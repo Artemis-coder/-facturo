@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "./lib/useAuth";
+import { isSupabaseConfigured } from "./lib/supabaseClient";
 import { useClients } from "./lib/useClients";
 import { useProduits } from "./lib/useProduits";
 import { useDevis } from "./lib/useDevis";
@@ -102,6 +103,24 @@ export default function App() {
   const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, loading: loadingFactures } = useFactures(entrepriseId, userId);
   const { entreprise, saveProfil, saveParametres, loading: loadingEntreprise } = useEntreprise(entrepriseId);
   const { profiles, invitations, changeRole, invite, cancelInvitation } = useUsers(entrepriseId);
+
+  if (!isSupabaseConfigured) {
+    return (
+      <>
+        <GlobalStyles />
+        <FullscreenMessage>
+          <div style={{ maxWidth: 420, textAlign: "center", padding: 24 }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, marginBottom: 12 }}>Configuration manquante</div>
+            <p style={{ color: "#B9BFCF", lineHeight: 1.7, fontSize: 13.5 }}>
+              Les variables <code>VITE_SUPABASE_URL</code> et <code>VITE_SUPABASE_ANON_KEY</code> ne sont pas définies.
+              Sur Vercel : <b>Project Settings → Environment Variables</b>, ajoutez les deux valeurs
+              (Project Settings → API dans Supabase), puis relancez un déploiement (<b>Redeploy</b>).
+            </p>
+          </div>
+        </FullscreenMessage>
+      </>
+    );
+  }
 
   if (loading) {
     return (<><GlobalStyles /><FullscreenMessage>Chargement…</FullscreenMessage></>);

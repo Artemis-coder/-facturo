@@ -3,12 +3,20 @@ import { createClient } from "@supabase/supabase-js";
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!url || !anonKey) {
+export const isSupabaseConfigured = Boolean(url && anonKey);
+
+if (!isSupabaseConfigured) {
   // eslint-disable-next-line no-console
-  console.warn(
+  console.error(
     "Facturo: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY manquants. " +
-    "Copiez .env.example vers .env et renseignez vos identifiants Supabase."
+    "En local : copiez .env.example vers .env. " +
+    "Sur Vercel : Project Settings → Environment Variables, puis redeploy."
   );
 }
 
-export const supabase = createClient(url, anonKey);
+// On exporte toujours un client, même factice, pour que le reste du code
+// (qui importe { supabase } sans savoir s'il est configuré) ne plante pas
+// au chargement du module — c'est CE crash qui produisait la page blanche.
+export const supabase = isSupabaseConfigured
+  ? createClient(url, anonKey)
+  : createClient("https://placeholder.supabase.co", "placeholder-anon-key");
