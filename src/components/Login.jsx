@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, Lock, ArrowRight, Building2, User } from "lucide-react";
+import { Mail, Lock, ArrowRight, Building2, User, CheckCircle2 } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { Card, Field, Btn } from "./ui";
 
@@ -11,16 +11,52 @@ export function Login({ onSignIn, onSignUp }) {
   const [nomComplet, setNomComplet] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [createdAccount, setCreatedAccount] = useState(null); // { email, nomComplet } once signup succeeds
 
   const submit = async () => {
     setError("");
     setBusy(true);
-    const { error } = mode === "connexion"
-      ? await onSignIn(email, password)
-      : await onSignUp(email, password, entrepriseNom, nomComplet);
-    setBusy(false);
-    if (error) setError(error.message || "Une erreur est survenue.");
+    if (mode === "connexion") {
+      const { error } = await onSignIn(email, password);
+      setBusy(false);
+      if (error) setError(error.message || "Une erreur est survenue.");
+    } else {
+      const { error } = await onSignUp(email, password, entrepriseNom, nomComplet);
+      setBusy(false);
+      if (error) { setError(error.message || "Une erreur est survenue."); return; }
+      setCreatedAccount({ email, nomComplet });
+    }
   };
+
+  if (createdAccount) {
+    return (
+      <div style={{ minHeight: "100vh", background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+        <div style={{ width: 380, maxWidth: "92vw" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 3, marginBottom: 30, justifyContent: "center" }}>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, color: "#fff", fontWeight: 600 }}>Facturo</span>
+            <span style={{ width: 6, height: 6, background: T.gold, display: "inline-block", marginLeft: 3 }} />
+          </div>
+          <Card style={{ padding: 28, textAlign: "center" }}>
+            <div style={{ width: 52, height: 52, borderRadius: 26, background: T.tealSoft, color: T.teal, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+              <CheckCircle2 size={26} />
+            </div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, marginBottom: 10 }}>Compte créé avec succès</div>
+            <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 18 }}>
+              Bienvenue{createdAccount.nomComplet ? `, ${createdAccount.nomComplet}` : ""} ! Un e-mail de confirmation vient d'être
+              envoyé à <b style={{ color: T.ink }}>{createdAccount.email}</b>. Ouvrez-le et cliquez sur le lien pour activer votre compte.
+            </p>
+            <div style={{ background: T.bg, borderRadius: 8, padding: "12px 14px", textAlign: "left", fontSize: 12.5, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
+              <div><b style={{ color: T.ink }}>Adresse de connexion :</b> {createdAccount.email}</div>
+              <div><b style={{ color: T.ink }}>Mot de passe :</b> celui que vous venez de choisir</div>
+            </div>
+            <Btn variant="gold" fullWidth onClick={() => { setCreatedAccount(null); setMode("connexion"); setPassword(""); }}>
+              Aller à la connexion
+            </Btn>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif" }}>

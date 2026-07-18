@@ -43,6 +43,16 @@ Pour ajouter un collègue : **Utilisateurs → Inviter**, puis demandez-lui de c
 compte Facturo avec exactement cette adresse e-mail — il rejoint automatiquement
 l'entreprise avec le rôle choisi (voir migration 0003).
 
+## 3bis. E-mail de bienvenue (confirmation d'inscription)
+
+Supabase envoie automatiquement un e-mail de confirmation à chaque inscription.
+Pour qu'il reprenne l'identité Facturo et rappelle les informations de connexion
+(sans jamais inclure le mot de passe, qui n'est récupérable par personne) :
+
+1. Supabase → **Authentication → Email Templates → Confirm signup**
+2. Collez le contenu de `supabase/email-templates/confirm-signup.html` dans le champ HTML
+3. Enregistrez
+
 ## 4. Build & déploiement
 
 ```bash

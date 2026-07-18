@@ -96,5 +96,13 @@ export function useFactures(entrepriseId, userId) {
     await load();
   };
 
-  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, loading, reload: load };
+  // La suppression est déjà restreinte côté serveur aux Administrateurs par la
+  // policy RLS "factures: suppression admin" — un autre rôle recevrait une erreur.
+  const deleteFacture = async (facture) => {
+    const { error } = await supabase.from("factures").delete().eq("id", facture.uuid);
+    if (!error) await load();
+    return { error };
+  };
+
+  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, deleteFacture, loading, reload: load };
 }

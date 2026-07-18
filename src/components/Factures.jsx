@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { Plus, Printer } from "lucide-react";
+import { Plus, Printer, Trash2 } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
 import { TableShell, Btn, Modal, Badge, Field, Select } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 
-export function Factures({ factures, clients, produits, createFacture, enregistrerPaiement, notify, onPrint, canManage = true }) {
+export function Factures({ factures, clients, produits, createFacture, enregistrerPaiement, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("Tous");
   const [paying, setPaying] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const cli = (id) => clients.find((c) => c.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyée", "Payée", "Partiellement payée", "En retard", "Annulée"];
   const list = factures.filter((f) => filter === "Tous" || f.statut === filter);
@@ -24,6 +25,12 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
     await enregistrerPaiement(paying, montant, mode);
     notify("Paiement enregistré");
     setPaying(null);
+  };
+
+  const confirmerSuppression = async () => {
+    const { error } = await deleteFacture(deleting);
+    notify(error ? "Suppression refusée : " + error.message : "Facture supprimée");
+    setDeleting(null);
   };
 
   return (
@@ -51,6 +58,9 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
                 <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
               )}
               <Btn variant="ghost" small icon={Printer} onClick={() => onPrint(f, "facture", cli(f.clientId))}>PDF</Btn>
+              {canDelete && (
+                <Btn variant="danger" small icon={Trash2} onClick={() => setDeleting(f)}>Supprimer</Btn>
+              )}
             </td>
           </tr>
         ))}
@@ -63,6 +73,19 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
       {paying && (
         <Modal title={`Paiement — ${paying.id}`} onClose={() => setPaying(null)}>
           <PaiementForm facture={paying} onSave={payer} />
+        </Modal>
+      )}
+      {deleting && (
+        <Modal title={`Supprimer ${deleting.id} ?`} onClose={() => setDeleting(null)}>
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
+            Cette action est <b>définitive</b> et supprimera aussi ses lignes, ses détails de
+            prestation et son historique de paiement. Le client <b>{cli(deleting.clientId)?.societe}</b> ne
+            verra plus cette facture.
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Btn variant="danger" onClick={confirmerSuppression}>Oui, supprimer définitivement</Btn>
+            <Btn variant="ghost" onClick={() => setDeleting(null)}>Annuler</Btn>
+          </div>
         </Modal>
       )}
     </div>
