@@ -32,3 +32,13 @@ export const totals = (lignes) => {
   });
   return { ht, tva: tvaTot, ttc: ht + tvaTot };
 };
+
+// Source unique de vérité pour "montant encaissé" — utilisée partout
+// (Tableau de bord, Rapports…) pour que le même chiffre s'affiche partout.
+// Se base sur `regle` (montant réellement réglé par le client), qui inclut
+// aussi bien les factures payées en totalité que les paiements partiels.
+export const montantEncaisseTotal = (factures) =>
+  factures.reduce((s, f) => s + Number(f.regle || 0), 0);
+
+export const montantPaiementsPartiels = (factures) =>
+  factures.filter((f) => f.statut === "Partiellement payée").reduce((s, f) => s + Number(f.regle || 0), 0);

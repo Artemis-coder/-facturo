@@ -1,7 +1,7 @@
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { T, fmt } from "../lib/theme";
-import { totals } from "../lib/helpers";
+import { totals, montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
 import { Card, Badge } from "./ui";
 
 const MOIS_FR = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
@@ -24,8 +24,8 @@ function caParMois(factures) {
 
 export function Dashboard({ factures, devis, clients, setView }) {
   const cli = (id) => clients.find((c) => c.id === id);
-  const montantEncaisse = factures.reduce((s, f) => s + Number(f.regle || 0), 0);
-  const paiementsPartiels = factures.filter((f) => f.statut === "Partiellement payée").reduce((s, f) => s + Number(f.regle || 0), 0);
+  const montantEncaisse = montantEncaisseTotal(factures);
+  const paiementsPartiels = montantPaiementsPartiels(factures);
   const impayees = factures.filter((f) => ["Envoyée", "En retard", "Partiellement payée"].includes(f.statut));
   const enRetard = factures.filter((f) => f.statut === "En retard").length;
   const devisEnAttente = devis.filter((d) => d.statut === "Envoyé").length;
