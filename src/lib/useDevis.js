@@ -30,17 +30,21 @@ function mapRow(row) {
   };
 }
 
-// Réserve le prochain numéro de document (devis ou facture) pour l'entreprise
-// et incrémente le compteur. `field` = "prochain_numero" est partagé entre les
-// deux types pour rester simple ; le préfixe distingue "D-" de "F-".
-async function reserverNumero(entrepriseId, prefixField) {
-  const { data: ent } = await supabase
+// Réserve le prochain numéro de devis pour l'entreprise et incrémente
+// son compteur dédié (indépendant de celui des factures).
+async function reserverNumeroDevis(entrepriseId) {
+  const { data: ent, error } = await supabase
     .from("entreprises")
-    .select(`prochain_numero, ${prefixField}`)
+    .select("prochain_numero_devis, prefixe_devis")
     .eq("id", entrepriseId)
     .single();
-  const numero = `${ent[prefixField]}${String(ent.prochain_numero).padStart(3, "0")}`;
-  await supabase.from("entreprises").update({ prochain_numero: ent.prochain_numero + 1 }).eq("id", entrepriseId);
+  if (error) throw error;
+  const numero = `${ent.prefixe_devis}${String(ent.prochain_numero_devis).padStart(3, "0")}`;
+  const { error: updError } = await supabase
+    .from("entreprises")
+    .update({ prochain_numero_devis: ent.prochain_numero_devis + 1 })
+    .eq("id", entrepriseId);
+  if (updError) throw updError;
   return numero;
 }
 
@@ -77,7 +81,7 @@ export function useDevis(entrepriseId, userId) {
 
   // Crée un nouveau devis (brouillon ou envoyé directement).
   const createDevis = async ({ clientId, lignes, statut }) => {
-    const numero = await reserverNumero(entrepriseId, "prefixe_devis");
+    const numero = await reserverNumeroDevis(entrepriseId);
     const { data: d } = await supabase.from("devis").insert({
       numero, entreprise_id: entrepriseId, client_id: clientId,
       date: todayISO(), statut, created_by: userId,

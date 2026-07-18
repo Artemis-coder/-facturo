@@ -62,10 +62,13 @@ export function useFactures(entrepriseId, userId) {
   useEffect(() => { load(); }, [load]);
 
   const reserverNumeroFacture = async () => {
-    const { data: ent } = await supabase
-      .from("entreprises").select("prochain_numero, prefixe_facture").eq("id", entrepriseId).single();
-    const numero = `${ent.prefixe_facture}${String(ent.prochain_numero).padStart(3, "0")}`;
-    await supabase.from("entreprises").update({ prochain_numero: ent.prochain_numero + 1 }).eq("id", entrepriseId);
+    const { data: ent, error } = await supabase
+      .from("entreprises").select("prochain_numero_facture, prefixe_facture").eq("id", entrepriseId).single();
+    if (error) throw error;
+    const numero = `${ent.prefixe_facture}${String(ent.prochain_numero_facture).padStart(3, "0")}`;
+    const { error: updError } = await supabase
+      .from("entreprises").update({ prochain_numero_facture: ent.prochain_numero_facture + 1 }).eq("id", entrepriseId);
+    if (updError) throw updError;
     return numero;
   };
 

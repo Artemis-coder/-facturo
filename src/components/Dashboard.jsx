@@ -24,14 +24,16 @@ function caParMois(factures) {
 
 export function Dashboard({ factures, devis, clients, setView }) {
   const cli = (id) => clients.find((c) => c.id === id);
-  const caPaye = factures.filter((f) => f.statut === "Payée").reduce((s, f) => s + totals(f.lignes).ttc, 0);
+  const montantEncaisse = factures.reduce((s, f) => s + Number(f.regle || 0), 0);
+  const paiementsPartiels = factures.filter((f) => f.statut === "Partiellement payée").reduce((s, f) => s + Number(f.regle || 0), 0);
   const impayees = factures.filter((f) => ["Envoyée", "En retard", "Partiellement payée"].includes(f.statut));
   const enRetard = factures.filter((f) => f.statut === "En retard").length;
   const devisEnAttente = devis.filter((d) => d.statut === "Envoyé").length;
   const historique = caParMois(factures);
 
   const kpis = [
-    { label: "CA encaissé (total)", value: fmt(caPaye), tone: T.teal },
+    { label: "Montant total encaissé (paiements partiels inclus)", value: fmt(montantEncaisse), tone: T.teal },
+    { label: "Dont paiements partiels reçus", value: fmt(paiementsPartiels), tone: T.gold },
     { label: "Factures impayées", value: `${impayees.length}`, tone: T.gold },
     { label: "Factures en retard", value: `${enRetard}`, tone: T.brick },
     { label: "Devis en attente", value: `${devisEnAttente}`, tone: T.slate },
@@ -39,7 +41,7 @@ export function Dashboard({ factures, devis, clients, setView }) {
 
   return (
     <div>
-      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 22 }}>
+      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
         {kpis.map((k) => (
           <Card key={k.label} style={{ padding: "16px 18px" }}>
             <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>{k.label}</div>

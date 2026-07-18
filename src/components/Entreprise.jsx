@@ -4,10 +4,18 @@ import { Card, Field, Btn, Select } from "./ui";
 
 export function Entreprise({ entreprise, onSaveProfil, notify, canEdit = true }) {
   const [form, setForm] = useState(entreprise);
+  const [error, setError] = useState("");
   useEffect(() => { setForm(entreprise); }, [entreprise]);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   if (!form) return null;
+
+  const save = async () => {
+    setError("");
+    const { error } = await onSaveProfil(form);
+    if (error) setError("Échec de l'enregistrement : " + error.message);
+    else notify("Profil entreprise enregistré");
+  };
 
   return (
     <Card style={{ padding: 24, maxWidth: 640 }}>
@@ -37,8 +45,11 @@ export function Entreprise({ entreprise, onSaveProfil, notify, canEdit = true })
         <Field label="Adresse"><input style={inputStyle} value={form.adresse} onChange={set("adresse")} /></Field>
         <Field label="Conditions générales"><textarea style={{ ...inputStyle, height: "auto", minHeight: 80, padding: "10px 12px" }} value={form.conditions} onChange={set("conditions")} /></Field>
       </fieldset>
+      {error && (
+        <div style={{ background: T.brickSoft, color: T.brick, fontSize: 12.5, borderRadius: 8, padding: "9px 12px", marginBottom: 14 }}>{error}</div>
+      )}
       {canEdit ? (
-        <Btn variant="gold" onClick={async () => { await onSaveProfil(form); notify("Profil entreprise enregistré"); }}>Enregistrer</Btn>
+        <Btn variant="gold" onClick={save}>Enregistrer</Btn>
       ) : (
         <p style={{ fontSize: 12, color: T.inkSoft }}>Seul un Administrateur peut modifier les informations de l'entreprise.</p>
       )}

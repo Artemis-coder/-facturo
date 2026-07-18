@@ -4,20 +4,29 @@ import { Card, Field, Btn } from "./ui";
 
 export function Parametres({ entreprise, onSaveParametres, notify, canEdit = true }) {
   const [form, setForm] = useState(entreprise);
+  const [error, setError] = useState("");
   useEffect(() => { setForm(entreprise); }, [entreprise]);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const toggle = (k) => canEdit && setForm({ ...form, [k]: !form[k] });
 
   if (!form) return null;
 
+  const save = async () => {
+    setError("");
+    const { error } = await onSaveParametres(form);
+    if (error) setError("Échec de l'enregistrement : " + error.message);
+    else notify("Paramètres enregistrés");
+  };
+
   return (
     <Card style={{ padding: 24, maxWidth: 560 }}>
       <fieldset disabled={!canEdit} style={{ border: "none", padding: 0, margin: 0 }}>
         <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <Field label="TVA par défaut (%)"><input type="number" style={inputStyle} value={form.tvaDefaut} onChange={set("tvaDefaut")} /></Field>
-          <Field label="Préfixe factures"><input style={inputStyle} value={form.prefixeFacture} onChange={set("prefixeFacture")} /></Field>
           <Field label="Préfixe devis"><input style={inputStyle} value={form.prefixeDevis} onChange={set("prefixeDevis")} /></Field>
-          <Field label="Prochain numéro"><input type="number" style={inputStyle} value={form.prochainNumero} onChange={set("prochainNumero")} /></Field>
+          <Field label="Prochain numéro de devis"><input type="number" style={inputStyle} value={form.prochainNumeroDevis} onChange={set("prochainNumeroDevis")} /></Field>
+          <Field label="Préfixe factures"><input style={inputStyle} value={form.prefixeFacture} onChange={set("prefixeFacture")} /></Field>
+          <Field label="Prochain numéro de facture"><input type="number" style={inputStyle} value={form.prochainNumeroFacture} onChange={set("prochainNumeroFacture")} /></Field>
         </div>
       </fieldset>
       {[
@@ -32,9 +41,14 @@ export function Parametres({ entreprise, onSaveParametres, notify, canEdit = tru
           <span style={{ fontSize: 13 }}>{label}</span>
         </div>
       ))}
+
+      {error && (
+        <div style={{ background: T.brickSoft, color: T.brick, fontSize: 12.5, borderRadius: 8, padding: "9px 12px", marginTop: 14 }}>{error}</div>
+      )}
+
       <div style={{ marginTop: 18 }}>
         {canEdit ? (
-          <Btn variant="gold" onClick={async () => { await onSaveParametres(form); notify("Paramètres enregistrés"); }}>Enregistrer</Btn>
+          <Btn variant="gold" onClick={save}>Enregistrer</Btn>
         ) : (
           <p style={{ fontSize: 12, color: T.inkSoft }}>Seul un Administrateur peut modifier ces paramètres.</p>
         )}
