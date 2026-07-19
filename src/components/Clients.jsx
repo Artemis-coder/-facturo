@@ -44,21 +44,32 @@ export function Clients({ clients, onSaveClient, devis, factures, notify, canEdi
 
       {detail && (
         <Modal title={detail.nom} onClose={() => setDetail(null)} wide>
-          <div style={{ display: "flex", gap: 24, marginBottom: 18, fontSize: 13, color: T.inkSoft }}>
-            <div>{detail.societe}</div><div>{detail.email}</div><div style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{detail.tel}</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+            <div style={{ display: "flex", gap: 24, fontSize: 13, color: T.inkSoft, flexWrap: "wrap" }}>
+              <div>{detail.societe}</div><div>{detail.email}</div><div style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{detail.tel}</div>
+            </div>
+            {canEdit && (
+              <Btn variant="ghost" small icon={Pencil} onClick={() => { setEditing(detail); setDetail(null); }}>Modifier</Btn>
+            )}
           </div>
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 8 }}>Devis</div>
           {devis.filter((d) => d.clientId === detail.id).map((d) => (
             <div key={d.id} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${T.line}`, fontSize: 12.5 }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{d.id}</span><span>{fmt(totals(d.lignes).ttc)}</span><Badge statut={d.statut} />
             </div>
-          )) || <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucun devis</div>}
+          ))}
+          {devis.filter((d) => d.clientId === detail.id).length === 0 && (
+            <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucun devis</div>
+          )}
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, margin: "16px 0 8px" }}>Factures</div>
           {factures.filter((f) => f.clientId === detail.id).map((f) => (
             <div key={f.id} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${T.line}`, fontSize: 12.5 }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{f.id}</span><span>{fmt(totals(f.lignes).ttc)}</span><Badge statut={f.statut} />
             </div>
           ))}
+          {factures.filter((f) => f.clientId === detail.id).length === 0 && (
+            <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucune facture</div>
+          )}
         </Modal>
       )}
     </div>

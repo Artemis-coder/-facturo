@@ -5,9 +5,11 @@ import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
 import { TableShell, Btn, Modal, Badge, Field, Select } from "./ui";
 import { DocBuilder } from "./DocBuilder";
+import { DocPreview } from "./DocPreview";
 
 export function Factures({ factures, clients, produits, createFacture, enregistrerPaiement, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
+  const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
   const [paying, setPaying] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -48,12 +50,15 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle facture</Btn>}>
         {list.map((f) => (
           <tr key={f.uuid}>
-            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{f.id}</td>
+            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>
+              <a style={{ color: T.ink, cursor: "pointer", fontWeight: 600 }} onClick={() => setPreviewing(f)}>{f.id}</a>
+            </td>
             <td style={td}>{cli(f.clientId)?.societe}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{f.echeance}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes).ttc)}</td>
             <td style={td}><Badge statut={f.statut} /></td>
             <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <Btn variant="ghost" small onClick={() => setPreviewing(f)}>Aperçu</Btn>
               {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
                 <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
               )}
@@ -65,6 +70,27 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
           </tr>
         ))}
       </TableShell>
+
+      {previewing && (
+        <Modal title={`Facture — ${previewing.id}`} onClose={() => setPreviewing(null)} wide>
+          <DocPreview doc={previewing} client={cli(previewing.clientId)}
+            onDownload={() => onPrint(previewing, "facture", cli(previewing.clientId))}
+            extraInfo={
+              <div style={{ display: "flex", gap: 20, fontSize: 12.5, color: T.inkSoft, marginBottom: 16 }}>
+                <div>Échéance : <b style={{ color: T.ink, fontFamily: "'IBM Plex Mono', monospace" }}>{previewing.echeance}</b></div>
+                <div>Réglé : <b style={{ color: T.teal, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(previewing.regle || 0)}</b></div>
+                <div>Reste à payer : <b style={{ color: T.brick, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(previewing.lignes).ttc - (previewing.regle || 0))}</b></div>
+              </div>
+            }
+          />
+          {canManage && previewing.statut !== "Payée" && previewing.statut !== "Annulée" && (
+            <div style={{ marginTop: -8, marginBottom: 4 }}>
+              <Btn variant="primary" onClick={() => { setPaying(previewing); setPreviewing(null); }}>Enregistrer un paiement</Btn>
+            </div>
+          )}
+        </Modal>
+      )}
+
       {creating && (
         <Modal title="Nouvelle facture" onClose={() => setCreating(false)} wide>
           <DocBuilder clients={clients} produits={produits} onSave={save} docType="facture" />
