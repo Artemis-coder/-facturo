@@ -4,6 +4,7 @@ import {
   Building2, Settings, X, Menu, LogOut, UserCog,
 } from "lucide-react";
 import { T } from "../lib/theme";
+import { Modal, Btn } from "./ui";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -21,6 +22,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
   const items = NAV.filter((n) => !n.roles || role === "super_admin" || n.roles.includes(role));
   const current = NAV.find((n) => n.key === view);
   const [navOpen, setNavOpen] = useState(false);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   const go = (key) => { setView(key); setNavOpen(false); };
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -51,7 +53,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
           <div style={{ fontSize: 12, color: "#B9BFCF", marginBottom: 10 }}>{entreprise?.nom}</div>
-          <div onClick={onLogout} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#B9BFCF", cursor: "pointer" }}>
+          <div onClick={() => setConfirmingLogout(true)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#B9BFCF", cursor: "pointer" }}>
             <LogOut size={15} /> Déconnexion
           </div>
         </div>
@@ -65,6 +67,19 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
         </header>
         <div className="app-content" style={{ padding: 30 }}>{children}</div>
       </main>
+
+      {confirmingLogout && (
+        <Modal title="Se déconnecter ?" onClose={() => setConfirmingLogout(false)}>
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
+            Vous allez être déconnecté de Facturo. Vos données restent enregistrées et
+            vous pourrez vous reconnecter à tout moment avec votre e-mail et votre mot de passe.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Btn variant="danger" onClick={() => { setConfirmingLogout(false); onLogout(); }}>Oui, me déconnecter</Btn>
+            <Btn variant="ghost" onClick={() => setConfirmingLogout(false)}>Annuler</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
