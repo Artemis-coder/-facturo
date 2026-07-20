@@ -100,7 +100,7 @@ export default function App() {
   const { clients, saveClient, loading: loadingClients } = useClients(entrepriseId);
   const { produits, saveProduit, loading: loadingProduits } = useProduits(entrepriseId);
   const { devis, createDevis, updateDevis, marquerTransforme, loading: loadingDevis } = useDevis(entrepriseId, userId);
-  const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
+  const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
   const { entreprise, saveProfil, saveParametres, loading: loadingEntreprise } = useEntreprise(entrepriseId);
   const { profiles, invitations, changeRole, invite, cancelInvitation } = useUsers(entrepriseId);
 
@@ -159,7 +159,7 @@ export default function App() {
             )}
             {view === "factures" && (
               <Factures factures={factures} clients={clients} produits={produits}
-                createFacture={createFacture} enregistrerPaiement={enregistrerPaiement} deleteFacture={deleteFacture}
+                createFacture={createFacture} enregistrerPaiement={enregistrerPaiement} marquerProjetTermine={marquerProjetTermine} deleteFacture={deleteFacture}
                 notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin} />
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} notify={notify} />}

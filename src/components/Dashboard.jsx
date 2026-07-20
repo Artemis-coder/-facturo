@@ -1,7 +1,7 @@
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { T, fmt } from "../lib/theme";
-import { totals, montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
+import { montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
 import { Card, Badge } from "./ui";
 
 const MOIS_FR = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
@@ -13,11 +13,15 @@ function caParMois(factures) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, mois: MOIS_FR[d.getMonth()], ca: 0 });
   }
-  factures.filter((f) => f.statut === "Payée").forEach((f) => {
+  // On additionne `regle` (montant réellement encaissé, paiements partiels
+  // inclus) plutôt que le total facturé — c'est la même source que la carte
+  // "Montant total encaissé" au-dessus, pour que le graphique évolue avec
+  // exactement le chiffre affiché à l'écran.
+  factures.forEach((f) => {
     const d = new Date(f.date);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     const m = months.find((m) => m.key === key);
-    if (m) m.ca += totals(f.lignes).ttc;
+    if (m) m.ca += Number(f.regle || 0);
   });
   return months;
 }
@@ -29,21 +33,24 @@ export function Dashboard({ factures, devis, clients, setView }) {
   const impayees = factures.filter((f) => ["Envoyée", "En retard", "Partiellement payée"].includes(f.statut));
   const enRetard = factures.filter((f) => f.statut === "En retard").length;
   const devisEnAttente = devis.filter((d) => d.statut === "Envoyé").length;
+  const projetsTermines = factures.filter((f) => f.projetTermine).length;
   const historique = caParMois(factures);
 
   const kpis = [
     { label: "Montant total encaissé (paiements partiels inclus)", value: fmt(montantEncaisse), tone: T.teal },
     { label: "Dont paiements partiels reçus", value: fmt(paiementsPartiels), tone: T.gold },
-    { label: "Factures impayées", value: `${impayees.length}`, tone: T.gold },
-    { label: "Factures en retard", value: `${enRetard}`, tone: T.brick },
-    { label: "Devis en attente", value: `${devisEnAttente}`, tone: T.slate },
+    { label: "Factures impayées", value: `${impayees.length}`, tone: T.gold, view: "factures" },
+    { label: "Factures en retard", value: `${enRetard}`, tone: T.brick, view: "factures" },
+    { label: "Devis en attente", value: `${devisEnAttente}`, tone: T.slate, view: "devis" },
+    { label: "Projets terminés", value: `${projetsTermines}`, tone: T.teal, view: "factures" },
   ];
 
   return (
     <div>
       <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
         {kpis.map((k) => (
-          <Card key={k.label} style={{ padding: "16px 18px" }}>
+          <Card key={k.label} style={{ padding: "16px 18px", cursor: k.view ? "pointer" : "default" }}
+            onClick={k.view ? () => setView(k.view) : undefined}>
             <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: k.tone, fontWeight: 600 }}>{k.value}</div>
           </Card>

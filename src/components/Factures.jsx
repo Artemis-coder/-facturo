@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Printer, Trash2 } from "lucide-react";
+import { Plus, Printer, Trash2, CheckCircle2 } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
@@ -7,15 +7,18 @@ import { TableShell, Btn, Modal, Badge, Field, Select } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
-export function Factures({ factures, clients, produits, createFacture, enregistrerPaiement, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
+export function Factures({ factures, clients, produits, createFacture, enregistrerPaiement, marquerProjetTermine, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
+  const [projetsTerminesUniquement, setProjetsTerminesUniquement] = useState(false);
   const [paying, setPaying] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const cli = (id) => clients.find((c) => c.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyée", "Payée", "Partiellement payée", "En retard", "Annulée"];
-  const list = factures.filter((f) => filter === "Tous" || f.statut === filter);
+  const list = factures
+    .filter((f) => filter === "Tous" || f.statut === filter)
+    .filter((f) => !projetsTerminesUniquement || f.projetTermine);
 
   const save = async (data) => {
     await createFacture(data);
@@ -29,6 +32,12 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
     setPaying(null);
   };
 
+  const marquerTermine = async (facture) => {
+    const { error } = await marquerProjetTermine(facture);
+    notify(error ? "Échec : " + error.message : "Projet marqué comme terminé");
+    setPreviewing(null);
+  };
+
   const confirmerSuppression = async () => {
     const { error } = await deleteFacture(deleting);
     notify(error ? "Suppression refusée : " + error.message : "Facture supprimée");
@@ -37,14 +46,24 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-        {statuts.map((s) => (
-          <button key={s} onClick={() => setFilter(s)} style={{
-            padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
-            border: `1px solid ${filter === s ? T.ink : T.line}`, background: filter === s ? T.ink : "#fff",
-            color: filter === s ? "#fff" : T.inkSoft,
-          }}>{s}</button>
-        ))}
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {statuts.map((s) => (
+            <button key={s} onClick={() => setFilter(s)} style={{
+              padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
+              border: `1px solid ${filter === s ? T.ink : T.line}`, background: filter === s ? T.ink : "#fff",
+              color: filter === s ? "#fff" : T.inkSoft,
+            }}>{s}</button>
+          ))}
+        </div>
+        <button onClick={() => setProjetsTerminesUniquement(!projetsTerminesUniquement)} style={{
+          display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
+          border: `1px solid ${projetsTerminesUniquement ? T.teal : T.line}`,
+          background: projetsTerminesUniquement ? T.tealSoft : "#fff",
+          color: projetsTerminesUniquement ? T.teal : T.inkSoft,
+        }}>
+          <CheckCircle2 size={13} /> Projets terminés uniquement
+        </button>
       </div>
       <TableShell headers={["N°", "Client", "Échéance", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle facture</Btn>}>
@@ -56,11 +75,21 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
             <td style={td}>{cli(f.clientId)?.societe}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{f.echeance}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes).ttc)}</td>
-            <td style={td}><Badge statut={f.statut} /></td>
+            <td style={td}>
+              <Badge statut={f.statut} />
+              {f.projetTermine && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 6, fontSize: 11, color: T.teal }}>
+                  <CheckCircle2 size={12} /> Terminé
+                </span>
+              )}
+            </td>
             <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
               <Btn variant="ghost" small onClick={() => setPreviewing(f)}>Aperçu</Btn>
               {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
                 <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
+              )}
+              {canManage && f.statut === "Payée" && !f.projetTermine && (
+                <Btn variant="ghost" small icon={CheckCircle2} onClick={() => marquerTermine(f)}>Marquer terminé</Btn>
               )}
               <Btn variant="ghost" small icon={Printer} onClick={() => onPrint(f, "facture", cli(f.clientId))}>PDF</Btn>
               {canDelete && (
@@ -76,16 +105,28 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
           <DocPreview doc={previewing} client={cli(previewing.clientId)}
             onDownload={() => onPrint(previewing, "facture", cli(previewing.clientId))}
             extraInfo={
-              <div style={{ display: "flex", gap: 20, fontSize: 12.5, color: T.inkSoft, marginBottom: 16 }}>
-                <div>Échéance : <b style={{ color: T.ink, fontFamily: "'IBM Plex Mono', monospace" }}>{previewing.echeance}</b></div>
-                <div>Réglé : <b style={{ color: T.teal, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(previewing.regle || 0)}</b></div>
-                <div>Reste à payer : <b style={{ color: T.brick, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(previewing.lignes).ttc - (previewing.regle || 0))}</b></div>
+              <div>
+                <div style={{ display: "flex", gap: 20, fontSize: 12.5, color: T.inkSoft, marginBottom: previewing.projetTermine ? 10 : 16, flexWrap: "wrap" }}>
+                  <div>Échéance : <b style={{ color: T.ink, fontFamily: "'IBM Plex Mono', monospace" }}>{previewing.echeance}</b></div>
+                  <div>Réglé : <b style={{ color: T.teal, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(previewing.regle || 0)}</b></div>
+                  <div>Reste à payer : <b style={{ color: T.brick, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(previewing.lignes).ttc - (previewing.regle || 0))}</b></div>
+                </div>
+                {previewing.projetTermine && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.tealSoft, color: T.teal, borderRadius: 8, padding: "9px 12px", fontSize: 12.5, marginBottom: 16 }}>
+                    <CheckCircle2 size={14} /> Projet marqué terminé le {previewing.termineLe}
+                  </div>
+                )}
               </div>
             }
           />
           {canManage && previewing.statut !== "Payée" && previewing.statut !== "Annulée" && (
             <div style={{ marginTop: -8, marginBottom: 4 }}>
               <Btn variant="primary" onClick={() => { setPaying(previewing); setPreviewing(null); }}>Enregistrer un paiement</Btn>
+            </div>
+          )}
+          {canManage && previewing.statut === "Payée" && !previewing.projetTermine && (
+            <div style={{ marginTop: -8, marginBottom: 4 }}>
+              <Btn variant="primary" icon={CheckCircle2} onClick={() => marquerTermine(previewing)}>Marquer le projet comme terminé</Btn>
             </div>
           )}
         </Modal>

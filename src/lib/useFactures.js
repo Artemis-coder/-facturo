@@ -4,6 +4,7 @@ import { todayISO, totals } from "./helpers";
 
 const FACTURE_SELECT = `
   id, numero, client_id, date, echeance, statut, montant_regle, created_by,
+  projet_termine, termine_le,
   facture_lignes ( id, produit_id, nom, prix_ht, tva, qty, remise,
     facture_details ( id, label, prix ) )
 `;
@@ -17,6 +18,8 @@ function mapRow(row) {
     echeance: row.echeance,
     statut: row.statut,
     regle: row.montant_regle,
+    projetTermine: row.projet_termine,
+    termineLe: row.termine_le,
     lignes: (row.facture_lignes || []).map((l) => ({
       id: l.id,
       produitId: l.produit_id,
@@ -99,6 +102,17 @@ export function useFactures(entrepriseId, userId) {
     await load();
   };
 
+  // Ne peut réussir que si la facture est déjà "Payée" — la contrainte
+  // "projet_termine_requiert_paiement" (migration 0006) le garantit aussi
+  // côté base, même si l'interface était contournée.
+  const marquerProjetTermine = async (facture) => {
+    const { error } = await supabase.from("factures")
+      .update({ projet_termine: true, termine_le: todayISO() })
+      .eq("id", facture.uuid);
+    if (!error) await load();
+    return { error };
+  };
+
   // La suppression est déjà restreinte côté serveur aux Administrateurs par la
   // policy RLS "factures: suppression admin" — un autre rôle recevrait une erreur.
   const deleteFacture = async (facture) => {
@@ -107,5 +121,5 @@ export function useFactures(entrepriseId, userId) {
     return { error };
   };
 
-  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, deleteFacture, loading, reload: load };
+  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, deleteFacture, loading, reload: load };
 }
