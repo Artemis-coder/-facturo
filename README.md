@@ -65,6 +65,24 @@ Pensez à configurer les variables d'environnement `VITE_SUPABASE_URL` et
 `VITE_SUPABASE_ANON_KEY` sur la plateforme de déploiement (elles sont injectées au
 moment du build, pas à l'exécution).
 
+## 4bis. Application installable (PWA)
+
+Facturo est une Progressive Web App : sur Android/Desktop (Chrome, Edge, Brave),
+un bouton **"Installer l'application"** apparaît directement dans le menu latéral
+et sur l'écran de connexion dès que le navigateur le permet — un clic suffit,
+aucune boutique d'applications n'est nécessaire. Sur iPhone/iPad (Safari), un
+bouton affiche les 3 étapes manuelles (Partager → Sur l'écran d'accueil → Ajouter),
+car iOS ne propose pas d'installation automatique.
+
+Ce que ça donne une fois installé : icône sur l'écran d'accueil, ouverture en
+plein écran sans barre d'adresse, et l'app shell (JS/CSS/icônes) reste disponible
+même hors-ligne — seules les données Supabase nécessitent une connexion.
+
+Géré par `vite-plugin-pwa` (config dans `vite.config.js`) ; les icônes sources
+sont dans `public/icons/`. Pour changer l'icône, remplacez les fichiers dans ce
+dossier (192, 512, versions "maskable" avec fond plein pour Android, favicon,
+apple-touch-icon) en gardant les mêmes noms.
+
 ## 5. Pousser sur GitHub
 
 ```bash

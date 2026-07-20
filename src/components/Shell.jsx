@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download,
 } from "lucide-react";
 import { T } from "../lib/theme";
+import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { Modal, Btn } from "./ui";
 
 export const NAV = [
@@ -23,6 +24,8 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
   const current = NAV.find((n) => n.key === view);
   const [navOpen, setNavOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [showIosHelp, setShowIosHelp] = useState(false);
+  const { canInstall, isIosSafariManual, promptInstall } = useInstallPrompt();
   const go = (key) => { setView(key); setNavOpen(false); };
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -53,6 +56,14 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
           <div style={{ fontSize: 12, color: "#B9BFCF", marginBottom: 10 }}>{entreprise?.nom}</div>
+          {(canInstall || isIosSafariManual) && (
+            <div
+              onClick={canInstall ? promptInstall : () => setShowIosHelp(true)}
+              style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.gold, cursor: "pointer", marginBottom: 12 }}
+            >
+              <Download size={15} /> Installer l'application
+            </div>
+          )}
           <div onClick={() => setConfirmingLogout(true)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#B9BFCF", cursor: "pointer" }}>
             <LogOut size={15} /> Déconnexion
           </div>
@@ -78,6 +89,17 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
             <Btn variant="danger" onClick={() => { setConfirmingLogout(false); onLogout(); }}>Oui, me déconnecter</Btn>
             <Btn variant="ghost" onClick={() => setConfirmingLogout(false)}>Annuler</Btn>
           </div>
+        </Modal>
+      )}
+
+      {showIosHelp && (
+        <Modal title="Installer Facturo sur iPhone/iPad" onClose={() => setShowIosHelp(false)}>
+          <ol style={{ fontSize: 13, color: T.inkSoft, lineHeight: 2, paddingLeft: 20, marginBottom: 20 }}>
+            <li>Appuyez sur l'icône <b>Partager</b> en bas de Safari (le carré avec une flèche vers le haut)</li>
+            <li>Faites défiler et appuyez sur <b>« Sur l'écran d'accueil »</b></li>
+            <li>Appuyez sur <b>Ajouter</b> — Facturo apparaît comme une vraie application, icône comprise</li>
+          </ol>
+          <Btn variant="gold" onClick={() => setShowIosHelp(false)}>Compris</Btn>
         </Modal>
       )}
     </div>

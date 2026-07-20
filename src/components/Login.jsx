@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Mail, Lock, ArrowRight, Building2, User, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Building2, User, CheckCircle2, Download } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
+import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { Card, Field, Btn } from "./ui";
 
 export function Login({ onSignIn, onSignUp }) {
+  const { canInstall, promptInstall } = useInstallPrompt();
   const [mode, setMode] = useState("connexion");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -127,6 +129,11 @@ export function Login({ onSignIn, onSignUp }) {
             Votre compte est créé avec le rôle Administrateur de votre nouvelle entreprise.
             Vous pourrez inviter des collègues (Comptable, Commercial, Employé…) ensuite.
           </p>
+        )}
+        {canInstall && (
+          <div onClick={promptInstall} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 18, color: "#B9BFCF", fontSize: 12.5, cursor: "pointer" }}>
+            <Download size={13} /> Installer Facturo sur cet appareil
+          </div>
         )}
       </div>
     </div>
