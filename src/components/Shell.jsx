@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
@@ -9,6 +9,7 @@ import { Modal, Btn } from "./ui";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { key: "finance", label: "Finance", icon: Wallet, roles: ["administrateur", "comptable"] },
   { key: "projets", label: "Projets", icon: FolderKanban, roles: ["administrateur", "comptable", "commercial"] },
   { key: "devis", label: "Devis", icon: FileText, roles: ["administrateur", "comptable", "commercial", "employe"] },
   { key: "factures", label: "Factures", icon: Receipt, roles: ["administrateur", "comptable", "employe"] },

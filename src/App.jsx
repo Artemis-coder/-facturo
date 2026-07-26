@@ -8,6 +8,8 @@ import { useFactures } from "./lib/useFactures";
 import { useEntreprise } from "./lib/useEntreprise";
 import { useUsers } from "./lib/useUsers";
 import { useProjets } from "./lib/useProjets";
+import { usePaiements } from "./lib/usePaiements";
+import { useDepenses } from "./lib/useDepenses";
 import { T } from "./lib/theme";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
@@ -21,6 +23,7 @@ import { Entreprise } from "./components/Entreprise";
 import { Parametres } from "./components/Parametres";
 import { Users } from "./components/Users";
 import { Projets } from "./components/Projets";
+import { Finance } from "./components/Finance";
 import { PrintArea } from "./components/PrintArea";
 import { Toast } from "./components/ui";
 
@@ -106,6 +109,8 @@ export default function App() {
   const { entreprise, saveProfil, saveParametres, loading: loadingEntreprise } = useEntreprise(entrepriseId);
   const { profiles, invitations, changeRole, invite, cancelInvitation } = useUsers(entrepriseId);
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
+  const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
+  const { depenses, saveDepense, deleteDepense, loading: loadingDepenses } = useDepenses(entrepriseId);
 
   if (!isSupabaseConfigured) {
     return (
@@ -137,13 +142,14 @@ export default function App() {
     return (<><GlobalStyles /><FullscreenMessage>Création de votre espace en cours…</FullscreenMessage></>);
   }
 
-  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets;
+  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses;
   const isAdmin = role === "administrateur" || role === "super_admin";
   const canManageClients = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
   const canManageProduits = ["administrateur", "comptable", "super_admin"].includes(role);
   const canCreateDevis = ["administrateur", "commercial", "super_admin"].includes(role);
   const canManageFactures = ["administrateur", "comptable", "super_admin"].includes(role);
   const canManageProjets = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
+  const canManageFinance = ["administrateur", "comptable", "super_admin"].includes(role);
 
   return (
     <>
@@ -154,6 +160,11 @@ export default function App() {
         ) : (
           <>
             {view === "dashboard" && <Dashboard factures={factures} devis={devis} clients={clients} setView={setView} />}
+            {view === "finance" && canManageFinance && (
+              <Finance paiements={paiements} depenses={depenses} clients={clients}
+                saveDepense={saveDepense} deleteDepense={deleteDepense} userId={userId}
+                notify={notify} canManage={canManageFinance} canDelete={isAdmin} />
+            )}
             {view === "projets" && (
               <Projets projets={projets} clients={clients} devis={devis} factures={factures}
                 saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}

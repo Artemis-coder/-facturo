@@ -178,7 +178,7 @@ function PaiementForm({ facture, onSave }) {
       <Field label="Montant reçu (FCFA)"><input type="number" style={inputStyle} value={montant} onChange={(e) => setMontant(e.target.value)} /></Field>
       <Field label="Mode de paiement">
         <Select value={mode} onChange={(e) => setMode(e.target.value)}>
-          {["Virement", "Espèces", "Chèque", "Carte bancaire"].map((m) => <option key={m}>{m}</option>)}
+          {["Espèces", "Virement", "Mobile Money", "Chèque", "Carte bancaire"].map((m) => <option key={m}>{m}</option>)}
         </Select>
       </Field>
       <Btn variant="gold" onClick={() => onSave(montant, mode)}>Confirmer le paiement</Btn>
