@@ -27,6 +27,10 @@ Dans Supabase → **SQL Editor**, exécutez les migrations **dans l'ordre** :
 1. `supabase/migrations/0001_init_schema_roles_rls.sql` — schéma complet, rôles, RLS
 2. `supabase/migrations/0002_preferences.sql` — préférences de notifications
 3. `supabase/migrations/0003_invitations.sql` — invitations d'équipe par rôle
+4. `supabase/migrations/0004_compteurs_separes.sql` — compteurs de numérotation devis/factures séparés
+5. `supabase/migrations/0005_rattrapage_preferences_et_compteurs.sql` — rattrapage si 0002/0004 n'ont pas été exécutées
+6. `supabase/migrations/0006_projet_termine.sql` — indicateur "projet terminé" par facture
+7. `supabase/migrations/0007_projets.sql` — entité Projets (regroupement de devis/factures)
 
 ## 3. Rôles
 

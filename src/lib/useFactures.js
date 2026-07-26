@@ -4,7 +4,7 @@ import { todayISO, totals } from "./helpers";
 
 const FACTURE_SELECT = `
   id, numero, client_id, date, echeance, statut, montant_regle, created_by,
-  projet_termine, termine_le,
+  projet_termine, termine_le, projet_id,
   facture_lignes ( id, produit_id, nom, prix_ht, tva, qty, remise,
     facture_details ( id, label, prix ) )
 `;
@@ -20,6 +20,7 @@ function mapRow(row) {
     regle: row.montant_regle,
     projetTermine: row.projet_termine,
     termineLe: row.termine_le,
+    projetId: row.projet_id,
     lignes: (row.facture_lignes || []).map((l) => ({
       id: l.id,
       produitId: l.produit_id,
@@ -75,12 +76,12 @@ export function useFactures(entrepriseId, userId) {
     return numero;
   };
 
-  const createFacture = async ({ clientId, lignes, statut }) => {
+  const createFacture = async ({ clientId, lignes, statut, projetId }) => {
     const numero = await reserverNumeroFacture();
     const echeance = new Date(); echeance.setDate(echeance.getDate() + 30);
     const { data: f } = await supabase.from("factures").insert({
       numero, entreprise_id: entrepriseId, client_id: clientId, date: todayISO(),
-      echeance: echeance.toISOString().slice(0, 10), statut, created_by: userId,
+      echeance: echeance.toISOString().slice(0, 10), statut, created_by: userId, projet_id: projetId || null,
     }).select().single();
     await insertLignes(f.id, lignes);
     await load();
@@ -88,9 +89,9 @@ export function useFactures(entrepriseId, userId) {
   };
 
   // Utilisée par Devis → "Facturer" : crée directement une facture Envoyée
-  // à partir des lignes d'un devis accepté.
+  // à partir des lignes d'un devis accepté, en conservant le même projet.
   const creerDepuisDevis = async (devisObj) => createFacture({
-    clientId: devisObj.clientId, lignes: devisObj.lignes, statut: "Envoyée",
+    clientId: devisObj.clientId, lignes: devisObj.lignes, statut: "Envoyée", projetId: devisObj.projetId,
   });
 
   const enregistrerPaiement = async (facture, montant, mode) => {
@@ -121,5 +122,14 @@ export function useFactures(entrepriseId, userId) {
     return { error };
   };
 
-  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, deleteFacture, loading, reload: load };
+  // Rattache (ou détache si projetId est null) une facture existante à un
+  // projet, utilisé depuis l'écran Projets pour relier rétroactivement une
+  // ancienne facture.
+  const lierProjet = async (facture, projetId) => {
+    const { error } = await supabase.from("factures").update({ projet_id: projetId }).eq("id", facture.uuid);
+    if (!error) await load();
+    return { error };
+  };
+
+  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, loading, reload: load };
 }

@@ -4,8 +4,9 @@ import { T, fmt, inputStyle } from "../lib/theme";
 import { mkLine, mkDetail, ligneMontant, totals } from "../lib/helpers";
 import { Field, Select, Btn } from "./ui";
 
-export function DocBuilder({ clients, produits, onSave, docType, initial }) {
+export function DocBuilder({ clients, produits, projets = [], onSave, docType, initial }) {
   const [clientId, setClientId] = useState(initial?.clientId || clients[0]?.id || "");
+  const [projetId, setProjetId] = useState(initial?.projetId || "");
   const [lignes, setLignes] = useState(initial?.lignes ? initial.lignes.map((l) => ({ ...l })) : []);
   const t = totals(lignes);
 
@@ -22,6 +23,13 @@ export function DocBuilder({ clients, produits, onSave, docType, initial }) {
       <Field label="Client">
         <Select value={clientId} onChange={(e) => setClientId(e.target.value)}>
           {clients.map((c) => <option key={c.id} value={c.id}>{c.societe} — {c.nom}</option>)}
+        </Select>
+      </Field>
+
+      <Field label="Projet associé (optionnel)">
+        <Select value={projetId} onChange={(e) => setProjetId(e.target.value)}>
+          <option value="">— Aucun projet —</option>
+          {projets.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
         </Select>
       </Field>
 
@@ -87,8 +95,8 @@ export function DocBuilder({ clients, produits, onSave, docType, initial }) {
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
-        <Btn variant="gold" onClick={() => onSave({ clientId, lignes, statut: "Brouillon" })}>Enregistrer en brouillon</Btn>
-        <Btn variant="primary" icon={Send} onClick={() => onSave({ clientId, lignes, statut: docType === "devis" ? "Envoyé" : "Envoyée" })}>Enregistrer et envoyer</Btn>
+        <Btn variant="gold" onClick={() => onSave({ clientId, projetId: projetId || null, lignes, statut: "Brouillon" })}>Enregistrer en brouillon</Btn>
+        <Btn variant="primary" icon={Send} onClick={() => onSave({ clientId, projetId: projetId || null, lignes, statut: docType === "devis" ? "Envoyé" : "Envoyée" })}>Enregistrer et envoyer</Btn>
       </div>
     </div>
   );

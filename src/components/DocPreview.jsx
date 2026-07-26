@@ -1,11 +1,15 @@
-import React from "react";
-import { Download, Pencil, Lock, AlertTriangle } from "lucide-react";
+import React, { useState } from "react";
+import { Download, Pencil, Lock, AlertTriangle, FolderKanban } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { ligneMontant, totals } from "../lib/helpers";
-import { Badge, Btn } from "./ui";
+import { Badge, Btn, Select } from "./ui";
 
-export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNote, extraInfo }) {
+export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNote, extraInfo, projets, onLinkProjet }) {
   const t = totals(doc.lignes);
+  const [linking, setLinking] = useState(false);
+  const [choix, setChoix] = useState(doc.projetId || "");
+  const projetActuel = projets?.find((p) => p.id === doc.projetId);
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
@@ -16,6 +20,29 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
         </div>
         <Badge statut={doc.statut} />
       </div>
+
+      {projets && onLinkProjet && (
+        <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: "10px 12px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <FolderKanban size={15} color={T.inkSoft} style={{ flexShrink: 0 }} />
+          {!linking ? (
+            <>
+              <span style={{ fontSize: 12.5, color: T.inkSoft, flex: 1 }}>
+                Projet : <b style={{ color: T.ink }}>{projetActuel ? projetActuel.nom : "Non rattaché"}</b>
+              </span>
+              <Btn variant="ghost" small onClick={() => setLinking(true)}>{projetActuel ? "Changer" : "Rattacher à un projet"}</Btn>
+            </>
+          ) : (
+            <>
+              <Select wrapperStyle={{ flex: 1, minWidth: 160 }} value={choix} onChange={(e) => setChoix(e.target.value)}>
+                <option value="">— Aucun projet —</option>
+                {projets.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+              </Select>
+              <Btn variant="gold" small onClick={async () => { await onLinkProjet(choix || null); setLinking(false); }}>Valider</Btn>
+              <Btn variant="ghost" small onClick={() => { setChoix(doc.projetId || ""); setLinking(false); }}>Annuler</Btn>
+            </>
+          )}
+        </div>
+      )}
 
       {extraInfo}
 

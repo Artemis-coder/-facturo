@@ -7,11 +7,12 @@ import { TableShell, Btn, Modal, Badge } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
-export function Devis({ devis, clients, produits, createDevis, updateDevis, marquerTransforme, creerDepuisDevis, notify, onPrint, canCreate = true }) {
+export function Devis({ devis, clients, produits, projets, createDevis, updateDevis, marquerTransforme, creerDepuisDevis, lierProjet, notify, onPrint, canCreate = true }) {
   const [builder, setBuilder] = useState(null); // null closed, {} new, {...doc} editing
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
   const cli = (id) => clients.find((c) => c.id === id);
+  const proj = (id) => projets?.find((p) => p.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyé", "Accepté", "Refusé", "Expiré"];
   const list = devis.filter((d) => filter === "Tous" || d.statut === filter);
   const canEditDoc = (d) => !LOCKED_STATUTS.includes(d.statut);
@@ -46,7 +47,7 @@ export function Devis({ devis, clients, produits, createDevis, updateDevis, marq
           }}>{s}</button>
         ))}
       </div>
-      <TableShell headers={["N°", "Client", "Date", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
+      <TableShell headers={["N°", "Client", "Projet", "Date", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canCreate && <Btn icon={Plus} onClick={() => setBuilder({})}>Nouveau devis</Btn>}>
         {list.map((d) => (
           <tr key={d.uuid}>
@@ -54,6 +55,7 @@ export function Devis({ devis, clients, produits, createDevis, updateDevis, marq
               <a style={{ color: T.ink, cursor: "pointer", fontWeight: 600 }} onClick={() => setPreviewing(d)}>{d.id}</a>
             </td>
             <td style={td}>{cli(d.clientId)?.societe}</td>
+            <td style={{ ...td, color: proj(d.projetId) ? T.ink : T.inkSoft }}>{proj(d.projetId)?.nom || "—"}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{d.date}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(d.lignes).ttc)}</td>
             <td style={td}><Badge statut={d.statut} /></td>
@@ -73,13 +75,19 @@ export function Devis({ devis, clients, produits, createDevis, updateDevis, marq
             onEdit={canCreate && canEditDoc(previewing) ? () => { setBuilder(previewing); setPreviewing(null); } : null}
             lockedNote={!canEditDoc(previewing) ? "Ce devis est verrouillé : son statut ne permet plus de modification." : null}
             editNote={previewing.statut === "Envoyé" ? "Une modification à ce stade sera enregistrée dans l'historique de traçabilité." : null}
+            projets={canCreate ? projets : null}
+            onLinkProjet={canCreate ? async (projetId) => {
+              const { error } = await lierProjet(previewing, projetId);
+              notify(error ? "Échec : " + error.message : "Projet mis à jour");
+              setPreviewing((p) => (p ? { ...p, projetId } : p));
+            } : null}
           />
         </Modal>
       )}
 
       {builder && (
         <Modal title={builder.uuid ? `Modifier — ${builder.id}` : "Nouveau devis"} onClose={() => setBuilder(null)} wide>
-          <DocBuilder clients={clients} produits={produits} onSave={save} docType="devis" initial={builder.uuid ? builder : null} />
+          <DocBuilder clients={clients} produits={produits} projets={projets} onSave={save} docType="devis" initial={builder.uuid ? builder : null} />
         </Modal>
       )}
     </div>

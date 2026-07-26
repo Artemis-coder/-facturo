@@ -7,6 +7,7 @@ import { useDevis } from "./lib/useDevis";
 import { useFactures } from "./lib/useFactures";
 import { useEntreprise } from "./lib/useEntreprise";
 import { useUsers } from "./lib/useUsers";
+import { useProjets } from "./lib/useProjets";
 import { T } from "./lib/theme";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
@@ -19,6 +20,7 @@ import { Rapports } from "./components/Rapports";
 import { Entreprise } from "./components/Entreprise";
 import { Parametres } from "./components/Parametres";
 import { Users } from "./components/Users";
+import { Projets } from "./components/Projets";
 import { PrintArea } from "./components/PrintArea";
 import { Toast } from "./components/ui";
 
@@ -99,10 +101,11 @@ export default function App() {
 
   const { clients, saveClient, loading: loadingClients } = useClients(entrepriseId);
   const { produits, saveProduit, loading: loadingProduits } = useProduits(entrepriseId);
-  const { devis, createDevis, updateDevis, marquerTransforme, loading: loadingDevis } = useDevis(entrepriseId, userId);
-  const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
+  const { devis, createDevis, updateDevis, marquerTransforme, lierProjet: lierProjetDevis, loading: loadingDevis } = useDevis(entrepriseId, userId);
+  const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, lierProjet: lierProjetFacture, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
   const { entreprise, saveProfil, saveParametres, loading: loadingEntreprise } = useEntreprise(entrepriseId);
   const { profiles, invitations, changeRole, invite, cancelInvitation } = useUsers(entrepriseId);
+  const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
 
   if (!isSupabaseConfigured) {
     return (
@@ -134,12 +137,13 @@ export default function App() {
     return (<><GlobalStyles /><FullscreenMessage>Création de votre espace en cours…</FullscreenMessage></>);
   }
 
-  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise;
+  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets;
   const isAdmin = role === "administrateur" || role === "super_admin";
   const canManageClients = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
   const canManageProduits = ["administrateur", "comptable", "super_admin"].includes(role);
   const canCreateDevis = ["administrateur", "commercial", "super_admin"].includes(role);
   const canManageFactures = ["administrateur", "comptable", "super_admin"].includes(role);
+  const canManageProjets = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
 
   return (
     <>
@@ -150,16 +154,23 @@ export default function App() {
         ) : (
           <>
             {view === "dashboard" && <Dashboard factures={factures} devis={devis} clients={clients} setView={setView} />}
+            {view === "projets" && (
+              <Projets projets={projets} clients={clients} devis={devis} factures={factures}
+                saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}
+                lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
+                notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
+            )}
             {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} notify={notify} canEdit={canManageClients} />}
             {view === "produits" && <Produits produits={produits} onSaveProduit={saveProduit} notify={notify} canEdit={canManageProduits} />}
             {view === "devis" && (
-              <Devis devis={devis} clients={clients} produits={produits}
+              <Devis devis={devis} clients={clients} produits={produits} projets={projets}
                 createDevis={createDevis} updateDevis={updateDevis} marquerTransforme={marquerTransforme}
-                creerDepuisDevis={creerDepuisDevis} notify={notify} onPrint={requestPrint} canCreate={canCreateDevis} />
+                creerDepuisDevis={creerDepuisDevis} lierProjet={lierProjetDevis} notify={notify} onPrint={requestPrint} canCreate={canCreateDevis} />
             )}
             {view === "factures" && (
-              <Factures factures={factures} clients={clients} produits={produits}
-                createFacture={createFacture} enregistrerPaiement={enregistrerPaiement} marquerProjetTermine={marquerProjetTermine} deleteFacture={deleteFacture}
+              <Factures factures={factures} clients={clients} produits={produits} projets={projets}
+                createFacture={createFacture} enregistrerPaiement={enregistrerPaiement} marquerProjetTermine={marquerProjetTermine}
+                lierProjet={lierProjetFacture} deleteFacture={deleteFacture}
                 notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin} />
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} notify={notify} />}

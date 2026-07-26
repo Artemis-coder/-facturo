@@ -7,7 +7,7 @@ import { TableShell, Btn, Modal, Badge, Field, Select } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
-export function Factures({ factures, clients, produits, createFacture, enregistrerPaiement, marquerProjetTermine, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
+export function Factures({ factures, clients, produits, projets, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -15,6 +15,7 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
   const [paying, setPaying] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const cli = (id) => clients.find((c) => c.id === id);
+  const proj = (id) => projets?.find((p) => p.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyée", "Payée", "Partiellement payée", "En retard", "Annulée"];
   const list = factures
     .filter((f) => filter === "Tous" || f.statut === filter)
@@ -65,7 +66,7 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
           <CheckCircle2 size={13} /> Projets terminés uniquement
         </button>
       </div>
-      <TableShell headers={["N°", "Client", "Échéance", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
+      <TableShell headers={["N°", "Client", "Projet", "Échéance", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle facture</Btn>}>
         {list.map((f) => (
           <tr key={f.uuid}>
@@ -73,6 +74,7 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
               <a style={{ color: T.ink, cursor: "pointer", fontWeight: 600 }} onClick={() => setPreviewing(f)}>{f.id}</a>
             </td>
             <td style={td}>{cli(f.clientId)?.societe}</td>
+            <td style={{ ...td, color: proj(f.projetId) ? T.ink : T.inkSoft }}>{proj(f.projetId)?.nom || "—"}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{f.echeance}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes).ttc)}</td>
             <td style={td}>
@@ -113,11 +115,17 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
                 </div>
                 {previewing.projetTermine && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.tealSoft, color: T.teal, borderRadius: 8, padding: "9px 12px", fontSize: 12.5, marginBottom: 16 }}>
-                    <CheckCircle2 size={14} /> Projet marqué terminé le {previewing.termineLe}
+                    <CheckCircle2 size={14} /> Facture marquée comme terminée le {previewing.termineLe}
                   </div>
                 )}
               </div>
             }
+            projets={canManage ? projets : null}
+            onLinkProjet={canManage ? async (projetId) => {
+              const { error } = await lierProjet(previewing, projetId);
+              notify(error ? "Échec : " + error.message : "Projet mis à jour");
+              setPreviewing((p) => (p ? { ...p, projetId } : p));
+            } : null}
           />
           {canManage && previewing.statut !== "Payée" && previewing.statut !== "Annulée" && (
             <div style={{ marginTop: -8, marginBottom: 4 }}>
@@ -126,7 +134,7 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
           )}
           {canManage && previewing.statut === "Payée" && !previewing.projetTermine && (
             <div style={{ marginTop: -8, marginBottom: 4 }}>
-              <Btn variant="primary" icon={CheckCircle2} onClick={() => marquerTermine(previewing)}>Marquer le projet comme terminé</Btn>
+              <Btn variant="primary" icon={CheckCircle2} onClick={() => marquerTermine(previewing)}>Marquer cette facture comme terminée</Btn>
             </div>
           )}
         </Modal>
@@ -134,7 +142,7 @@ export function Factures({ factures, clients, produits, createFacture, enregistr
 
       {creating && (
         <Modal title="Nouvelle facture" onClose={() => setCreating(false)} wide>
-          <DocBuilder clients={clients} produits={produits} onSave={save} docType="facture" />
+          <DocBuilder clients={clients} produits={produits} projets={projets} onSave={save} docType="facture" />
         </Modal>
       )}
       {paying && (

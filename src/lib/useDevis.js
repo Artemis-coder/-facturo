@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { todayISO } from "./helpers";
 
 const DEVIS_SELECT = `
-  id, numero, client_id, date, statut, created_by,
+  id, numero, client_id, date, statut, created_by, projet_id,
   devis_lignes ( id, produit_id, nom, prix_ht, tva, qty, remise,
     devis_details ( id, label, prix ) ),
   devis_historique ( date, action, detail )
@@ -16,6 +16,7 @@ function mapRow(row) {
     clientId: row.client_id,
     date: row.date,
     statut: row.statut,
+    projetId: row.projet_id,
     lignes: (row.devis_lignes || []).map((l) => ({
       id: l.id,
       produitId: l.produit_id,
@@ -79,12 +80,13 @@ export function useDevis(entrepriseId, userId) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Crée un nouveau devis (brouillon ou envoyé directement).
-  const createDevis = async ({ clientId, lignes, statut }) => {
+  // Crée un nouveau devis (brouillon ou envoyé directement), avec un
+  // rattachement optionnel à un projet dès la création.
+  const createDevis = async ({ clientId, lignes, statut, projetId }) => {
     const numero = await reserverNumeroDevis(entrepriseId);
     const { data: d } = await supabase.from("devis").insert({
       numero, entreprise_id: entrepriseId, client_id: clientId,
-      date: todayISO(), statut, created_by: userId,
+      date: todayISO(), statut, created_by: userId, projet_id: projetId || null,
     }).select().single();
 
     await insertLignes("devis_lignes", "devis_details", "devis_id", d.id, lignes);
@@ -99,8 +101,8 @@ export function useDevis(entrepriseId, userId) {
   // Met à jour un devis existant (Brouillon ou Envoyé uniquement — la
   // policy RLS "devis: modification admin/commercial" refusera silencieusement
   // toute autre tentative côté serveur).
-  const updateDevis = async (existing, { clientId, lignes, statut }) => {
-    await supabase.from("devis").update({ client_id: clientId, statut }).eq("id", existing.uuid);
+  const updateDevis = async (existing, { clientId, lignes, statut, projetId }) => {
+    await supabase.from("devis").update({ client_id: clientId, statut, projet_id: projetId ?? existing.projetId ?? null }).eq("id", existing.uuid);
 
     // Remplacement complet des lignes (plus simple et sûr qu'un diff) —
     // la suppression cascade jusqu'aux devis_details grâce aux FK.
@@ -131,5 +133,13 @@ export function useDevis(entrepriseId, userId) {
     await load();
   };
 
-  return { devis, createDevis, updateDevis, marquerTransforme, loading, reload: load };
+  // Rattache (ou détache si projetId est null) un devis existant à un projet,
+  // utilisé depuis l'écran Projets pour relier rétroactivement un ancien devis.
+  const lierProjet = async (existing, projetId) => {
+    const { error } = await supabase.from("devis").update({ projet_id: projetId }).eq("id", existing.uuid);
+    if (!error) await load();
+    return { error };
+  };
+
+  return { devis, createDevis, updateDevis, marquerTransforme, lierProjet, loading, reload: load };
 }
