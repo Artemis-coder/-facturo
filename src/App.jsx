@@ -159,7 +159,7 @@ export default function App() {
           <div style={{ color: T.inkSoft, fontSize: 13 }}>Chargement des données…</div>
         ) : (
           <>
-            {view === "dashboard" && <Dashboard factures={factures} devis={devis} clients={clients} setView={setView} />}
+            {view === "dashboard" && <Dashboard role={role} factures={factures} devis={devis} clients={clients} projets={projets} setView={setView} />}
             {view === "finance" && canManageFinance && (
               <Finance paiements={paiements} depenses={depenses} clients={clients}
                 saveDepense={saveDepense} deleteDepense={deleteDepense} userId={userId}
@@ -171,7 +171,7 @@ export default function App() {
                 lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
-            {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} notify={notify} canEdit={canManageClients} />}
+            {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} />}
             {view === "produits" && <Produits produits={produits} onSaveProduit={saveProduit} notify={notify} canEdit={canManageProduits} />}
             {view === "devis" && (
               <Devis devis={devis} clients={clients} produits={produits} projets={projets}

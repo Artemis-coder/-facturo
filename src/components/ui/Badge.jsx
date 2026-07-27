@@ -13,6 +13,8 @@ export function Badge({ statut }) {
     "En retard": { bg: T.brickSoft, fg: T.brick },
     "Expiré": { bg: T.brickSoft, fg: T.brick },
     "Annulée": { bg: T.brickSoft, fg: T.brick },
+    "Prospect": { bg: T.goldSoft, fg: T.gold },
+    "Client": { bg: T.tealSoft, fg: T.teal },
   };
   const c = map[statut] || { bg: T.slateSoft, fg: T.slate };
   return (

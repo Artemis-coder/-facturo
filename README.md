@@ -32,6 +32,7 @@ Dans Supabase → **SQL Editor**, exécutez les migrations **dans l'ordre** :
 6. `supabase/migrations/0006_projet_termine.sql` — indicateur "projet terminé" par facture
 7. `supabase/migrations/0007_projets.sql` — entité Projets (regroupement de devis/factures)
 8. `supabase/migrations/0008_finance.sql` — module Finance (dépenses / sorties de trésorerie)
+9. `supabase/migrations/0009_clients_statut.sql` — statut Prospect / Client sur les clients
 
 ## 3. Rôles
 
