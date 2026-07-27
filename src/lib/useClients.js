@@ -15,7 +15,7 @@ export function useClients(entrepriseId) {
     if (!error) {
       setClients(data.map((c) => ({
         id: c.id, nom: c.nom, societe: c.societe, email: c.email,
-        tel: c.telephone, ville: c.ville, notes: c.notes,
+        tel: c.telephone, ville: c.ville, notes: c.notes, statut: c.statut || "Prospect",
       })));
     }
     setLoading(false);
@@ -27,13 +27,16 @@ export function useClients(entrepriseId) {
     const row = {
       entreprise_id: entrepriseId, nom: form.nom, societe: form.societe,
       email: form.email, telephone: form.tel, ville: form.ville, notes: form.notes,
+      statut: form.statut || "Prospect",
     };
+    let error;
     if (form.id) {
-      await supabase.from("clients").update(row).eq("id", form.id);
+      ({ error } = await supabase.from("clients").update(row).eq("id", form.id));
     } else {
-      await supabase.from("clients").insert(row);
+      ({ error } = await supabase.from("clients").insert(row));
     }
-    await load();
+    if (!error) await load();
+    return { error };
   };
 
   return { clients, saveClient, loading, reload: load };
