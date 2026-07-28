@@ -1,0 +1,44 @@
+<!--
+  Modèle d'e-mail "Magic Link" pour Facturo — utilisé pour les invitations
+  d'équipe (Utilisateurs → Inviter), envoyées via supabase.auth.signInWithOtp().
+
+  À installer dans : Supabase → Authentication → Email Templates → "Magic Link"
+  Collez ce contenu dans le champ "Message body (HTML)".
+
+  Variables disponibles fournies par Supabase (ne pas modifier les noms) :
+    {{ .Email }}            → l'adresse e-mail invitée
+    {{ .ConfirmationURL }}  → le lien magique à cliquer pour rejoindre l'équipe
+    {{ .SiteURL }}          → l'URL de votre application
+
+  Important : ce même modèle est aussi utilisé si quelqu'un se connecte un jour
+  par lien magique en dehors du contexte d'invitation — le texte reste générique
+  exprès ("rejoindre votre espace") pour couvrir les deux cas.
+-->
+<div style="font-family: -apple-system, 'IBM Plex Sans', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #16213A;">
+  <div style="margin-bottom: 28px;">
+    <span style="font-family: Georgia, serif; font-size: 22px; font-weight: 700;">Facturo</span>
+    <span style="display:inline-block; width:6px; height:6px; background:#C98A2B; margin-left:4px;"></span>
+  </div>
+
+  <h1 style="font-size: 18px; margin: 0 0 12px;">Votre lien de connexion</h1>
+
+  <p style="font-size: 14px; line-height: 1.7; color: #5B647A; margin: 0 0 20px;">
+    Cliquez sur le bouton ci-dessous pour rejoindre votre espace Facturo — aucun
+    mot de passe n'est nécessaire, ce lien vous connecte directement.
+  </p>
+
+  <a href="{{ .ConfirmationURL }}"
+     style="display:inline-block; background:#C98A2B; color:#fff; text-decoration:none;
+            font-weight:600; font-size:14px; padding:12px 24px; border-radius:8px; margin-bottom:24px;">
+    Rejoindre mon espace Facturo
+  </a>
+
+  <div style="background:#EDEFE9; border-radius:8px; padding:16px 18px; font-size:13px; line-height:1.8; color:#5B647A; margin: 24px 0;">
+    <div><strong style="color:#16213A;">Adresse concernée :</strong> {{ .Email }}</div>
+  </div>
+
+  <p style="font-size: 12.5px; line-height: 1.7; color: #5B647A;">
+    Ce lien expire après un court délai pour votre sécurité. Si vous n'êtes pas
+    à l'origine de cette demande, ignorez simplement cet e-mail.
+  </p>
+</div>

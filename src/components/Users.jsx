@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { UserPlus, X, Copy, MessageCircle, Check, Clock } from "lucide-react";
+import { UserPlus, X, Copy, MessageCircle, Check, Clock, Mail, RefreshCw, AlertTriangle } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { Card, Field, Btn, Select, Modal } from "./ui";
@@ -19,11 +19,9 @@ function buildMessage(entrepriseNom, email, role) {
   return (
     `Bonjour ! Vous êtes invité(e) à rejoindre "${entrepriseNom}" sur Facturo, ` +
     `avec le rôle ${ROLE_LABELS[role]}.\n\n` +
-    `Pour rejoindre l'équipe :\n` +
-    `1. Allez sur ${APP_URL}\n` +
-    `2. Cliquez sur "Inscription"\n` +
-    `3. Créez votre compte avec CETTE adresse e-mail précise : ${email}\n\n` +
-    `Vous rejoindrez automatiquement l'entreprise avec le bon rôle, sans rien configurer.`
+    `Un e-mail avec un lien de connexion vient de vous être envoyé à ${email} — ` +
+    `il vous suffit de cliquer dessus pour rejoindre l'équipe automatiquement.\n\n` +
+    `Si vous ne le recevez pas, allez sur ${APP_URL} et inscrivez-vous avec CETTE adresse e-mail précise : ${email}.`
   );
 }
 
@@ -32,23 +30,28 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-export function Users({ profiles, invitations, changeRole, invite, cancelInvitation, notify, currentUserId, entreprise }) {
+export function Users({ profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation, notify, currentUserId, entreprise }) {
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("employe");
-  const [justInvited, setJustInvited] = useState(null); // { email, role } — pour afficher le message juste après création
+  const [justInvited, setJustInvited] = useState(null); // { email, role, emailError }
   const [sharing, setSharing] = useState(null); // invitation existante dont on montre le message
 
   const sendInvite = async () => {
     if (!email.trim()) { notify("Renseignez une adresse e-mail"); return; }
-    const { error } = await invite(email.trim(), role);
+    const { error, emailError } = await invite(email.trim(), role);
     if (error) {
       notify(error.code === "23505" ? "Cette adresse a déjà une invitation en attente" : "Erreur : " + error.message);
       return;
     }
     setInviting(false);
-    setJustInvited({ email: email.trim(), role });
+    setJustInvited({ email: email.trim(), role, emailError });
     setEmail(""); setRole("employe");
+  };
+
+  const renvoyer = async (inv) => {
+    const { error } = await resendInviteEmail(inv.email);
+    notify(error ? "Échec de l'envoi : " + error.message : `E-mail renvoyé à ${inv.email}`);
   };
 
   const copier = async (texte) => {
@@ -103,6 +106,7 @@ export function Users({ profiles, invitations, changeRole, invite, cancelInvitat
                     </span>
                   </td>
                   <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                    <Btn variant="ghost" small icon={RefreshCw} onClick={() => renvoyer(inv)}>Renvoyer l'e-mail</Btn>
                     <Btn variant="ghost" small icon={Copy} onClick={() => setSharing(inv)}>Message</Btn>
                     <Btn variant="danger" small icon={X} onClick={() => cancelInvitation(inv.id)}>Annuler</Btn>
                   </td>
@@ -122,23 +126,32 @@ export function Users({ profiles, invitations, changeRole, invite, cancelInvitat
             </Select>
           </Field>
           <p style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.6, marginBottom: 16 }}>
-            Facturo n'envoie pas encore d'e-mail automatique — à l'étape suivante, vous pourrez copier
-            un message prêt à envoyer (WhatsApp, SMS ou e-mail) avec les instructions pour rejoindre l'équipe.
+            Un e-mail avec un lien de connexion sera envoyé automatiquement à cette adresse —
+            un clic suffit pour rejoindre l'équipe, sans mot de passe à créer.
           </p>
-          <Btn variant="gold" onClick={sendInvite}>Créer l'invitation</Btn>
+          <Btn variant="gold" icon={Mail} onClick={sendInvite}>Envoyer l'invitation par e-mail</Btn>
         </Modal>
       )}
 
-      {/* Étape 2 : message prêt à partager, juste après la création de l'invitation */}
+      {/* Confirmation juste après la création de l'invitation */}
       {justInvited && (
-        <Modal title="Invitation créée" onClose={() => setJustInvited(null)}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.tealSoft, color: T.teal, borderRadius: 8, padding: "9px 12px", fontSize: 12.5, marginBottom: 16 }}>
-            <Check size={14} /> Il ne reste plus qu'à transmettre ce message à {justInvited.email}
-          </div>
+        <Modal title="Invitation envoyée" onClose={() => setJustInvited(null)}>
+          {justInvited.emailError ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start", background: T.brickSoft, color: T.brick, borderRadius: 8, padding: "10px 12px", fontSize: 12.5, marginBottom: 16 }}>
+              <AlertTriangle size={14} style={{ marginTop: 1, flexShrink: 0 }} />
+              L'e-mail n'a pas pu être envoyé automatiquement ({justInvited.emailError.message}). L'invitation est bien créée —
+              utilisez "Renvoyer l'e-mail" plus tard, ou partagez le message ci-dessous manuellement.
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.tealSoft, color: T.teal, borderRadius: 8, padding: "9px 12px", fontSize: 12.5, marginBottom: 16 }}>
+              <Check size={14} /> E-mail envoyé automatiquement à {justInvited.email} — un lien de connexion l'attend dans sa boîte de réception.
+            </div>
+          )}
+          <p style={{ fontSize: 11.5, color: T.inkSoft, marginBottom: 8 }}>En secours, vous pouvez aussi partager ce message vous-même :</p>
           <textarea readOnly value={buildMessage(entreprise?.nom || "votre entreprise", justInvited.email, justInvited.role)}
-            style={{ ...inputStyle, height: "auto", minHeight: 160, padding: "10px 12px", fontSize: 12.5, lineHeight: 1.6, marginBottom: 14 }} />
+            style={{ ...inputStyle, height: "auto", minHeight: 140, padding: "10px 12px", fontSize: 12, lineHeight: 1.6, marginBottom: 14 }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Btn variant="gold" icon={Copy} onClick={() => copier(buildMessage(entreprise?.nom || "votre entreprise", justInvited.email, justInvited.role))}>Copier le message</Btn>
+            <Btn variant="ghost" icon={Copy} onClick={() => copier(buildMessage(entreprise?.nom || "votre entreprise", justInvited.email, justInvited.role))}>Copier le message</Btn>
             <a href={`https://wa.me/?text=${encodeURIComponent(buildMessage(entreprise?.nom || "votre entreprise", justInvited.email, justInvited.role))}`}
               target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <Btn variant="ghost" icon={MessageCircle}>Envoyer via WhatsApp</Btn>
@@ -147,11 +160,11 @@ export function Users({ profiles, invitations, changeRole, invite, cancelInvitat
         </Modal>
       )}
 
-      {/* Renvoyer le message d'une invitation déjà existante */}
+      {/* Partager le message d'une invitation déjà existante */}
       {sharing && (
         <Modal title={`Message pour ${sharing.email}`} onClose={() => setSharing(null)}>
           <textarea readOnly value={buildMessage(entreprise?.nom || "votre entreprise", sharing.email, sharing.role)}
-            style={{ ...inputStyle, height: "auto", minHeight: 160, padding: "10px 12px", fontSize: 12.5, lineHeight: 1.6, marginBottom: 14 }} />
+            style={{ ...inputStyle, height: "auto", minHeight: 140, padding: "10px 12px", fontSize: 12, lineHeight: 1.6, marginBottom: 14 }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Btn variant="gold" icon={Copy} onClick={() => copier(buildMessage(entreprise?.nom || "votre entreprise", sharing.email, sharing.role))}>Copier le message</Btn>
             <a href={`https://wa.me/?text=${encodeURIComponent(buildMessage(entreprise?.nom || "votre entreprise", sharing.email, sharing.role))}`}
