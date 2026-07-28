@@ -43,9 +43,17 @@ Dans Supabase → **SQL Editor**, exécutez les migrations **dans l'ordre** :
 | Employé | Voir ses propres devis/factures | Voir les siennes | Voir | — |
 
 Le premier compte créé sur une entreprise devient automatiquement **Administrateur**.
-Pour ajouter un collègue : **Utilisateurs → Inviter**, puis demandez-lui de créer un
-compte Facturo avec exactement cette adresse e-mail — il rejoint automatiquement
-l'entreprise avec le rôle choisi (voir migration 0003).
+Pour ajouter un collègue : **Utilisateurs → Inviter** — un e-mail avec un lien de
+connexion (lien magique, sans mot de passe) est envoyé automatiquement à
+l'adresse indiquée via le SMTP configuré côté Supabase. En cliquant dessus, la
+personne rejoint automatiquement l'entreprise avec le rôle choisi (voir
+migrations 0003 et 0010).
+
+### Configuration requise pour l'envoi automatique
+1. Supabase → **Project Settings → Auth → SMTP Settings** : vos identifiants SMTP doivent être renseignés et actifs
+2. Supabase → **Authentication → URL Configuration** : le **Site URL** doit correspondre à votre domaine de déploiement (ex. `https://facturo-tau.vercel.app`), sinon le lien renverra vers la mauvaise adresse
+3. Supabase → **Authentication → Email Templates → Magic Link** : collez le contenu de `supabase/email-templates/magic-link-invitation.html` pour reprendre l'identité Facturo
+4. Si l'envoi automatique échoue (ex. limite de fréquence Supabase), l'invitation reste créée — un bouton **"Renvoyer l'e-mail"** est disponible, ou le message peut être partagé manuellement (copié ou via WhatsApp) depuis l'écran Utilisateurs
 
 ## 3bis. E-mail de bienvenue (confirmation d'inscription)
 

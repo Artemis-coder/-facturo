@@ -25,8 +25,26 @@ export function useUsers(entrepriseId) {
   };
 
   const invite = async (email, role) => {
-    const { error } = await supabase.from("invitations").insert({ entreprise_id: entrepriseId, email, role });
+    const { error: insertError } = await supabase.from("invitations").insert({ entreprise_id: entrepriseId, email, role });
+    if (insertError) { await load(); return { error: insertError, emailSent: false }; }
+
+    // Envoie un vrai e-mail (lien magique) via le SMTP configuré côté Supabase.
+    // Si l'envoi échoue (ex. limite de fréquence), l'invitation reste créée :
+    // l'admin peut réessayer avec "Renvoyer l'e-mail" ou partager le message manuellement.
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+    });
     await load();
+    return { error: null, emailError: otpError };
+  };
+
+  // Renvoie l'e-mail d'invitation (lien magique) pour une invitation déjà créée.
+  const resendInviteEmail = async (email) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+    });
     return { error };
   };
 
@@ -35,5 +53,5 @@ export function useUsers(entrepriseId) {
     await load();
   };
 
-  return { profiles, invitations, changeRole, invite, cancelInvitation, loading, reload: load };
+  return { profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation, loading, reload: load };
 }

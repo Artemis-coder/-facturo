@@ -107,7 +107,7 @@ export default function App() {
   const { devis, createDevis, updateDevis, marquerTransforme, lierProjet: lierProjetDevis, loading: loadingDevis } = useDevis(entrepriseId, userId);
   const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, lierProjet: lierProjetFacture, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
   const { entreprise, saveProfil, saveParametres, loading: loadingEntreprise } = useEntreprise(entrepriseId);
-  const { profiles, invitations, changeRole, invite, cancelInvitation } = useUsers(entrepriseId);
+  const { profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation } = useUsers(entrepriseId);
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses } = useDepenses(entrepriseId);
@@ -186,7 +186,7 @@ export default function App() {
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} notify={notify} />}
             {view === "utilisateurs" && isAdmin && (
-              <Users profiles={profiles} invitations={invitations} changeRole={changeRole} invite={invite}
+              <Users profiles={profiles} invitations={invitations} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}
                 cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise} />
             )}
             {view === "entreprise" && <Entreprise entreprise={entreprise} onSaveProfil={saveProfil} notify={notify} canEdit={isAdmin} />}
