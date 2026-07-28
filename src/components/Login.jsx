@@ -85,6 +85,10 @@ export function Login({ onSignIn, onSignUp }) {
                   <Building2 size={14} style={{ position: "absolute", left: 10, top: 12, color: T.inkSoft }} />
                   <input style={{ ...inputStyle, paddingLeft: 30 }} placeholder="Ex. Koné Textiles" value={entrepriseNom} onChange={(e) => setEntrepriseNom(e.target.value)} />
                 </div>
+                <div style={{ fontSize: 11, color: "#8891A3", marginTop: 5, lineHeight: 1.5 }}>
+                  Déjà invité(e) par une entreprise ? Ignorez ce champ — utilisez simplement
+                  l'adresse e-mail exacte reçue dans l'invitation, vous la rejoindrez automatiquement.
+                </div>
               </Field>
               <Field label="Votre nom">
                 <div style={{ position: "relative" }}>

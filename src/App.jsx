@@ -187,7 +187,7 @@ export default function App() {
             {view === "rapports" && <Rapports factures={factures} clients={clients} notify={notify} />}
             {view === "utilisateurs" && isAdmin && (
               <Users profiles={profiles} invitations={invitations} changeRole={changeRole} invite={invite}
-                cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} />
+                cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise} />
             )}
             {view === "entreprise" && <Entreprise entreprise={entreprise} onSaveProfil={saveProfil} notify={notify} canEdit={isAdmin} />}
             {view === "parametres" && <Parametres entreprise={entreprise} onSaveParametres={saveParametres} notify={notify} canEdit={isAdmin} />}
