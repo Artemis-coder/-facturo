@@ -1,9 +1,7 @@
 # Facturo
 
 Application web de gestion commerciale et de facturation (devis, factures, clients,
-produits, rapports) pensée pour le marché ivoirien / UEMOA — connectée à une vraie
-base de données Supabase avec authentification, rôles et sécurité au niveau des lignes
-(Row Level Security).
+produits, rapports) pensée pour le freelance.
 
 ## Stack
 
