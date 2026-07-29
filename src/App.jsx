@@ -24,7 +24,7 @@ import { Parametres } from "./components/Parametres";
 import { Users } from "./components/Users";
 import { Projets } from "./components/Projets";
 import { Finance } from "./components/Finance";
-import { PrintArea } from "./components/PrintArea";
+import { genererDocumentPDF } from "./lib/documentPdf";
 import { Toast } from "./components/ui";
 
 const FONT_LINKS = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap";
@@ -42,12 +42,6 @@ const GLOBAL_STYLE = `
   ::-webkit-scrollbar-track { background: transparent; }
   @keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  #print-area { display: none; }
-  @media print {
-    body * { visibility: hidden; }
-    #print-area, #print-area * { visibility: visible; }
-    #print-area { display: block; position: absolute; top: 0; left: 0; width: 100%; }
-  }
   .nav-overlay { display: none; }
   @media (max-width: 880px) {
     .app-sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 60; transform: translateX(-100%); transition: transform .25s ease; }
@@ -92,10 +86,8 @@ export default function App() {
   const [view, setView] = useState("dashboard");
   const [toast, setToast] = useState("");
   const notify = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
-  const [printJob, setPrintJob] = useState(null);
-  const requestPrint = (doc, type, client) => {
-    setPrintJob({ doc, type, client });
-    setTimeout(() => window.print(), 120);
+  const requestPrint = async (doc, type, client) => {
+    await genererDocumentPDF(doc, type, client, entreprise);
   };
 
   const entrepriseId = profile?.entreprise_id;
@@ -184,7 +176,7 @@ export default function App() {
                 lierProjet={lierProjetFacture} deleteFacture={deleteFacture}
                 notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin} />
             )}
-            {view === "rapports" && <Rapports factures={factures} clients={clients} notify={notify} />}
+            {view === "rapports" && <Rapports factures={factures} clients={clients} entreprise={entreprise} notify={notify} />}
             {view === "utilisateurs" && isAdmin && (
               <Users profiles={profiles} invitations={invitations} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}
                 cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise} />
@@ -195,7 +187,6 @@ export default function App() {
         )}
       </Shell>
       <Toast message={toast} />
-      <PrintArea printJob={printJob} entreprise={entreprise} />
     </>
   );
 }
