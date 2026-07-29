@@ -125,8 +125,9 @@ supabase/
 
 ## Limites connues (prochaines étapes)
 
-- L'envoi d'e-mail d'invitation n'est pas automatisé — l'administrateur doit
-  communiquer l'adresse à utiliser à la personne invitée.
-- Les exports Rapports (PDF/Excel/CSV) sont encore simulés.
-- Le téléchargement de PDF utilise la boîte de dialogue d'impression du
-  navigateur ("Enregistrer au format PDF").
+Aucune pour l'instant — les exports Rapports (PDF/Excel/CSV) et le téléchargement
+de PDF pour les devis/factures génèrent maintenant de vrais fichiers directement
+téléchargés (via `jsPDF` et `SheetJS`), sans passer par la boîte de dialogue
+d'impression du navigateur. Ces bibliothèques sont chargées à la demande
+(uniquement au moment d'un export) pour ne pas alourdir le chargement initial
+de l'application.

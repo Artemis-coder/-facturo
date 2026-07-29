@@ -3,21 +3,49 @@ import { Download } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
+import { exportCSV, exportExcel, exportRapportPDF } from "../lib/exports";
 import { Card, Btn } from "./ui";
 
-export function Rapports({ factures, clients, notify }) {
+export function Rapports({ factures, clients, entreprise, notify }) {
   const parClient = clients.map((c) => ({
     c, total: montantEncaisseTotal(factures.filter((f) => f.clientId === c.id)),
   })).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
   const totalTVA = factures.reduce((s, f) => s + totals(f.lignes).tva, 0);
   const totalEncaisse = montantEncaisseTotal(factures);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const exportPDF = async () => {
+    await exportRapportPDF({
+      entreprise, totalEncaisse, totalTVA,
+      parClient: parClient.map(({ c, total }) => ({ nom: c.societe, total })),
+    });
+    notify("Rapport PDF téléchargé");
+  };
+
+  const exportXLSX = async () => {
+    await exportExcel(
+      `rapport-financier-${today}.xlsx`, "Encaissement par client",
+      ["Client", "Montant encaissé (FCFA)"],
+      parClient.map(({ c, total }) => [c.societe, Math.round(total)])
+    );
+    notify("Rapport Excel téléchargé");
+  };
+
+  const exportCSVFile = () => {
+    exportCSV(
+      `rapport-financier-${today}.csv`,
+      ["Client", "Montant encaissé (FCFA)"],
+      parClient.map(({ c, total }) => [c.societe, Math.round(total)])
+    );
+    notify("Rapport CSV téléchargé");
+  };
 
   return (
     <div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-        <Btn icon={Download} variant="ghost" onClick={() => notify("Export PDF généré (simulation)")}>Exporter PDF</Btn>
-        <Btn icon={Download} variant="ghost" onClick={() => notify("Export Excel généré (simulation)")}>Exporter Excel</Btn>
-        <Btn icon={Download} variant="ghost" onClick={() => notify("Export CSV généré (simulation)")}>Exporter CSV</Btn>
+        <Btn icon={Download} variant="ghost" onClick={exportPDF}>Exporter PDF</Btn>
+        <Btn icon={Download} variant="ghost" onClick={exportXLSX}>Exporter Excel</Btn>
+        <Btn icon={Download} variant="ghost" onClick={exportCSVFile}>Exporter CSV</Btn>
       </div>
 
       <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
