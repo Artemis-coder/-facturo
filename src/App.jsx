@@ -10,6 +10,7 @@ import { useUsers } from "./lib/useUsers";
 import { useProjets } from "./lib/useProjets";
 import { usePaiements } from "./lib/usePaiements";
 import { useDepenses } from "./lib/useDepenses";
+import { useAmountVisibility } from "./lib/useAmountVisibility";
 import { T } from "./lib/theme";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
@@ -84,6 +85,7 @@ function FullscreenMessage({ children }) {
 export default function App() {
   const { session, profile, loading, signIn, signUp, signOut } = useAuth();
   const [view, setView] = useState("dashboard");
+  const { hidden: amountsHidden, toggle: toggleAmounts } = useAmountVisibility();
   const [toast, setToast] = useState("");
   const notify = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
   const requestPrint = async (doc, type, client) => {
@@ -146,7 +148,8 @@ export default function App() {
   return (
     <>
       <GlobalStyles />
-      <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}>
+      <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
+        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts}>
         {!dataReady ? (
           <div style={{ color: T.inkSoft, fontSize: 13 }}>Chargement des données…</div>
         ) : (
