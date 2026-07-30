@@ -4,8 +4,7 @@ import { todayISO } from "./helpers";
 
 const DEVIS_SELECT = `
   id, numero, client_id, date, statut, created_by, projet_id,
-  devis_lignes ( id, produit_id, nom, prix_ht, tva, qty, remise,
-    devis_details ( id, label, prix ) ),
+  devis_lignes ( id, produit_id, nom, description, prix_ht, tva, qty, remise ),
   devis_historique ( date, action, detail )
 `;
 
@@ -21,11 +20,11 @@ function mapRow(row) {
       id: l.id,
       produitId: l.produit_id,
       nom: l.nom,
+      description: l.description || "",
       prixHT: Number(l.prix_ht),
       tva: Number(l.tva),
       qty: Number(l.qty),
       remise: Number(l.remise),
-      details: (l.devis_details || []).map((d) => ({ id: d.id, label: d.label, prix: Number(d.prix) })),
     })),
     historique: (row.devis_historique || []).sort((a, b) => (a.date > b.date ? 1 : -1)),
   };
@@ -49,18 +48,11 @@ async function reserverNumeroDevis(entrepriseId) {
   return numero;
 }
 
-async function insertLignes(table, detailsTable, parentIdField, parentId, lignes) {
-  for (const l of lignes) {
-    const { data: ligne } = await supabase.from(table).insert({
-      [parentIdField]: parentId, produit_id: l.produitId, nom: l.nom,
-      prix_ht: l.prixHT, tva: l.tva, qty: l.qty, remise: l.remise,
-    }).select().single();
-    if (l.details && l.details.length) {
-      await supabase.from(detailsTable).insert(
-        l.details.map((d) => ({ ligne_id: ligne.id, label: d.label, prix: Number(d.prix || 0) }))
-      );
-    }
-  }
+async function insertLignes(parentIdField, parentId, lignes) {
+  await supabase.from("devis_lignes").insert(lignes.map((l) => ({
+    [parentIdField]: parentId, produit_id: l.produitId, nom: l.nom, description: l.description || "",
+    prix_ht: l.prixHT, tva: l.tva, qty: l.qty, remise: l.remise,
+  })));
 }
 
 export function useDevis(entrepriseId, userId) {
@@ -89,7 +81,7 @@ export function useDevis(entrepriseId, userId) {
       date: todayISO(), statut, created_by: userId, projet_id: projetId || null,
     }).select().single();
 
-    await insertLignes("devis_lignes", "devis_details", "devis_id", d.id, lignes);
+    await insertLignes("devis_id", d.id, lignes);
 
     const historique = [{ devis_id: d.id, date: todayISO(), action: "Création", detail: "Devis créé en statut Brouillon", created_by: userId }];
     if (statut === "Envoyé") historique.push({ devis_id: d.id, date: todayISO(), action: "Envoi", detail: "Devis envoyé au client par e-mail", created_by: userId });
@@ -104,10 +96,9 @@ export function useDevis(entrepriseId, userId) {
   const updateDevis = async (existing, { clientId, lignes, statut, projetId }) => {
     await supabase.from("devis").update({ client_id: clientId, statut, projet_id: projetId ?? existing.projetId ?? null }).eq("id", existing.uuid);
 
-    // Remplacement complet des lignes (plus simple et sûr qu'un diff) —
-    // la suppression cascade jusqu'aux devis_details grâce aux FK.
+    // Remplacement complet des lignes (plus simple et sûr qu'un diff).
     await supabase.from("devis_lignes").delete().eq("devis_id", existing.uuid);
-    await insertLignes("devis_lignes", "devis_details", "devis_id", existing.uuid, lignes);
+    await insertLignes("devis_id", existing.uuid, lignes);
 
     const historique = [{
       devis_id: existing.uuid, date: todayISO(),

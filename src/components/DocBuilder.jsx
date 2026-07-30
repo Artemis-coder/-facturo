@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Send, X } from "lucide-react";
+import { Plus, Trash2, Send } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
-import { mkLine, mkDetail, ligneMontant, totals } from "../lib/helpers";
+import { mkLine, ligneMontant, totals } from "../lib/helpers";
 import { Field, Select, Btn } from "./ui";
 
 export function DocBuilder({ clients, produits, projets = [], onSave, docType, initial }) {
@@ -13,10 +13,6 @@ export function DocBuilder({ clients, produits, projets = [], onSave, docType, i
   const addLigne = () => { if (produits[0]) setLignes([...lignes, mkLine(produits[0])]); };
   const updateLigne = (id, patch) => setLignes(lignes.map((l) => (l.id === id ? { ...l, ...patch } : l)));
   const removeLigne = (id) => setLignes(lignes.filter((l) => l.id !== id));
-
-  const addDetail = (ligneId) => setLignes(lignes.map((l) => (l.id === ligneId ? { ...l, details: [...(l.details || []), mkDetail()] } : l)));
-  const updateDetail = (ligneId, detailId, patch) => setLignes(lignes.map((l) => (l.id !== ligneId ? l : { ...l, details: l.details.map((d) => (d.id === detailId ? { ...d, ...patch } : d)) })));
-  const removeDetail = (ligneId, detailId) => setLignes(lignes.map((l) => (l.id !== ligneId ? l : { ...l, details: l.details.filter((d) => d.id !== detailId) })));
 
   return (
     <div>
@@ -45,6 +41,14 @@ export function DocBuilder({ clients, produits, projets = [], onSave, docType, i
             </Select>
             <button onClick={() => removeLigne(l.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, flexShrink: 0, display: "flex" }}><Trash2 size={15} /></button>
           </div>
+
+          <textarea
+            placeholder="Description (optionnelle) — précise ce que comprend la prestation, non chiffrée séparément"
+            value={l.description || ""}
+            onChange={(e) => updateLigne(l.id, { description: e.target.value })}
+            style={{ ...inputStyle, height: "auto", minHeight: 44, padding: "8px 10px", fontSize: 12.5, marginBottom: 10, resize: "vertical" }}
+          />
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.3fr", gap: 8, alignItems: "center" }}>
             <div>
               <div style={{ fontSize: 10.5, color: T.inkSoft, marginBottom: 3 }}>Quantité</div>
@@ -58,26 +62,6 @@ export function DocBuilder({ clients, produits, projets = [], onSave, docType, i
               <div style={{ fontSize: 10.5, color: T.inkSoft, marginBottom: 3 }}>Sous-total</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, paddingTop: 8 }}>{fmt(ligneMontant(l))}</div>
             </div>
-          </div>
-
-          {l.details && l.details.length > 0 && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px dashed ${T.line}` }}>
-              <div style={{ fontSize: 10.5, color: T.inkSoft, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Détail de la prestation</div>
-              {l.details.map((d) => (
-                <div key={d.id} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                  <input style={{ ...inputStyle, flex: 1 }} placeholder="Ex. Logo, charte graphique, cartes de visite…" value={d.label} onChange={(e) => updateDetail(l.id, d.id, { label: e.target.value })} />
-                  <input type="number" style={{ ...inputStyle, width: 120, flexShrink: 0 }} placeholder="Prix" value={d.prix} onChange={(e) => updateDetail(l.id, d.id, { prix: Number(e.target.value) })} />
-                  <button onClick={() => removeDetail(l.id, d.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, flexShrink: 0, display: "flex" }}><X size={15} /></button>
-                </div>
-              ))}
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: T.inkSoft, marginTop: 6 }}>
-                <span>Somme des éléments</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(l.details.reduce((s, d) => s + Number(d.prix || 0), 0))}</span>
-              </div>
-            </div>
-          )}
-          <div style={{ marginTop: 10 }}>
-            <Btn variant="ghost" small icon={Plus} onClick={() => addDetail(l.id)}>Ajouter un élément à cette prestation</Btn>
           </div>
         </div>
       ))}

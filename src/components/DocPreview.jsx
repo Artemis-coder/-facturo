@@ -59,18 +59,16 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
             {doc.lignes.map((l) => (
               <React.Fragment key={l.id}>
                 <tr>
-                  <td style={{ padding: "9px 12px", fontSize: 12.5, borderTop: `1px solid ${T.line}`, fontWeight: l.details?.length ? 600 : 400 }}>{l.nom}</td>
+                  <td style={{ padding: "9px 12px", fontSize: 12.5, borderTop: `1px solid ${T.line}` }}>{l.nom}</td>
                   <td style={{ padding: "9px 12px", fontSize: 12.5, textAlign: "right", borderTop: `1px solid ${T.line}`, fontFamily: "'IBM Plex Mono', monospace" }}>{l.qty}</td>
                   <td style={{ padding: "9px 12px", fontSize: 12.5, textAlign: "right", borderTop: `1px solid ${T.line}`, fontFamily: "'IBM Plex Mono', monospace" }}>{l.remise}%</td>
                   <td style={{ padding: "9px 12px", fontSize: 12.5, textAlign: "right", borderTop: `1px solid ${T.line}`, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(ligneMontant(l))}</td>
                 </tr>
-                {l.details && l.details.map((d) => (
-                  <tr key={d.id}>
-                    <td style={{ padding: "3px 12px 3px 26px", fontSize: 11.5, color: T.inkSoft }}>— {d.label || "Élément sans nom"}</td>
-                    <td></td><td></td>
-                    <td style={{ padding: "3px 12px", fontSize: 11.5, color: T.inkSoft, textAlign: "right", fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(Number(d.prix || 0))}</td>
+                {l.description && (
+                  <tr>
+                    <td colSpan={4} style={{ padding: "2px 12px 8px 12px", fontSize: 11.5, color: T.inkSoft, fontStyle: "italic" }}>{l.description}</td>
                   </tr>
-                ))}
+                )}
               </React.Fragment>
             ))}
           </tbody>
