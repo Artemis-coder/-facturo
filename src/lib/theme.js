@@ -16,8 +16,11 @@ export const T = {
   slateSoft: "#E4E7F0",
 };
 
+let hideAmounts = false;
+export const setAmountsHidden = (v) => { hideAmounts = v; };
+
 export const fmt = (n) =>
-  new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(n)) + " FCFA";
+  hideAmounts ? "•••• ••• FCFA" : new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(n)) + " FCFA";
 
 export const inputStyle = {
   width: "100%",

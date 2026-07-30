@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
@@ -21,7 +21,7 @@ export const NAV = [
   { key: "parametres", label: "Paramètres", icon: Settings },
 ];
 
-export function Shell({ view, setView, onLogout, children, entreprise, role }) {
+export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts }) {
   const items = NAV.filter((n) => !n.roles || role === "super_admin" || n.roles.includes(role));
   const current = NAV.find((n) => n.key === view);
   const [navOpen, setNavOpen] = useState(false);
@@ -76,7 +76,11 @@ export function Shell({ view, setView, onLogout, children, entreprise, role }) {
           <button className="nav-menu-btn" onClick={() => setNavOpen(true)} style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "none", alignItems: "center", justifyContent: "center", cursor: "pointer", color: T.ink, flexShrink: 0 }}>
             <Menu size={18} />
           </button>
-          <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21 }}>{current?.label}</h1>
+          <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1 }}>{current?.label}</h1>
+          <button onClick={onToggleAmounts} title={amountsHidden ? "Afficher les montants" : "Masquer les montants"}
+            style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: amountsHidden ? T.gold : T.inkSoft, flexShrink: 0 }}>
+            {amountsHidden ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
         </header>
         <div className="app-content" style={{ padding: 30 }}>{children}</div>
       </main>
