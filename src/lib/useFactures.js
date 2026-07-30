@@ -5,8 +5,7 @@ import { todayISO, totals } from "./helpers";
 const FACTURE_SELECT = `
   id, numero, client_id, date, echeance, statut, montant_regle, created_by,
   projet_termine, termine_le, projet_id,
-  facture_lignes ( id, produit_id, nom, prix_ht, tva, qty, remise,
-    facture_details ( id, label, prix ) )
+  facture_lignes ( id, produit_id, nom, description, prix_ht, tva, qty, remise )
 `;
 
 function mapRow(row) {
@@ -25,27 +24,20 @@ function mapRow(row) {
       id: l.id,
       produitId: l.produit_id,
       nom: l.nom,
+      description: l.description || "",
       prixHT: Number(l.prix_ht),
       tva: Number(l.tva),
       qty: Number(l.qty),
       remise: Number(l.remise),
-      details: (l.facture_details || []).map((d) => ({ id: d.id, label: d.label, prix: Number(d.prix) })),
     })),
   };
 }
 
 async function insertLignes(parentId, lignes) {
-  for (const l of lignes) {
-    const { data: ligne } = await supabase.from("facture_lignes").insert({
-      facture_id: parentId, produit_id: l.produitId, nom: l.nom,
-      prix_ht: l.prixHT, tva: l.tva, qty: l.qty, remise: l.remise,
-    }).select().single();
-    if (l.details && l.details.length) {
-      await supabase.from("facture_details").insert(
-        l.details.map((d) => ({ ligne_id: ligne.id, label: d.label, prix: Number(d.prix || 0) }))
-      );
-    }
-  }
+  await supabase.from("facture_lignes").insert(lignes.map((l) => ({
+    facture_id: parentId, produit_id: l.produitId, nom: l.nom, description: l.description || "",
+    prix_ht: l.prixHT, tva: l.tva, qty: l.qty, remise: l.remise,
+  })));
 }
 
 export function useFactures(entrepriseId, userId) {

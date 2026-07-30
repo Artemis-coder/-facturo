@@ -31,6 +31,8 @@ Dans Supabase → **SQL Editor**, exécutez les migrations **dans l'ordre** :
 7. `supabase/migrations/0007_projets.sql` — entité Projets (regroupement de devis/factures)
 8. `supabase/migrations/0008_finance.sql` — module Finance (dépenses / sorties de trésorerie)
 9. `supabase/migrations/0009_clients_statut.sql` — statut Prospect / Client sur les clients
+10. `supabase/migrations/0010_verification_complete_idempotente.sql` — rattrapage complet, sûr à rejouer (recommandé si un doute persiste sur l'état de la base)
+11. `supabase/migrations/0011_ligne_description.sql` — description libre par ligne (remplace les anciens éléments détaillés chiffrés)
 
 ## 3. Rôles
 
