@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, Printer, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Printer, Trash2, CheckCircle2, Receipt } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
-import { TableShell, Btn, Modal, Badge, Field, Select } from "./ui";
+import { TableShell, Btn, Modal, Badge, Field, Select , EmptyState} from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
@@ -68,6 +68,9 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
       </div>
       <TableShell headers={["N°", "Client", "Projet", "Échéance", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle facture</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={7}><EmptyState icon={Receipt} title="Aucune facture" subtitle="Vos factures apparaîtront ici." /></td></tr>
+        )}
         {list.map((f) => (
           <tr key={f.uuid}>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>

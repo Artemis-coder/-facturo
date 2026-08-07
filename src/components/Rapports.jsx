@@ -1,10 +1,10 @@
 import React from "react";
-import { Download } from "lucide-react";
+import { Download, TrendingUp } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
 import { exportCSV, exportExcel, exportRapportPDF } from "../lib/exports";
-import { Card, Btn } from "./ui";
+import { Card, Btn, EmptyState } from "./ui";
 
 export function Rapports({ factures, clients, entreprise, notify }) {
   const parClient = clients.map((c) => ({
@@ -64,7 +64,7 @@ export function Rapports({ factures, clients, entreprise, notify }) {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             {parClient.length === 0 && (
-              <tr><td style={{ ...td, color: T.inkSoft }}>Aucun paiement reçu pour le moment.</td></tr>
+              <tr><td colSpan={2}><EmptyState icon={TrendingUp} title="Aucun paiement reçu" subtitle="Le classement par client apparaîtra dès le premier encaissement." /></td></tr>
             )}
             {parClient.map(({ c, total }) => (
               <tr key={c.id}>

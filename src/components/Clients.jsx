@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Users as UsersIcon } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
-import { TableShell, Btn, Modal, Field, Badge, Select } from "./ui";
+import { TableShell, Btn, Modal, Field, Badge, Select , EmptyState} from "./ui";
 
 export function Clients({ clients, onSaveClient, devis, factures, projets, notify, canEdit = true }) {
   const [q, setQ] = useState("");
@@ -35,6 +35,9 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
       <TableShell headers={["Nom", "Société", "Statut", "Email", "Téléphone", "Ville", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un client…"
         action={canEdit && <Btn icon={Plus} onClick={() => setEditing({ nom: "", societe: "", email: "", tel: "", ville: "", notes: "", statut: "Prospect" })}>Nouveau client</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={7}><EmptyState icon={UsersIcon} title="Aucun client" subtitle="Ajoutez votre premier client pour commencer à créer des devis." /></td></tr>
+        )}
         {list.map((c) => (
           <tr key={c.id}>
             <td style={td}><a style={{ color: T.ink, cursor: "pointer", fontWeight: 600 }} onClick={() => setDetail(c)}>{c.nom}</a></td>

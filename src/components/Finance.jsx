@@ -3,7 +3,7 @@ import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet } from "lucide-rea
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { Card, Btn, Modal, Field, Select, TableShell } from "./ui";
+import { Card, Btn, Modal, Field, Select, TableShell, EmptyState } from "./ui";
 
 const CATEGORIES = [
   "Loyer", "Salaires", "Achats & fournitures", "Transport & carburant",
@@ -133,7 +133,7 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
       <TableShell headers={["Date", "Type", "Libellé", "Détail", "Mode", "Montant", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle dépense</Btn>}>
         {mouvementsFiltres.length === 0 && (
-          <tr><td style={{ ...td, color: T.inkSoft }} colSpan={7}>Aucun mouvement pour le moment.</td></tr>
+          <tr><td colSpan={7}><EmptyState icon={Wallet} title="Aucun mouvement" subtitle="Les encaissements de factures et vos dépenses apparaîtront ici." /></td></tr>
         )}
         {mouvementsFiltres.map((m, i) => (
           <tr key={i}>

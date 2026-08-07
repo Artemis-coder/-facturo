@@ -57,7 +57,15 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
           })}
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
-          <div style={{ fontSize: 12, color: "#B9BFCF", marginBottom: 10 }}>{entreprise?.nom}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {entreprise?.nom?.[0]?.toUpperCase() || "F"}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: "#fff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entreprise?.nom}</div>
+              {role && <div style={{ fontSize: 10.5, color: "#8891A3", textTransform: "capitalize" }}>{role.replace("_", " ")}</div>}
+            </div>
+          </div>
           {(canInstall || isIosSafariManual) && (
             <div
               onClick={canInstall ? promptInstall : () => setShowIosHelp(true)}
