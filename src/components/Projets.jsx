@@ -3,7 +3,7 @@ import { Plus, Pencil, FolderKanban, Link2, X, Trash2 } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
-import { TableShell, Btn, Modal, Field, Select, Badge, Card } from "./ui";
+import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState } from "./ui";
 
 const STATUTS = ["En cours", "Terminé", "Annulé"];
 const STATUT_TONE = { "En cours": T.slate, "Terminé": T.teal, "Annulé": T.brick };
@@ -45,6 +45,9 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
       <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Encaissé", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un projet…"
         action={canManage && <Btn icon={Plus} onClick={() => setEditing({ nom: "", description: "", clientId: "" })}>Nouveau projet</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={7}><EmptyState icon={FolderKanban} title="Aucun projet" subtitle="Regroupez vos devis et factures par projet pour un meilleur suivi." /></td></tr>
+        )}
         {list.map((p) => (
           <tr key={p.id}>
             <td style={{ ...td, fontWeight: 600 }}>

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Package } from "lucide-react";
 import { fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { TableShell, Btn, Modal, Field, Select } from "./ui";
+import { TableShell, Btn, Modal, Field, Select , EmptyState} from "./ui";
 
 export function Produits({ produits, onSaveProduit, notify, canEdit = true }) {
   const [q, setQ] = useState("");
@@ -20,6 +20,9 @@ export function Produits({ produits, onSaveProduit, notify, canEdit = true }) {
       <TableShell headers={["Nom", "Catégorie", "Prix HT", "TVA", "Prix TTC", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un produit…"
         action={canEdit && <Btn icon={Plus} onClick={() => setEditing({ nom: "", categorie: "Service", prixHT: 0, tva: 18 })}>Nouveau produit</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={6}><EmptyState icon={Package} title="Aucun produit ou service" subtitle="Ajoutez votre catalogue pour accélérer la création de devis." /></td></tr>
+        )}
         {list.map((p) => (
           <tr key={p.id}>
             <td style={{ ...td, fontWeight: 600 }}>{p.nom}</td>

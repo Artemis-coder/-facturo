@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, ArrowRight, Download } from "lucide-react";
+import { Plus, ArrowRight, Download, FileText } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, LOCKED_STATUTS } from "../lib/helpers";
-import { TableShell, Btn, Modal, Badge } from "./ui";
+import { TableShell, Btn, Modal, Badge , EmptyState} from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
@@ -49,6 +49,9 @@ export function Devis({ devis, clients, produits, projets, createDevis, updateDe
       </div>
       <TableShell headers={["N°", "Client", "Projet", "Date", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canCreate && <Btn icon={Plus} onClick={() => setBuilder({})}>Nouveau devis</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={7}><EmptyState icon={FileText} title="Aucun devis" subtitle="Créez votre premier devis pour démarrer." /></td></tr>
+        )}
         {list.map((d) => (
           <tr key={d.uuid}>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>

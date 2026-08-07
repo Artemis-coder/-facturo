@@ -28,7 +28,7 @@ export function DashboardCommercial({ devis, clients, projets, setView }) {
     <div>
       <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
         {kpis.map((k) => (
-          <Card key={k.label} style={{ padding: "16px 18px", cursor: k.view ? "pointer" : "default" }}
+          <Card key={k.label} className="kpi-card" style={{ padding: "16px 18px", cursor: k.view ? "pointer" : "default" }}
             onClick={k.view ? () => setView(k.view) : undefined}>
             <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: k.tone, fontWeight: 600 }}>{k.value}</div>

@@ -26,7 +26,7 @@ import { Users } from "./components/Users";
 import { Projets } from "./components/Projets";
 import { Finance } from "./components/Finance";
 import { genererDocumentPDF } from "./lib/documentPdf";
-import { Toast } from "./components/ui";
+import { Toast, LoadingState } from "./components/ui";
 
 const FONT_LINKS = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap";
 
@@ -43,6 +43,12 @@ const GLOBAL_STYLE = `
   ::-webkit-scrollbar-track { background: transparent; }
   @keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes facturo-spin { to { transform: rotate(360deg); } }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  button, a { transition: opacity .15s, transform .1s, box-shadow .15s; }
+  button:active { transform: scale(.97); }
+  .kpi-card { transition: box-shadow .15s, transform .15s; }
+  .kpi-card:hover { box-shadow: 0 4px 14px rgba(22,33,58,.08); transform: translateY(-1px); }
   .nav-overlay { display: none; }
   @media (max-width: 880px) {
     .app-sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 60; transform: translateX(-100%); transition: transform .25s ease; }
@@ -125,7 +131,7 @@ export default function App() {
   }
 
   if (loading) {
-    return (<><GlobalStyles /><FullscreenMessage>Chargement…</FullscreenMessage></>);
+    return (<><GlobalStyles /><FullscreenMessage><LoadingState label="Chargement…" light /></FullscreenMessage></>);
   }
 
   if (!session) {
@@ -133,7 +139,7 @@ export default function App() {
   }
 
   if (!profile) {
-    return (<><GlobalStyles /><FullscreenMessage>Création de votre espace en cours…</FullscreenMessage></>);
+    return (<><GlobalStyles /><FullscreenMessage><LoadingState label="Création de votre espace en cours…" light /></FullscreenMessage></>);
   }
 
   const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses;
@@ -151,7 +157,7 @@ export default function App() {
       <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
         amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts}>
         {!dataReady ? (
-          <div style={{ color: T.inkSoft, fontSize: 13 }}>Chargement des données…</div>
+          <LoadingState label="Chargement des données…" />
         ) : (
           <>
             {view === "dashboard" && <Dashboard role={role} factures={factures} devis={devis} clients={clients} projets={projets} setView={setView} />}
