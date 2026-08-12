@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Download, Pencil, Lock, AlertTriangle, FolderKanban } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { ligneMontant, totals } from "../lib/helpers";
-import { Badge, Btn, Select } from "./ui";
+import { Badge, Btn, Select, Timeline } from "./ui";
 
 export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNote, extraInfo, projets, onLinkProjet }) {
   const t = totals(doc.lignes);
@@ -105,20 +105,7 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
       {doc.historique && (
         <div>
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 10 }}>Historique &amp; traçabilité</div>
-          <div>
-            {doc.historique.slice().reverse().map((h, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 4 }}>
-                <div style={{ width: 8, display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, paddingTop: 4 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: i === 0 ? T.gold : T.line, flexShrink: 0 }} />
-                  {i < doc.historique.length - 1 && <div style={{ width: 1, flex: 1, background: T.line, marginTop: 2 }} />}
-                </div>
-                <div style={{ paddingBottom: 14 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600 }}>{h.action} <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 400, color: T.inkSoft, fontSize: 11 }}>· {h.date}</span></div>
-                  <div style={{ fontSize: 12, color: T.inkSoft }}>{h.detail}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <Timeline items={doc.historique.slice().reverse().map((h) => ({ title: h.action, date: h.date, detail: h.detail }))} />
         </div>
       )}
     </div>
