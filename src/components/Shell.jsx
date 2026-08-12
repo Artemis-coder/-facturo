@@ -58,8 +58,10 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {entreprise?.nom?.[0]?.toUpperCase() || "F"}
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              {entreprise?.logoUrl
+                ? <img src={entreprise.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : entreprise?.nom?.[0]?.toUpperCase() || "F"}
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12.5, color: "#fff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entreprise?.nom}</div>
