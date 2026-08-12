@@ -3,11 +3,11 @@ import { Plus, Printer, Trash2, CheckCircle2, Receipt } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
-import { TableShell, Btn, Modal, Badge, Field, Select , EmptyState} from "./ui";
+import { TableShell, Btn, Modal, Badge, Field, Select, EmptyState, Timeline } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
-export function Factures({ factures, clients, produits, projets, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
+export function Factures({ factures, clients, produits, projets, paiements = [], createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -27,8 +27,8 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
     setCreating(false);
   };
 
-  const payer = async (montant, mode) => {
-    await enregistrerPaiement(paying, montant, mode);
+  const payer = async (montant, mode, date) => {
+    await enregistrerPaiement(paying, montant, mode, date);
     notify("Paiement enregistré");
     setPaying(null);
   };
@@ -121,6 +121,14 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
                     <CheckCircle2 size={14} /> Facture marquée comme terminée le {previewing.termineLe}
                   </div>
                 )}
+                {paiements.filter((p) => p.factureId === previewing.uuid).length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 10 }}>Historique des paiements</div>
+                    <Timeline items={paiements.filter((p) => p.factureId === previewing.uuid)
+                      .slice().sort((a, b) => (a.date < b.date ? 1 : -1))
+                      .map((p) => ({ title: fmt(p.montant), date: p.date, detail: p.mode }))} />
+                  </div>
+                )}
               </div>
             }
             projets={canManage ? projets : null}
@@ -175,16 +183,18 @@ function PaiementForm({ facture, onSave }) {
   const resteA = t - (facture.regle || 0);
   const [montant, setMontant] = useState(resteA);
   const [mode, setMode] = useState("Virement");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   return (
     <div>
       <div style={{ fontSize: 13, color: T.inkSoft, marginBottom: 14 }}>Reste à payer : <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.ink }}>{fmt(resteA)}</b></div>
       <Field label="Montant reçu (FCFA)"><input type="number" style={inputStyle} value={montant} onChange={(e) => setMontant(e.target.value)} /></Field>
+      <Field label="Date d'encaissement"><input type="date" style={inputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
       <Field label="Mode de paiement">
         <Select value={mode} onChange={(e) => setMode(e.target.value)}>
           {["Espèces", "Virement", "Mobile Money", "Chèque", "Carte bancaire"].map((m) => <option key={m}>{m}</option>)}
         </Select>
       </Field>
-      <Btn variant="gold" onClick={() => onSave(montant, mode)}>Confirmer le paiement</Btn>
+      <Btn variant="gold" onClick={() => onSave(montant, mode, date)}>Confirmer le paiement</Btn>
     </div>
   );
 }

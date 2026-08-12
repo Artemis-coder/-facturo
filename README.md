@@ -1,13 +1,29 @@
 # Facturo
 
-Application web de gestion commerciale et de facturation (devis, factures, clients,
-produits, rapports) pensée pour le freelance.
+Application web de gestion commerciale pour PME et indépendants en Côte d'Ivoire /
+UEMOA : devis, factures, clients, projets, trésorerie et rapports — avec rôles
+d'équipe et sécurité au niveau des données (Row Level Security Supabase).
+
+## Fonctionnalités
+
+- **Devis & factures** : lignes avec description libre, remises, historique de
+  traçabilité complet, export PDF téléchargeable directement (design de marque)
+- **Projets** : regroupement de devis/factures liés à un même client ou une même
+  mission, suivi de statut
+- **Finance** : journal de trésorerie (entrées de paiements + dépenses), rapports
+  exportables en PDF/Excel/CSV
+- **Équipe & rôles** : Administrateur, Comptable, Commercial, Employé — chacun
+  avec un tableau de bord et des permissions dédiés ; invitation par e-mail
+  (lien magique, sans mot de passe)
+- **Confidentialité à l'écran** : bouton pour masquer tous les montants
+  affichés d'un coup (utile en réunion ou en public)
+- **PWA installable** sur mobile et desktop
 
 ## Stack
 
 - **React 18 + Vite**
-- **Supabase** (PostgreSQL, Auth, RLS)
-- Recharts (graphiques), Lucide (icônes)
+- **Supabase** (PostgreSQL, Auth, Row Level Security)
+- Recharts, Lucide, jsPDF, SheetJS
 
 ## 1. Installation
 
@@ -18,54 +34,45 @@ cp .env.example .env
 npm run dev
 ```
 
+`VITE_SUPABASE_ANON_KEY` est la clé publique ("anon") de votre projet — elle
+est conçue pour être utilisée côté client, la sécurité réelle vient des
+policies RLS définies en base. Ne jamais utiliser la clé `service_role`
+(secrète) dans ce fichier.
+
 ## 2. Base de données
 
-Dans Supabase → **SQL Editor**, exécutez les migrations **dans l'ordre** :
-
-1. `supabase/migrations/0001_init_schema_roles_rls.sql` — schéma complet, rôles, RLS
-2. `supabase/migrations/0002_preferences.sql` — préférences de notifications
-3. `supabase/migrations/0003_invitations.sql` — invitations d'équipe par rôle
-4. `supabase/migrations/0004_compteurs_separes.sql` — compteurs de numérotation devis/factures séparés
-5. `supabase/migrations/0005_rattrapage_preferences_et_compteurs.sql` — rattrapage si 0002/0004 n'ont pas été exécutées
-6. `supabase/migrations/0006_projet_termine.sql` — indicateur "projet terminé" par facture
-7. `supabase/migrations/0007_projets.sql` — entité Projets (regroupement de devis/factures)
-8. `supabase/migrations/0008_finance.sql` — module Finance (dépenses / sorties de trésorerie)
-9. `supabase/migrations/0009_clients_statut.sql` — statut Prospect / Client sur les clients
-10. `supabase/migrations/0010_verification_complete_idempotente.sql` — rattrapage complet, sûr à rejouer (recommandé si un doute persiste sur l'état de la base)
-11. `supabase/migrations/0011_ligne_description.sql` — description libre par ligne (remplace les anciens éléments détaillés chiffrés)
+Dans Supabase → **SQL Editor**, exécutez les migrations de `supabase/migrations/`
+**dans l'ordre numérique**. En cas de doute sur l'état de votre base (colonne ou
+table manquante), rejouez `0010_verification_complete_idempotente.sql` : elle
+reconstruit tout l'état attendu et est sûre à exécuter plusieurs fois.
 
 ## 3. Rôles
 
 | Rôle | Devis | Factures & paiements | Clients / Produits | Utilisateurs |
 |---|---|---|---|---|
-| Super Admin | Tout, toutes entreprises | Tout | Tout | Tout |
 | Administrateur | Créer / modifier / supprimer | Créer / modifier / supprimer | Créer / modifier / supprimer | Gérer + inviter |
 | Comptable | Voir | Créer / modifier | Voir / modifier | — |
 | Commercial | Créer / modifier | — | Créer / modifier | — |
 | Employé | Voir ses propres devis/factures | Voir les siennes | Voir | — |
 
 Le premier compte créé sur une entreprise devient automatiquement **Administrateur**.
-Pour ajouter un collègue : **Utilisateurs → Inviter** — un e-mail avec un lien de
-connexion (lien magique, sans mot de passe) est envoyé automatiquement à
-l'adresse indiquée via le SMTP configuré côté Supabase. En cliquant dessus, la
-personne rejoint automatiquement l'entreprise avec le rôle choisi (voir
-migrations 0003 et 0010).
+Pour ajouter un collègue : **Utilisateurs → Inviter** — un e-mail avec un lien
+de connexion (sans mot de passe) est envoyé automatiquement via le SMTP
+configuré côté Supabase. En cliquant dessus, la personne rejoint l'entreprise
+avec le rôle choisi.
 
-### Configuration requise pour l'envoi automatique
-1. Supabase → **Project Settings → Auth → SMTP Settings** : vos identifiants SMTP doivent être renseignés et actifs
-2. Supabase → **Authentication → URL Configuration** : le **Site URL** doit correspondre à votre domaine de déploiement (ex. `https://facturo-tau.vercel.app`), sinon le lien renverra vers la mauvaise adresse
-3. Supabase → **Authentication → Email Templates → Magic Link** : collez le contenu de `supabase/email-templates/magic-link-invitation.html` pour reprendre l'identité Facturo
-4. Si l'envoi automatique échoue (ex. limite de fréquence Supabase), l'invitation reste créée — un bouton **"Renvoyer l'e-mail"** est disponible, ou le message peut être partagé manuellement (copié ou via WhatsApp) depuis l'écran Utilisateurs
-
-## 3bis. E-mail de bienvenue (confirmation d'inscription)
-
-Supabase envoie automatiquement un e-mail de confirmation à chaque inscription.
-Pour qu'il reprenne l'identité Facturo et rappelle les informations de connexion
-(sans jamais inclure le mot de passe, qui n'est récupérable par personne) :
-
-1. Supabase → **Authentication → Email Templates → Confirm signup**
-2. Collez le contenu de `supabase/email-templates/confirm-signup.html` dans le champ HTML
-3. Enregistrez
+### Configuration requise pour l'envoi d'e-mails
+1. Supabase → **Project Settings → Auth → SMTP Settings** : identifiants SMTP actifs
+2. Supabase → **Authentication → URL Configuration** : le **Site URL** doit
+   correspondre à votre domaine de déploiement, sinon les liens pointeront
+   au mauvais endroit
+3. Supabase → **Authentication → Email Templates** : collez le contenu de
+   `supabase/email-templates/confirm-signup.html` (inscription) et
+   `magic-link-invitation.html` (invitation d'équipe) pour reprendre
+   l'identité visuelle de Facturo
+4. Si l'envoi automatique échoue, l'invitation reste créée — un bouton
+   "Renvoyer l'e-mail" est disponible, ou le message peut être partagé
+   manuellement (copié ou via WhatsApp)
 
 ## 4. Build & déploiement
 
@@ -73,29 +80,10 @@ Pour qu'il reprenne l'identité Facturo et rappelle les informations de connexio
 npm run build
 ```
 
-Le dossier `dist/` produit est un site statique déployable sur n'importe quel
-hébergeur (Netlify, Vercel, ou un VPS avec Nginx/Apache pointant vers `dist/`).
-Pensez à configurer les variables d'environnement `VITE_SUPABASE_URL` et
-`VITE_SUPABASE_ANON_KEY` sur la plateforme de déploiement (elles sont injectées au
-moment du build, pas à l'exécution).
-
-## 4bis. Application installable (PWA)
-
-Facturo est une Progressive Web App : sur Android/Desktop (Chrome, Edge, Brave),
-un bouton **"Installer l'application"** apparaît directement dans le menu latéral
-et sur l'écran de connexion dès que le navigateur le permet — un clic suffit,
-aucune boutique d'applications n'est nécessaire. Sur iPhone/iPad (Safari), un
-bouton affiche les 3 étapes manuelles (Partager → Sur l'écran d'accueil → Ajouter),
-car iOS ne propose pas d'installation automatique.
-
-Ce que ça donne une fois installé : icône sur l'écran d'accueil, ouverture en
-plein écran sans barre d'adresse, et l'app shell (JS/CSS/icônes) reste disponible
-même hors-ligne — seules les données Supabase nécessitent une connexion.
-
-Géré par `vite-plugin-pwa` (config dans `vite.config.js`) ; les icônes sources
-sont dans `public/icons/`. Pour changer l'icône, remplacez les fichiers dans ce
-dossier (192, 512, versions "maskable" avec fond plein pour Android, favicon,
-apple-touch-icon) en gardant les mêmes noms.
+Le dossier `dist/` est un site statique déployable sur n'importe quel hébergeur
+(Netlify, Vercel, VPS avec Nginx/Apache). Configurez `VITE_SUPABASE_URL` et
+`VITE_SUPABASE_ANON_KEY` comme variables d'environnement de build sur votre
+plateforme d'hébergement (elles sont injectées au moment du build).
 
 ## 5. Pousser sur GitHub
 
@@ -108,8 +96,10 @@ git remote add origin <URL_DE_VOTRE_DEPOT_GITHUB>
 git push -u origin main
 ```
 
-`.env` est exclu du dépôt via `.gitignore` — utilisez `.env.example` comme modèle
-sur chaque nouvelle machine ou dans les secrets CI/CD de votre hébergeur.
+`.env` est exclu du dépôt via `.gitignore` — utilisez `.env.example` comme
+modèle sur chaque nouvelle machine ou dans les secrets CI/CD de votre hébergeur.
+Ne committez jamais de clé réelle, même l'anon key : gardez-la dans `.env` local
+ou dans les variables d'environnement de votre plateforme de déploiement.
 
 ## Structure du projet
 
@@ -117,19 +107,11 @@ sur chaque nouvelle machine ou dans les secrets CI/CD de votre hébergeur.
 src/
   lib/            # thème, helpers métier, client Supabase, hooks de données
   components/
-    ui/           # primitives (Btn, Card, Modal, Select, TableShell…)
-    ...           # pages (Dashboard, Clients, Devis, Factures, Users…)
+    ui/           # primitives (Btn, Card, Modal, Select, TableShell, EmptyState…)
+    ...           # pages (Dashboard, Clients, Devis, Factures, Finance, Projets…)
   App.jsx         # assemblage : auth, navigation, permissions par rôle
   main.jsx        # point d'entrée React
 supabase/
-  migrations/     # schéma SQL à exécuter dans Supabase
+  migrations/         # schéma SQL à exécuter dans Supabase, dans l'ordre
+  email-templates/    # modèles HTML pour les e-mails Supabase Auth
 ```
-
-## Limites connues (prochaines étapes)
-
-Aucune pour l'instant — les exports Rapports (PDF/Excel/CSV) et le téléchargement
-de PDF pour les devis/factures génèrent maintenant de vrais fichiers directement
-téléchargés (via `jsPDF` et `SheetJS`), sans passer par la boîte de dialogue
-d'impression du navigateur. Ces bibliothèques sont chargées à la demande
-(uniquement au moment d'un export) pour ne pas alourdir le chargement initial
-de l'application.

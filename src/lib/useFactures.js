@@ -86,12 +86,12 @@ export function useFactures(entrepriseId, userId) {
     clientId: devisObj.clientId, lignes: devisObj.lignes, statut: "Envoyée", projetId: devisObj.projetId,
   });
 
-  const enregistrerPaiement = async (facture, montant, mode) => {
+  const enregistrerPaiement = async (facture, montant, mode, date) => {
     const t = totals(facture.lignes).ttc;
     const nouveauRegle = (facture.regle || 0) + Number(montant);
     const nouveauStatut = nouveauRegle >= t ? "Payée" : "Partiellement payée";
     await supabase.from("factures").update({ montant_regle: nouveauRegle, statut: nouveauStatut }).eq("id", facture.uuid);
-    await supabase.from("paiements").insert({ facture_id: facture.uuid, montant: Number(montant), mode, date: todayISO(), created_by: userId });
+    await supabase.from("paiements").insert({ facture_id: facture.uuid, montant: Number(montant), mode, date: date || todayISO(), created_by: userId });
     await load();
   };
 
