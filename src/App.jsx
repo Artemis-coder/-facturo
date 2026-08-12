@@ -106,7 +106,7 @@ export default function App() {
   const { produits, saveProduit, loading: loadingProduits } = useProduits(entrepriseId);
   const { devis, createDevis, updateDevis, marquerTransforme, lierProjet: lierProjetDevis, loading: loadingDevis } = useDevis(entrepriseId, userId);
   const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, lierProjet: lierProjetFacture, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
-  const { entreprise, saveProfil, saveParametres, loading: loadingEntreprise } = useEntreprise(entrepriseId);
+  const { entreprise, saveProfil, saveParametres, uploadLogo, loading: loadingEntreprise } = useEntreprise(entrepriseId);
   const { profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation } = useUsers(entrepriseId);
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
@@ -190,7 +190,7 @@ export default function App() {
               <Users profiles={profiles} invitations={invitations} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}
                 cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise} />
             )}
-            {view === "entreprise" && <Entreprise entreprise={entreprise} onSaveProfil={saveProfil} notify={notify} canEdit={isAdmin} />}
+            {view === "entreprise" && <Entreprise entreprise={entreprise} onSaveProfil={saveProfil} uploadLogo={uploadLogo} notify={notify} canEdit={isAdmin} />}
             {view === "parametres" && <Parametres entreprise={entreprise} onSaveParametres={saveParametres} notify={notify} canEdit={isAdmin} />}
           </>
         )}

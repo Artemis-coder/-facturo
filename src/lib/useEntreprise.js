@@ -5,6 +5,7 @@ function mapRow(e) {
   return {
     id: e.id,
     nom: e.nom || "",
+    logoUrl: e.logo_url || "",
     tel: e.telephone || "",
     rccm: e.rccm || "",
     nif: e.nif || "",
@@ -76,5 +77,21 @@ export function useEntreprise(entrepriseId) {
     return { error: null };
   };
 
-  return { entreprise, saveProfil, saveParametres, loading, loadError, reload: load };
+  // Upload direct dans Supabase Storage (bucket "logos", dossier = entreprise_id)
+  // puis mise à jour de entreprises.logo_url — le logo est ensuite visible
+  // partout où `entreprise.logoUrl` est utilisé, sans rechargement manuel.
+  const uploadLogo = async (file) => {
+    const ext = file.name.split(".").pop();
+    const path = `${entrepriseId}/logo.${ext}`;
+    const { error: upError } = await supabase.storage.from("logos").upload(path, file, { upsert: true, cacheControl: "3600" });
+    if (upError) return { error: upError };
+    const { data } = supabase.storage.from("logos").getPublicUrl(path);
+    // Cache-buster pour forcer le rafraîchissement immédiat de l'image affichée.
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+    const { error } = await supabase.from("entreprises").update({ logo_url: url }).eq("id", entrepriseId);
+    if (!error) await load();
+    return { error };
+  };
+
+  return { entreprise, saveProfil, saveParametres, uploadLogo, loading, loadError, reload: load };
 }
