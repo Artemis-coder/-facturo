@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Pencil, FolderKanban, Link2, X, Trash2 } from "lucide-react";
+import { Plus, Pencil, FolderKanban, Link2, X, Trash2, Clock, CheckCircle2, AlertCircle, DollarSign } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
@@ -20,6 +20,20 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
   const montantEncaisseDe = (projetId) => montantEncaisseTotal(facturesDe(projetId));
 
   const list = projets.filter((p) => (p.nom + (cli(p.clientId)?.societe || "")).toLowerCase().includes(q.toLowerCase()));
+
+  const totalProjets = projets.length;
+  const enCoursCount = projets.filter((p) => p.statut === "En cours").length;
+  const terminesCount = projets.filter((p) => p.statut === "Terminé").length;
+  const enAttenteCount = projets.filter((p) => p.statut === "En attente" || p.statut === "Annulé").length;
+  const totalEncaisseProjets = projets.reduce((sum, p) => sum + montantEncaisseDe(p.id), 0);
+
+  const kpis = [
+    { label: "Total Projets", value: `${totalProjets}`, sub: "Dossiers enregistrés", tone: T.ink, icon: FolderKanban },
+    { label: "Projets En Cours", value: `${enCoursCount}`, sub: "Production / exécution", tone: T.gold, icon: Clock },
+    { label: "Projets Terminés", value: `${terminesCount}`, sub: "Livrés & clôturés", tone: T.teal, icon: CheckCircle2 },
+    { label: "En Attente / Annulés", value: `${enAttenteCount}`, sub: "Stand-by ou annulés", tone: T.brick, icon: AlertCircle },
+    { label: "Encaissements Projets", value: fmt(totalEncaisseProjets), sub: "Total réglé sur factures liées", tone: T.slate, icon: DollarSign },
+  ];
 
   const save = async (form) => {
     const { error } = await saveProjet(form);
@@ -42,6 +56,22 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
 
   return (
     <div>
+      {/* KPI Cards Grid */}
+      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 20 }}>
+        {kpis.map((k, i) => {
+          const Icon = k.icon;
+          return (
+            <Card key={i} style={{ padding: "16px 18px", borderLeft: `4px solid ${k.tone}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                <span style={{ fontSize: 12, color: T.inkSoft, fontWeight: 500 }}>{k.label}</span>
+                {Icon && <Icon size={16} color={k.tone} />}
+              </div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 700, color: T.ink }}>{k.value}</div>
+              <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 4 }}>{k.sub}</div>
+            </Card>
+          );
+        })}
+      </div>
       <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Encaissé", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un projet…"
         action={canManage && <Btn icon={Plus} onClick={() => setEditing({ nom: "", description: "", clientId: "" })}>Nouveau projet</Btn>}>
