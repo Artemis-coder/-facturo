@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
+import { useOnlineStatus } from "../lib/useOnlineStatus";
 import { Modal, Btn } from "./ui";
 
 export const NAV = [
@@ -29,6 +30,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const [showIosHelp, setShowIosHelp] = useState(false);
   const [showGenericHelp, setShowGenericHelp] = useState(false);
   const { canInstall, isIosSafariManual, installed, promptInstall } = useInstallPrompt();
+  const online = useOnlineStatus();
   const go = (key) => { setView(key); setNavOpen(false); };
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -135,10 +137,36 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             <Menu size={18} />
           </button>
           <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1 }}>{current?.label}</h1>
-          <button onClick={onToggleAmounts} title={amountsHidden ? "Afficher les montants" : "Masquer les montants"}
-            style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: amountsHidden ? T.gold : T.inkSoft, flexShrink: 0 }}>
-            {amountsHidden ? <EyeOff size={17} /> : <Eye size={17} />}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              title={online ? "En ligne — données synchronisées" : "Hors ligne — mode déconnecté actif"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+                background: online ? T.tealSoft : T.brickSoft,
+                color: online ? T.teal : T.brick,
+                border: `1px solid ${online ? T.teal + "33" : T.brick + "33"}`,
+                transition: "all 0.3s ease",
+              }}
+            >
+              <span style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: online ? T.teal : T.brick,
+                boxShadow: `0 0 6px ${online ? T.teal : T.brick}`
+              }} />
+              {online ? <Wifi size={13} /> : <WifiOff size={13} />}
+              <span>{online ? "En ligne" : "Hors ligne"}</span>
+            </div>
+            <button onClick={onToggleAmounts} title={amountsHidden ? "Afficher les montants" : "Masquer les montants"}
+              style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: amountsHidden ? T.gold : T.inkSoft, flexShrink: 0 }}>
+              {amountsHidden ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
         </header>
         <div className="app-content" style={{ padding: 30 }}>{children}</div>
       </main>
