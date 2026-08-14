@@ -203,7 +203,7 @@ export function Login({ onSignIn, onSignUp }) {
               color: T.gold, padding: "6px 14px", borderRadius: 20, fontSize: 12.5, fontWeight: 600,
               marginBottom: 20
             }}>
-              <Sparkles size={14} /> Solution de facturation & gestion commerciale
+              <Sparkles size={14} /> Solution tout-en-un pour votre Bouate
             </div>
             <h1 style={{
               fontFamily: "'Space Grotesk', sans-serif",
