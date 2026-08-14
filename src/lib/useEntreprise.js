@@ -5,6 +5,7 @@ function mapRow(e) {
   return {
     id: e.id,
     nom: e.nom || "",
+    email: e.email || "",
     logoUrl: e.logo_url || "",
     tel: e.telephone || "",
     rccm: e.rccm || "",
@@ -50,7 +51,7 @@ export function useEntreprise(entrepriseId) {
   // et qui faisait passer un échec d'enregistrement (ex. TVA) pour une réussite.
   const saveProfil = async (form) => {
     const { error } = await supabase.from("entreprises").update({
-      nom: form.nom, telephone: form.tel, rccm: form.rccm, nif: form.nif,
+      nom: form.nom, email: form.email, telephone: form.tel, rccm: form.rccm, nif: form.nif,
       adresse: form.adresse, devise: form.devise, langue: form.langue,
       conditions_generales: form.conditions,
     }).eq("id", entrepriseId);

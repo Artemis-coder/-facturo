@@ -370,7 +370,7 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
                 </span>
               </div>
               <div style={{ fontSize: 11, color: T.inkSoft }}>
-                {entreprise?.email || "contact@mabouate.com"} · {entreprise?.telephone || "+225 07 00 00 00 00"}
+                {[entreprise?.email, entreprise?.tel || entreprise?.telephone].filter(Boolean).join(" · ") || "contact@mabouate.com"}
               </div>
             </div>
 

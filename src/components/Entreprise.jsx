@@ -50,9 +50,10 @@ export function Entreprise({ entreprise, onSaveProfil, uploadLogo, notify, canEd
       </div>
       <fieldset disabled={!canEdit} style={{ border: "none", padding: 0, margin: 0 }}>
         <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <Field label="Nom de l'entreprise"><input style={inputStyle} value={form.nom} onChange={set("nom")} /></Field>
-          <Field label="Téléphone"><input style={inputStyle} value={form.tel} onChange={set("tel")} /></Field>
-          <Field label="RCCM"><input style={inputStyle} value={form.rccm} onChange={set("rccm")} /></Field>
+          <Field label="Nom de l'entreprise"><input style={inputStyle} value={form.nom || ""} onChange={set("nom")} /></Field>
+          <Field label="E-mail de l'entreprise (affiché sur devis & factures)"><input type="email" style={inputStyle} value={form.email || ""} onChange={set("email")} placeholder="contact@votre-entreprise.com" /></Field>
+          <Field label="Téléphone"><input style={inputStyle} value={form.tel || ""} onChange={set("tel")} /></Field>
+          <Field label="RCCM"><input style={inputStyle} value={form.rccm || ""} onChange={set("rccm")} /></Field>
           <Field label="NIF"><input style={inputStyle} value={form.nif} onChange={set("nif")} /></Field>
           <Field label="Devise">
             <Select value={form.devise} onChange={set("devise")}>

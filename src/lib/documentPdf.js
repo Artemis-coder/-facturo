@@ -41,7 +41,7 @@ export async function genererDocumentPDF(doc, type, client, entreprise) {
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8.5);
   pdf.setTextColor(...INK_SOFT);
-  pdf.text([entreprise?.adresse, entreprise?.tel, `RCCM ${entreprise?.rccm || "—"} · NIF ${entreprise?.nif || "—"}`]
+  pdf.text([entreprise?.adresse, [entreprise?.tel, entreprise?.email].filter(Boolean).join(" · "), `RCCM ${entreprise?.rccm || "—"} · NIF ${entreprise?.nif || "—"}`]
     .filter(Boolean).join("   ·   "), M, 58);
 
   const label = type === "devis" ? "DEVIS" : "FACTURE";
