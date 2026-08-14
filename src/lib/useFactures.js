@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
 import { todayISO, totals } from "./helpers";
+import { cacheGet, cacheSet, enqueueAction } from "./offline";
 
 const FACTURE_SELECT = `
   id, numero, client_id, date, echeance, statut, montant_regle, created_by,
@@ -44,14 +45,19 @@ export function useFactures(entrepriseId, userId) {
   const [factures, setFactures] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const cacheKey = `factures:${entrepriseId}`;
+
   const load = useCallback(async () => {
     if (!entrepriseId) return;
-    const { data, error } = await supabase
-      .from("factures")
-      .select(FACTURE_SELECT)
-      .eq("entreprise_id", entrepriseId)
-      .order("date", { ascending: false });
-    if (!error) setFactures(data.map(mapRow));
+    try {
+      const { data, error } = await supabase.from("factures").select(FACTURE_SELECT).eq("entreprise_id", entrepriseId).order("date", { ascending: false });
+      if (error) throw error;
+      const mapped = data.map(mapRow);
+      setFactures(mapped); cacheSet(cacheKey, mapped);
+    } catch {
+      const cached = cacheGet(cacheKey);
+      if (cached) setFactures(cached);
+    }
     setLoading(false);
   }, [entrepriseId]);
 
@@ -90,9 +96,29 @@ export function useFactures(entrepriseId, userId) {
     const t = totals(facture.lignes).ttc;
     const nouveauRegle = (facture.regle || 0) + Number(montant);
     const nouveauStatut = nouveauRegle >= t ? "Payée" : "Partiellement payée";
+    const finalDate = date || todayISO();
+
+    if (!navigator.onLine) {
+      // Encaissement chez le client sans réseau : les valeurs finales sont déjà
+      // calculées ici, donc la synchronisation au retour du réseau se fait par
+      // simple rejeu — pas besoin de recalculer quoi que ce soit.
+      enqueueAction("enregistrerPaiement", { factureUuid: facture.uuid, montant, mode, date: finalDate, nouveauRegle, nouveauStatut },
+        `Paiement ${facture.id} : ${montant} FCFA`);
+      const next = factures.map((f) => f.uuid === facture.uuid ? { ...f, regle: nouveauRegle, statut: nouveauStatut } : f);
+      setFactures(next); cacheSet(cacheKey, next);
+      return;
+    }
+
     await supabase.from("factures").update({ montant_regle: nouveauRegle, statut: nouveauStatut }).eq("id", facture.uuid);
-    await supabase.from("paiements").insert({ facture_id: facture.uuid, montant: Number(montant), mode, date: date || todayISO(), created_by: userId });
+    await supabase.from("paiements").insert({ facture_id: facture.uuid, montant: Number(montant), mode, date: finalDate, created_by: userId });
     await load();
+  };
+
+  // Rejoue un paiement mis en file d'attente hors-ligne.
+  const enregistrerPaiementDepuisFile = async ({ factureUuid, montant, mode, date, nouveauRegle, nouveauStatut }) => {
+    const { error } = await supabase.from("factures").update({ montant_regle: nouveauRegle, statut: nouveauStatut }).eq("id", factureUuid);
+    if (error) return { error };
+    return supabase.from("paiements").insert({ facture_id: factureUuid, montant: Number(montant), mode, date, created_by: userId });
   };
 
   // Ne peut réussir que si la facture est déjà "Payée" — la contrainte
@@ -123,5 +149,5 @@ export function useFactures(entrepriseId, userId) {
     return { error };
   };
 
-  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, loading, reload: load };
+  return { factures, createFacture, creerDepuisDevis, enregistrerPaiement, enregistrerPaiementDepuisFile, marquerProjetTermine, lierProjet, deleteFacture, loading, reload: load };
 }
