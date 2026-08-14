@@ -50,7 +50,7 @@ export async function exportRapportPDF({ entreprise, totalEncaisse, totalTVA, pa
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(16);
   pdf.setTextColor(...INK);
-  pdf.text(entreprise?.nom || "Ma Boîte", marginX, 55);
+  pdf.text(entreprise?.nom || "Ma Bouate", marginX, 55);
 
   pdf.setFontSize(13);
   pdf.text("Rapport financier", rightX, 55, { align: "right" });

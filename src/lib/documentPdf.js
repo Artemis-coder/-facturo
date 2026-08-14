@@ -148,7 +148,7 @@ export async function genererDocumentPDF(doc, type, client, entreprise) {
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7.5);
   pdf.setTextColor(...LINE);
-  pdf.text("Généré via Ma Boîte", (M + R) / 2, pdf.internal.pageSize.getHeight() - 24, { align: "center" });
+  pdf.text("Généré via Ma Bouate", (M + R) / 2, pdf.internal.pageSize.getHeight() - 24, { align: "center" });
 
   pdf.save(`${doc.id}.pdf`);
 }

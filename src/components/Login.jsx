@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { 
-  Mail, Lock, ArrowRight, Building2, User, CheckCircle2, Download, 
+import {
+  Mail, Lock, ArrowRight, Building2, User, CheckCircle2, Download,
   Eye, EyeOff, ShieldCheck, Zap, Smartphone, Sparkles, Check
 } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
@@ -77,7 +77,7 @@ export function Login({ onSignIn, onSignUp }) {
       }}>
         <div style={{ width: 440, maxWidth: "100%" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 28, justifyContent: "center" }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 32, color: "#fff", fontWeight: 700, letterSpacing: "-0.5px" }}>Ma Boîte</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 32, color: "#fff", fontWeight: 700, letterSpacing: "-0.5px" }}>Ma Bouate</span>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.gold, display: "inline-block", boxShadow: `0 0 12px ${T.gold}` }} />
           </div>
           <Card style={{
@@ -166,7 +166,7 @@ export function Login({ onSignIn, onSignUp }) {
         minHeight: "100vh",
         zIndex: 1
       }}>
-        
+
         {/* LEFT PANEL: Branding & Showcase (Desktop) */}
         <div className="login-hero-panel" style={{
           flex: 1.2,
@@ -190,7 +190,7 @@ export function Login({ onSignIn, onSignUp }) {
               M
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, color: "#fff", fontWeight: 700 }}>Ma Boîte</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, color: "#fff", fontWeight: 700 }}>Ma Bouate</span>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.gold }} />
             </div>
           </div>
@@ -213,10 +213,10 @@ export function Login({ onSignIn, onSignUp }) {
               color: "#fff",
               marginBottom: 20
             }}>
-              Gérez vos devis & factures en toute simplicité.
+              Gérez votre entreprise en toute simplicité.
             </h1>
             <p style={{ fontSize: 16, color: "#B9BFCF", lineHeight: 1.7, maxWidth: 500, marginBottom: 36 }}>
-              Ma Boîte accompagne les entreprises et indépendants avec une plateforme moderne, rapide, conforme et utilisable hors ligne.
+              Ma Bouate accompagne les entreprises et indépendants avec une plateforme moderne, rapide, conforme et utilisable hors ligne.
             </p>
 
             {/* Feature checklist */}
@@ -254,7 +254,7 @@ export function Login({ onSignIn, onSignUp }) {
           }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: T.teal, boxShadow: `0 0 8px ${T.teal}` }} />
             <span style={{ fontSize: 12.5, color: "#94A3B8" }}>
-              Utilisé par des centaines de professionnels en Côte d'Ivoire & UEMOA
+              Utilisé par des milliers de professionnels
             </span>
           </div>
         </div>
@@ -269,7 +269,7 @@ export function Login({ onSignIn, onSignUp }) {
           boxSizing: "border-box"
         }}>
           <div style={{ width: 420, maxWidth: "100%" }}>
-            
+
             {/* Mobile Header Logo */}
             <div className="login-mobile-logo" style={{ display: "none", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 28 }}>
               <div style={{
@@ -279,7 +279,7 @@ export function Login({ onSignIn, onSignUp }) {
               }}>
                 M
               </div>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Ma Boîte</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Ma Bouate</span>
             </div>
 
             <Card style={{
@@ -500,7 +500,7 @@ export function Login({ onSignIn, onSignUp }) {
                   transition: "all 0.2s ease"
                 }}
               >
-                <Download size={15} /> Installer Ma Boîte sur cet appareil
+                <Download size={15} /> Installer Ma Bouate sur cet appareil
               </div>
             )}
           </div>
