@@ -3,7 +3,7 @@ import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet, ChevronLeft, Chev
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { Card, Btn, Modal, Field, Select, TableShell, EmptyState } from "./ui";
+import { Card, Btn, Modal, Field, Select, TableShell, EmptyState, KpiBar } from "./ui";
 
 const CATEGORIES = [
   "Loyer", "Salaires", "Achats & fournitures", "Transport & carburant",
@@ -54,6 +54,33 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
   const solde = totalEntrees - totalSorties;
   const historique = fluxParMois(paiementsAnnee, depensesAnnee);
 
+  const kpis = [
+    {
+      label: "Solde de Trésorerie",
+      value: fmt(solde),
+      sub: solde >= 0 ? "Résultat net positif" : "Déficit de trésorerie",
+      tone: solde >= 0 ? T.teal : T.brick,
+      icon: Wallet,
+      onClick: () => setFiltre("Tout")
+    },
+    {
+      label: "Total des Entrées",
+      value: fmt(totalEntrees),
+      sub: "Paiements clients encaissés",
+      tone: T.teal,
+      icon: ArrowDownCircle,
+      onClick: () => setFiltre("Entrée")
+    },
+    {
+      label: "Total des Sorties",
+      value: fmt(totalSorties),
+      sub: "Dépenses & charges décaissées",
+      tone: T.brick,
+      icon: ArrowUpCircle,
+      onClick: () => setFiltre("Sortie")
+    },
+  ];
+
   const parCategorie = CATEGORIES.map((cat) => ({
     categorie: cat, total: depensesAnnee.filter((d) => d.categorie === cat).reduce((s, d) => s + d.montant, 0),
   })).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
@@ -62,11 +89,8 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
     mode, total: paiementsAnnee.filter((p) => p.mode === mode).reduce((s, p) => s + p.montant, 0),
   })).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
 
-  // Journal unifié : chaque entrée (paiement client) et chaque sortie
-  // (dépense) fusionnées et triées par date, la même vue que l'utilisateur
-  // demande — "les allées et les retours, tout ce qui rentre et tout ce qui sort".
   const mouvements = [
-    ...paiementsAnnee.map((p) => ({ type: "Entrée", date: p.date, montant: p.montant, libelle: `Paiement facture ${p.factureNumero}`, detail: cli(p.clientId)?.societe, mode: p.mode, source: p })),
+    ...paiementsAnnee.map((p) => ({ type: "Entrée", date: p.date, montant: p.montant, libelle: `Paiement facture ${p.factureNumero}`, detail: cli(p.clientId)?.societe || cli(p.clientId)?.nom, mode: p.mode, source: p })),
     ...depensesAnnee.map((d) => ({ type: "Sortie", date: d.date, montant: d.montant, libelle: d.categorie, detail: d.description, mode: d.mode, source: d })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
@@ -102,20 +126,7 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           disabled={annee === "Toutes" || annIdx <= 0}>{""}</Btn>
       </div>
 
-      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
-        <Card style={{ padding: "16px 18px" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>Solde de trésorerie</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: solde >= 0 ? T.teal : T.brick, fontWeight: 600 }}>{fmt(solde)}</div>
-        </Card>
-        <Card style={{ padding: "16px 18px" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>Total des entrées</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: T.teal, fontWeight: 600 }}>{fmt(totalEntrees)}</div>
-        </Card>
-        <Card style={{ padding: "16px 18px" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>Total des sorties</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: T.brick, fontWeight: 600 }}>{fmt(totalSorties)}</div>
-        </Card>
-      </div>
+      <KpiBar items={kpis} />
 
       <div className="grid-dash" style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16, marginBottom: 22 }}>
         <Card style={{ padding: "20px 22px" }}>
