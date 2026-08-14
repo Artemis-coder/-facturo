@@ -27,7 +27,8 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const [navOpen, setNavOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [showIosHelp, setShowIosHelp] = useState(false);
-  const { canInstall, isIosSafariManual, promptInstall } = useInstallPrompt();
+  const [showGenericHelp, setShowGenericHelp] = useState(false);
+  const { canInstall, isIosSafariManual, installed, promptInstall } = useInstallPrompt();
   const go = (key) => { setView(key); setNavOpen(false); };
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -56,7 +57,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             );
           })}
         </nav>
-        {(canInstall || isIosSafariManual) && (
+        {!installed && (
           <div style={{ padding: "0 14px 16px 14px" }}>
             <div style={{
               background: "rgba(255, 255, 255, 0.05)",
@@ -85,7 +86,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
                 Accédez à Facturo en un clic directement depuis votre écran d'accueil, même hors ligne.
               </p>
               <button 
-                onClick={canInstall ? promptInstall : () => setShowIosHelp(true)}
+                onClick={canInstall ? promptInstall : isIosSafariManual ? () => setShowIosHelp(true) : () => setShowGenericHelp(true)}
                 style={{
                   background: `linear-gradient(135deg, ${T.gold} 0%, #D49D43 100%)`,
                   border: "none",
@@ -163,6 +164,32 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             <li>Appuyez sur <b>Ajouter</b> — Facturo apparaît comme une vraie application, icône comprise</li>
           </ol>
           <Btn variant="gold" onClick={() => setShowIosHelp(false)}>Compris</Btn>
+        </Modal>
+      )}
+
+      {showGenericHelp && (
+        <Modal title="Installer Facturo" onClose={() => setShowGenericHelp(false)}>
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 15 }}>
+            Vous pouvez installer Facturo sur votre appareil de plusieurs manières :
+          </p>
+          <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.8, display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+            <div>
+              <b>Sur Ordinateur (Chrome, Edge, Brave...) :</b>
+              <br />
+              Cliquez sur l'icône de téléchargement dans la barre d'adresse (en haut à droite, à côté de l'étoile des favoris), ou ouvrez le menu du navigateur (les trois points) puis sélectionnez <b>« Installer Facturo »</b>.
+            </div>
+            <div>
+              <b>Sur Mac (Safari) :</b>
+              <br />
+              Allez dans le menu <b>Fichier</b> de Safari puis sélectionnez <b>« Ajouter au Dock »</b>.
+            </div>
+            <div>
+              <b>Sur Android :</b>
+              <br />
+              Appuyez sur le menu (les trois points) en haut à droite du navigateur, puis sélectionnez <b>« Installer l'application »</b> ou <b>« Ajouter à l'écran d'accueil »</b>.
+            </div>
+          </div>
+          <Btn variant="gold" onClick={() => setShowGenericHelp(false)}>Compris</Btn>
         </Modal>
       )}
     </div>
