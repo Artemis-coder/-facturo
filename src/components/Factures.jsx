@@ -61,6 +61,7 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
 
   return (
     <div>
+      <KpiBar items={kpiItems} />
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {statuts.map((s) => (
