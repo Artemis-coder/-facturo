@@ -27,9 +27,8 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const current = NAV.find((n) => n.key === view);
   const [navOpen, setNavOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
-  const [showIosHelp, setShowIosHelp] = useState(false);
-  const [showGenericHelp, setShowGenericHelp] = useState(false);
-  const { canInstall, isIosSafariManual, installed, promptInstall } = useInstallPrompt();
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const { canInstall, installed, promptInstall } = useInstallPrompt();
   const online = useOnlineStatus();
   const go = (key) => { setView(key); setNavOpen(false); };
   return (
@@ -88,7 +87,12 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
                 Accédez à Facturo en un clic directement depuis votre écran d'accueil, même hors ligne.
               </p>
               <button 
-                onClick={canInstall ? promptInstall : isIosSafariManual ? () => setShowIosHelp(true) : () => setShowGenericHelp(true)}
+                onClick={() => {
+                  if (canInstall) {
+                    promptInstall();
+                  }
+                  setShowInstallModal(true);
+                }}
                 style={{
                   background: `linear-gradient(135deg, ${T.gold} 0%, #D49D43 100%)`,
                   border: "none",
@@ -184,40 +188,53 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
         </Modal>
       )}
 
-      {showIosHelp && (
-        <Modal title="Installer Facturo sur iPhone/iPad" onClose={() => setShowIosHelp(false)}>
-          <ol style={{ fontSize: 13, color: T.inkSoft, lineHeight: 2, paddingLeft: 20, marginBottom: 20 }}>
-            <li>Appuyez sur l'icône <b>Partager</b> en bas de Safari (le carré avec une flèche vers le haut)</li>
-            <li>Faites défiler et appuyez sur <b>« Sur l'écran d'accueil »</b></li>
-            <li>Appuyez sur <b>Ajouter</b> — Facturo apparaît comme une vraie application, icône comprise</li>
-          </ol>
-          <Btn variant="gold" onClick={() => setShowIosHelp(false)}>Compris</Btn>
-        </Modal>
-      )}
-
-      {showGenericHelp && (
-        <Modal title="Installer Facturo" onClose={() => setShowGenericHelp(false)}>
-          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 15 }}>
-            Vous pouvez installer Facturo sur votre appareil de plusieurs manières :
+      {showInstallModal && (
+        <Modal title="Processus d'installation" onClose={() => setShowInstallModal(false)}>
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 16 }}>
+            Installez l'application Facturo sur votre ordinateur ou votre smartphone pour un accès direct en un clic, même hors ligne.
           </p>
-          <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.8, display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-            <div>
-              <b>Sur Ordinateur (Chrome, Edge, Brave...) :</b>
-              <br />
-              Cliquez sur l'icône de téléchargement dans la barre d'adresse (en haut à droite, à côté de l'étoile des favoris), ou ouvrez le menu du navigateur (les trois points) puis sélectionnez <b>« Installer Facturo »</b>.
+
+          <div style={{ background: T.bg, padding: 14, borderRadius: 10, marginBottom: 20 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+              <Download size={15} color={T.gold} /> Selon votre navigateur et votre appareil :
             </div>
-            <div>
-              <b>Sur Mac (Safari) :</b>
-              <br />
-              Allez dans le menu <b>Fichier</b> de Safari puis sélectionnez <b>« Ajouter au Dock »</b>.
-            </div>
-            <div>
-              <b>Sur Android :</b>
-              <br />
-              Appuyez sur le menu (les trois points) en haut à droite du navigateur, puis sélectionnez <b>« Installer l'application »</b> ou <b>« Ajouter à l'écran d'accueil »</b>.
+
+            <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <b>Sur Chrome, Edge, Brave & Android :</b>
+                <br />
+                Cliquez sur le bouton <b>« Installer maintenant »</b> ci-dessous pour déclencher l'installation directe sur votre machine.
+              </div>
+              <div>
+                <b>Sur Mac (Safari) :</b>
+                <br />
+                Allez dans le menu <b>Fichier</b> en haut de Safari puis sélectionnez <b>« Ajouter au Dock »</b>.
+              </div>
+              <div>
+                <b>Sur iPhone & iPad (Safari) :</b>
+                <br />
+                Appuyez sur le bouton <b>Partager</b> (le carré avec la flèche vers le haut), puis défilez et touchez <b>« Sur l'écran d'accueil »</b>.
+              </div>
             </div>
           </div>
-          <Btn variant="gold" onClick={() => setShowGenericHelp(false)}>Compris</Btn>
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <Btn variant="ghost" onClick={() => setShowInstallModal(false)}>
+              Fermer
+            </Btn>
+            <Btn
+              variant="gold"
+              onClick={async () => {
+                if (canInstall) {
+                  await promptInstall();
+                }
+                setShowInstallModal(false);
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <Download size={15} /> Installer maintenant
+            </Btn>
+          </div>
         </Modal>
       )}
     </div>
