@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, Printer, Trash2, CheckCircle2, Receipt } from "lucide-react";
+import { Plus, Printer, Trash2, CheckCircle2, Receipt, Clock, AlertTriangle, DollarSign } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { totals } from "../lib/helpers";
-import { TableShell, Btn, Modal, Badge, Field, Select, EmptyState, Timeline } from "./ui";
+import { totals, montantEncaisseTotal } from "../lib/helpers";
+import { TableShell, Btn, Modal, Badge, Field, Select, EmptyState, Timeline, KpiBar } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
@@ -20,6 +20,20 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
   const list = factures
     .filter((f) => filter === "Tous" || f.statut === filter)
     .filter((f) => !projetsTerminesUniquement || f.projetTermine);
+
+  const totalFacturesCount = factures.length;
+  const payeesCount = factures.filter((f) => f.statut === "Payée").length;
+  const impayeesCount = factures.filter((f) => ["Envoyée", "Partiellement payée"].includes(f.statut)).length;
+  const enRetardCount = factures.filter((f) => f.statut === "En retard").length;
+  const totalEncaisse = montantEncaisseTotal(factures);
+
+  const kpiItems = [
+    { label: "Total Factures", value: `${totalFacturesCount}`, sub: "Toutes factures émises", tone: T.ink, icon: Receipt, onClick: () => setFilter("Tous") },
+    { label: "Factures Payées", value: `${payeesCount}`, sub: "Règlements intégralement perçus", tone: T.teal, icon: CheckCircle2, onClick: () => setFilter("Payée") },
+    { label: "En Attente / Partiel", value: `${impayeesCount}`, sub: "Règlements en cours", tone: T.gold, icon: Clock, onClick: () => setFilter("Envoyée") },
+    { label: "Factures en Retard", value: `${enRetardCount}`, sub: "Échéances dépassées", tone: T.brick, icon: AlertTriangle, onClick: () => setFilter("En retard") },
+    { label: "Total Encaissé", value: fmt(totalEncaisse), sub: "Règlements cumulés perçus", tone: T.teal, icon: DollarSign },
+  ];
 
   const save = async (data) => {
     await createFacture(data);

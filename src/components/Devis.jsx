@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, ArrowRight, Download, FileText } from "lucide-react";
+import { Plus, ArrowRight, Download, FileText, Edit3, Clock, CheckCircle2, DollarSign } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, LOCKED_STATUTS } from "../lib/helpers";
-import { TableShell, Btn, Modal, Badge , EmptyState} from "./ui";
+import { TableShell, Btn, Modal, Badge, EmptyState, KpiBar } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
@@ -16,6 +16,20 @@ export function Devis({ devis, clients, produits, projets, entreprise, createDev
   const statuts = ["Tous", "Brouillon", "Envoyé", "Accepté", "Refusé", "Expiré"];
   const list = devis.filter((d) => filter === "Tous" || d.statut === filter);
   const canEditDoc = (d) => !LOCKED_STATUTS.includes(d.statut);
+
+  const totalDevisCount = devis.length;
+  const brouillonsCount = devis.filter((d) => d.statut === "Brouillon").length;
+  const enAttenteCount = devis.filter((d) => d.statut === "Envoyé").length;
+  const acceptesCount = devis.filter((d) => d.statut === "Accepté").length;
+  const totalEstimeTTC = devis.reduce((s, d) => s + totals(d.lignes, d.remiseGlobale).ttc, 0);
+
+  const kpiItems = [
+    { label: "Total Devis", value: `${totalDevisCount}`, sub: "Tous statuts confondus", tone: T.ink, icon: FileText, onClick: () => setFilter("Tous") },
+    { label: "Brouillons", value: `${brouillonsCount}`, sub: "En cours de préparation", tone: T.slate, icon: Edit3, onClick: () => setFilter("Brouillon") },
+    { label: "Devis Envoyés", value: `${enAttenteCount}`, sub: "En attente de signature", tone: T.gold, icon: Clock, onClick: () => setFilter("Envoyé") },
+    { label: "Devis Acceptés", value: `${acceptesCount}`, sub: "Validés par les clients", tone: T.teal, icon: CheckCircle2, onClick: () => setFilter("Accepté") },
+    { label: "Volume Déclaré TTC", value: fmt(totalEstimeTTC), sub: "Total devisé cumulé", tone: T.slate, icon: DollarSign },
+  ];
 
   const save = async (data) => {
     if (builder?.uuid) {
@@ -38,6 +52,7 @@ export function Devis({ devis, clients, produits, projets, entreprise, createDev
 
   return (
     <div>
+      <KpiBar items={kpiItems} />
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
         {statuts.map((s) => (
           <button key={s} onClick={() => setFilter(s)} style={{

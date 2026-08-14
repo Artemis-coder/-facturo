@@ -3,7 +3,7 @@ import { Plus, Pencil, FolderKanban, Link2, X, Trash2, Clock, CheckCircle2, Aler
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
-import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState } from "./ui";
+import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar } from "./ui";
 
 const STATUTS = ["En cours", "Terminé", "Annulé"];
 const STATUT_TONE = { "En cours": T.slate, "Terminé": T.teal, "Annulé": T.brick };
@@ -56,22 +56,7 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
 
   return (
     <div>
-      {/* KPI Cards Grid */}
-      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 20 }}>
-        {kpis.map((k, i) => {
-          const Icon = k.icon;
-          return (
-            <Card key={i} style={{ padding: "16px 18px", borderLeft: `4px solid ${k.tone}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: T.inkSoft, fontWeight: 500 }}>{k.label}</span>
-                {Icon && <Icon size={16} color={k.tone} />}
-              </div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 700, color: T.ink }}>{k.value}</div>
-              <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 4 }}>{k.sub}</div>
-            </Card>
-          );
-        })}
-      </div>
+      <KpiBar items={kpis} />
       <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Encaissé", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un projet…"
         action={canManage && <Btn icon={Plus} onClick={() => setEditing({ nom: "", description: "", clientId: "" })}>Nouveau projet</Btn>}>

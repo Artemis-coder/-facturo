@@ -9,3 +9,4 @@ export { TableShell } from "./TableShell";
 export { EmptyState } from "./EmptyState";
 export { Spinner, LoadingState } from "./Spinner";
 export { Timeline } from "./Timeline";
+export { KpiBar } from "./KpiBar";
