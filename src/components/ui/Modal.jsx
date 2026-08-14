@@ -2,12 +2,12 @@ import React from "react";
 import { X } from "lucide-react";
 import { T } from "../../lib/theme";
 
-export function Modal({ title, onClose, children, wide }) {
+export function Modal({ title, onClose, children, wide, extraWide }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#16213A5C", zIndex: 50 }}>
       <div onClick={(e) => e.stopPropagation()} style={{
         position: "absolute", top: 0, right: 0, height: "100%",
-        width: wide ? 560 : 420, maxWidth: "92vw",
+        width: extraWide ? 1160 : (wide ? 600 : 420), maxWidth: "96vw",
         background: T.paper, borderLeft: `1px solid ${T.line}`,
         borderRadius: "18px 0 0 18px", overflow: "hidden",
         display: "flex", flexDirection: "column",

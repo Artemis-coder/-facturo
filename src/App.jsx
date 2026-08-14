@@ -196,12 +196,12 @@ export default function App() {
             {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} />}
             {view === "produits" && <Produits produits={produits} onSaveProduit={saveProduit} notify={notify} canEdit={canManageProduits} />}
             {view === "devis" && (
-              <Devis devis={devis} clients={clients} produits={produits} projets={projets}
+              <Devis devis={devis} clients={clients} produits={produits} projets={projets} entreprise={entreprise}
                 createDevis={createDevis} updateDevis={updateDevis} marquerTransforme={marquerTransforme}
                 creerDepuisDevis={creerDepuisDevis} lierProjet={lierProjetDevis} notify={notify} onPrint={requestPrint} canCreate={canCreateDevis} />
             )}
             {view === "factures" && (
-              <Factures factures={factures} clients={clients} produits={produits} projets={projets} paiements={paiements}
+              <Factures factures={factures} clients={clients} produits={produits} projets={projets} paiements={paiements} entreprise={entreprise}
                 createFacture={createFacture} enregistrerPaiement={enregistrerPaiement} marquerProjetTermine={marquerProjetTermine}
                 lierProjet={lierProjetFacture} deleteFacture={deleteFacture}
                 notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin} />

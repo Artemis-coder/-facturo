@@ -7,7 +7,7 @@ import { TableShell, Btn, Modal, Badge, Field, Select, EmptyState, Timeline } fr
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
-export function Factures({ factures, clients, produits, projets, paiements = [], createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
+export function Factures({ factures, clients, produits, projets, paiements = [], entreprise, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -152,8 +152,8 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
       )}
 
       {creating && (
-        <Modal title="Nouvelle facture" onClose={() => setCreating(false)} wide>
-          <DocBuilder clients={clients} produits={produits} projets={projets} onSave={save} docType="facture" />
+        <Modal title="Nouvelle facture" onClose={() => setCreating(false)} extraWide>
+          <DocBuilder clients={clients} produits={produits} projets={projets} entreprise={entreprise} onSave={save} docType="facture" onClose={() => setCreating(false)} />
         </Modal>
       )}
       {paying && (

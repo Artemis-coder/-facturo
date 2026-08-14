@@ -15,14 +15,17 @@ export const mkLine = (produit, qty = 1, remise = 0) => ({
 
 export const ligneMontant = (l) => l.prixHT * l.qty * (1 - l.remise / 100);
 
-export const totals = (lignes) => {
+export const totals = (lignes, remiseGlobale = 0) => {
   let ht = 0, tvaTot = 0;
   lignes.forEach((l) => {
     const base = ligneMontant(l);
     ht += base;
     tvaTot += base * (l.tva / 100);
   });
-  return { ht, tva: tvaTot, ttc: ht + tvaTot };
+  const discountFactor = remiseGlobale > 0 ? (1 - Math.min(100, Math.max(0, Number(remiseGlobale))) / 100) : 1;
+  const htNet = ht * discountFactor;
+  const tvaNet = tvaTot * discountFactor;
+  return { ht: htNet, htBrut: ht, tva: tvaNet, ttc: htNet + tvaNet };
 };
 
 // Source unique de vérité pour "montant encaissé" — utilisée partout

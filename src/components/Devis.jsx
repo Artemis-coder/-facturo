@@ -7,7 +7,7 @@ import { TableShell, Btn, Modal, Badge , EmptyState} from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 
-export function Devis({ devis, clients, produits, projets, createDevis, updateDevis, marquerTransforme, creerDepuisDevis, lierProjet, notify, onPrint, canCreate = true }) {
+export function Devis({ devis, clients, produits, projets, entreprise, createDevis, updateDevis, marquerTransforme, creerDepuisDevis, lierProjet, notify, onPrint, canCreate = true }) {
   const [builder, setBuilder] = useState(null); // null closed, {} new, {...doc} editing
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -89,8 +89,8 @@ export function Devis({ devis, clients, produits, projets, createDevis, updateDe
       )}
 
       {builder && (
-        <Modal title={builder.uuid ? `Modifier — ${builder.id}` : "Nouveau devis"} onClose={() => setBuilder(null)} wide>
-          <DocBuilder clients={clients} produits={produits} projets={projets} onSave={save} docType="devis" initial={builder.uuid ? builder : null} />
+        <Modal title={builder.uuid ? `Modifier — ${builder.id}` : "Nouveau devis"} onClose={() => setBuilder(null)} extraWide>
+          <DocBuilder clients={clients} produits={produits} projets={projets} entreprise={entreprise} onSave={save} docType="devis" initial={builder.uuid ? builder : null} onClose={() => setBuilder(null)} />
         </Modal>
       )}
     </div>
