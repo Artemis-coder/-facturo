@@ -60,7 +60,7 @@ export function Devis({ devis, clients, produits, projets, entreprise, createDev
             <td style={td}>{cli(d.clientId)?.societe}</td>
             <td style={{ ...td, color: proj(d.projetId) ? T.ink : T.inkSoft }}>{proj(d.projetId)?.nom || "—"}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{d.date}</td>
-            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(d.lignes).ttc)}</td>
+            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(d.lignes, d.remiseGlobale).ttc)}</td>
             <td style={td}><Badge statut={d.statut} /></td>
             <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
               <Btn variant="ghost" small onClick={() => setPreviewing(d)}>Aperçu</Btn>

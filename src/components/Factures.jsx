@@ -79,7 +79,7 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
             <td style={td}>{cli(f.clientId)?.societe}</td>
             <td style={{ ...td, color: proj(f.projetId) ? T.ink : T.inkSoft }}>{proj(f.projetId)?.nom || "—"}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{f.echeance}</td>
-            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes).ttc)}</td>
+            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes, f.remiseGlobale).ttc)}</td>
             <td style={td}>
               <Badge statut={f.statut} />
               {f.projetTermine && (
