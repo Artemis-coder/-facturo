@@ -5,7 +5,7 @@ import { ligneMontant, totals } from "../lib/helpers";
 import { Badge, Btn, Select, Timeline } from "./ui";
 
 export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNote, extraInfo, projets, onLinkProjet }) {
-  const t = totals(doc.lignes);
+  const t = totals(doc.lignes, doc.remiseGlobale || 0);
   const [linking, setLinking] = useState(false);
   const [choix, setChoix] = useState(doc.projetId || "");
   const projetActuel = projets?.find((p) => p.id === doc.projetId);
@@ -15,7 +15,7 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: T.inkSoft }}>{doc.id}</div>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, marginTop: 2 }}>{client?.societe}</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, marginTop: 2 }}>{client?.societe || client?.nom}</div>
           <div style={{ fontSize: 12.5, color: T.inkSoft }}>{client?.nom} · {client?.email}</div>
         </div>
         <Badge statut={doc.statut} />
@@ -76,11 +76,18 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
       </div>
 
       <div style={{ marginBottom: 18 }}>
-        {[["Total HT", t.ht], ["TVA", t.tva]].map(([l, v]) => (
-          <div key={l} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: T.inkSoft, marginBottom: 4 }}>
-            <span>{l}</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(v)}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: T.inkSoft, marginBottom: 4 }}>
+          <span>Sous-total HT</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(t.htBrut || t.ht)}</span>
+        </div>
+        {doc.remiseGlobale > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: T.brick, marginBottom: 4 }}>
+            <span>Remise globale ({doc.remiseGlobale}%)</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>-{fmt((t.htBrut || t.ht) * (Number(doc.remiseGlobale) / 100))}</span>
           </div>
-        ))}
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: T.inkSoft, marginBottom: 4 }}>
+          <span>TVA (18%)</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(t.tva)}</span>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 600, marginTop: 6 }}>
           <span>Total TTC</span><span style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.gold }}>{fmt(t.ttc)}</span>
         </div>
