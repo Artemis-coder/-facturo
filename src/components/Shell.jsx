@@ -56,6 +56,61 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             );
           })}
         </nav>
+        {(canInstall || isIosSafariManual) && (
+          <div style={{ padding: "0 14px 16px 14px" }}>
+            <div style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: 12,
+              padding: 14,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${T.gold} 0%, #D49D43 100%)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: `0 0 10px rgba(201, 138, 43, 0.4)`
+                }}>
+                  <Download size={14} color="#fff" />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                  Installer l'application
+                </span>
+              </div>
+              <p style={{ fontSize: 11.5, color: "#B9BFCF", lineHeight: 1.4, margin: 0 }}>
+                Accédez à Facturo en un clic directement depuis votre écran d'accueil, même hors ligne.
+              </p>
+              <button 
+                onClick={canInstall ? promptInstall : () => setShowIosHelp(true)}
+                style={{
+                  background: `linear-gradient(135deg, ${T.gold} 0%, #D49D43 100%)`,
+                  border: "none",
+                  borderRadius: 8,
+                  color: "#fff",
+                  padding: "8px 12px",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "all 0.2s ease-in-out",
+                  outline: "none"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.filter = "brightness(1.1)"}
+                onMouseOut={(e) => e.currentTarget.style.filter = "brightness(1)"}
+              >
+                <Download size={13} />
+                Installer maintenant
+              </button>
+            </div>
+          </div>
+        )}
         <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
@@ -68,14 +123,6 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
               {role && <div style={{ fontSize: 10.5, color: "#8891A3", textTransform: "capitalize" }}>{role.replace("_", " ")}</div>}
             </div>
           </div>
-          {(canInstall || isIosSafariManual) && (
-            <div
-              onClick={canInstall ? promptInstall : () => setShowIosHelp(true)}
-              style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.gold, cursor: "pointer", marginBottom: 12 }}
-            >
-              <Download size={15} /> Installer l'application
-            </div>
-          )}
           <div onClick={() => setConfirmingLogout(true)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#B9BFCF", cursor: "pointer" }}>
             <LogOut size={15} /> Déconnexion
           </div>
