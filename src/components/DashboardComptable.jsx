@@ -1,8 +1,9 @@
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { DollarSign, PieChart, FileText, CheckCircle2, Receipt, AlertTriangle } from "lucide-react";
 import { T, fmt } from "../lib/theme";
-import { totals, montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
-import { Card, Badge } from "./ui";
+import { montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
+import { Card, Badge, KpiBar } from "./ui";
 
 const MOIS_FR = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
@@ -21,9 +22,6 @@ function encaisseParMois(factures) {
   return months;
 }
 
-// Tableau de bord Comptable : ce qui l'intéresse, c'est le suivi financier —
-// devis à surveiller (lecture seule, aucune action de modification ici),
-// factures et encaissements. Pas de rubrique Prospects/Projets commerciaux.
 export function DashboardComptable({ devis, factures, clients, setView }) {
   const cli = (id) => clients.find((c) => c.id === id);
   const devisEnAttente = devis.filter((d) => d.statut === "Envoyé");
@@ -35,29 +33,23 @@ export function DashboardComptable({ devis, factures, clients, setView }) {
   const historique = encaisseParMois(factures);
 
   const kpis = [
-    { label: "Montant total encaissé (paiements partiels inclus)", value: fmt(montantEncaisse), tone: T.teal },
-    { label: "Dont paiements partiels reçus", value: fmt(paiementsPartiels), tone: T.gold },
-    { label: "Devis en attente de réponse", value: `${devisEnAttente.length}`, tone: T.slate, view: "devis" },
-    { label: "Devis acceptés", value: `${devisAcceptes}`, tone: T.teal, view: "devis" },
-    { label: "Factures impayées", value: `${impayees.length}`, tone: T.gold, view: "factures" },
-    { label: "Factures en retard", value: `${enRetard}`, tone: T.brick, view: "factures" },
+    { label: "Montant Total Encaissé", value: fmt(montantEncaisse), sub: "Paiements partiels inclus", tone: T.teal, icon: DollarSign },
+    { label: "Paiements Partiels", value: fmt(paiementsPartiels), sub: "Règlements partiels perçus", tone: T.gold, icon: PieChart },
+    { label: "Devis en Attente", value: `${devisEnAttente.length}`, sub: "En attente de confirmation", tone: T.slate, icon: FileText, onClick: () => setView("devis") },
+    { label: "Devis Acceptés", value: `${devisAcceptes}`, sub: "Transformables en factures", tone: T.teal, icon: CheckCircle2, onClick: () => setView("devis") },
+    { label: "Factures Impayées", value: `${impayees.length}`, sub: "Règlements non finalisés", tone: T.gold, icon: Receipt, onClick: () => setView("factures") },
+    { label: "Factures en Retard", value: `${enRetard}`, sub: "Rappels à effectuer", tone: T.brick, icon: AlertTriangle, onClick: () => setView("factures") },
   ];
 
   return (
     <div>
-      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
-        {kpis.map((k) => (
-          <Card key={k.label} className="kpi-card" style={{ padding: "16px 18px", cursor: k.view ? "pointer" : "default" }}
-            onClick={k.view ? () => setView(k.view) : undefined}>
-            <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: k.tone, fontWeight: 600 }}>{k.value}</div>
-          </Card>
-        ))}
-      </div>
+      <KpiBar items={kpis} />
 
       <div className="grid-dash" style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
         <Card style={{ padding: "20px 22px" }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Encaissements (6 derniers mois)</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, fontWeight: 600, marginBottom: 14 }}>
+            Encaissements (6 derniers mois)
+          </div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={historique}>
               <CartesianGrid stroke={T.line} vertical={false} />
@@ -70,13 +62,15 @@ export function DashboardComptable({ devis, factures, clients, setView }) {
         </Card>
 
         <Card style={{ padding: "20px 22px" }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Devis à vérifier</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, fontWeight: 600, marginBottom: 14 }}>
+            Devis à vérifier
+          </div>
           {devisEnAttente.length === 0 && <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucun devis en attente de réponse.</div>}
           {devisEnAttente.slice(0, 6).map((d) => (
             <div key={d.uuid} onClick={() => setView("devis")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: `1px solid ${T.line}`, cursor: "pointer" }}>
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5 }}>{d.id}</div>
-                <div style={{ fontSize: 11.5, color: T.inkSoft }}>{cli(d.clientId)?.societe}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, fontWeight: 600 }}>{d.id}</div>
+                <div style={{ fontSize: 11.5, color: T.inkSoft }}>{cli(d.clientId)?.societe || cli(d.clientId)?.nom}</div>
               </div>
               <Badge statut={d.statut} />
             </div>
