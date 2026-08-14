@@ -5,7 +5,7 @@ function mapRow(e) {
   return {
     id: e.id,
     nom: e.nom || "",
-    email: e.email || "",
+    email: e.email || e.preferences?.email || "",
     logoUrl: e.logo_url || "",
     tel: e.telephone || "",
     rccm: e.rccm || "",
@@ -46,21 +46,32 @@ export function useEntreprise(entrepriseId) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Les deux fonctions ci-dessous renvoient toujours { error }, jamais rien
-  // qui laisse croire silencieusement à un succès — c'est ce qui manquait
-  // et qui faisait passer un échec d'enregistrement (ex. TVA) pour une réussite.
   const saveProfil = async (form) => {
+    const { data: curr } = await supabase.from("entreprises").select("preferences").eq("id", entrepriseId).single();
+    const updatedPreferences = {
+      ...(curr?.preferences || {}),
+      email: form.email || "",
+    };
+
     const { error } = await supabase.from("entreprises").update({
-      nom: form.nom, email: form.email, telephone: form.tel, rccm: form.rccm, nif: form.nif,
-      adresse: form.adresse, devise: form.devise, langue: form.langue,
+      nom: form.nom,
+      telephone: form.tel,
+      rccm: form.rccm,
+      nif: form.nif,
+      adresse: form.adresse,
+      devise: form.devise,
+      langue: form.langue,
       conditions_generales: form.conditions,
+      preferences: updatedPreferences,
     }).eq("id", entrepriseId);
+
     if (error) { console.error("Facturo: échec saveProfil —", error.message); return { error }; }
     await load();
     return { error: null };
   };
 
   const saveParametres = async (form) => {
+    const { data: curr } = await supabase.from("entreprises").select("preferences").eq("id", entrepriseId).single();
     const { error } = await supabase.from("entreprises").update({
       tva_defaut: Number(form.tvaDefaut),
       prefixe_facture: form.prefixeFacture,
@@ -68,6 +79,7 @@ export function useEntreprise(entrepriseId) {
       prochain_numero_devis: Number(form.prochainNumeroDevis),
       prochain_numero_facture: Number(form.prochainNumeroFacture),
       preferences: {
+        ...(curr?.preferences || {}),
         notifPaiement: form.notifPaiement,
         notifEcheance: form.notifEcheance,
         relanceAuto: form.relanceAuto,
