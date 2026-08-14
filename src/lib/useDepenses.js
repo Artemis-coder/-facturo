@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
+import { cacheGet, cacheSet, enqueueAction } from "./offline";
 
 function mapRow(d) {
   return {
@@ -16,14 +17,19 @@ export function useDepenses(entrepriseId) {
   const [depenses, setDepenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const cacheKey = `depenses:${entrepriseId}`;
+
   const load = useCallback(async () => {
     if (!entrepriseId) return;
-    const { data, error } = await supabase
-      .from("depenses")
-      .select("*")
-      .eq("entreprise_id", entrepriseId)
-      .order("date", { ascending: false });
-    if (!error) setDepenses(data.map(mapRow));
+    try {
+      const { data, error } = await supabase.from("depenses").select("*").eq("entreprise_id", entrepriseId).order("date", { ascending: false });
+      if (error) throw error;
+      const mapped = data.map(mapRow);
+      setDepenses(mapped); cacheSet(cacheKey, mapped);
+    } catch {
+      const cached = cacheGet(cacheKey);
+      if (cached) setDepenses(cached);
+    }
     setLoading(false);
   }, [entrepriseId]);
 
@@ -39,6 +45,12 @@ export function useDepenses(entrepriseId) {
       mode: form.mode,
       created_by: userId,
     };
+    if (!navigator.onLine && !form.uuid) {
+      enqueueAction("saveDepense", row, `Dépense : ${form.categorie} — ${form.montant} FCFA`);
+      const next = [mapRow({ id: "local-" + Date.now(), ...row }), ...depenses];
+      setDepenses(next); cacheSet(cacheKey, next);
+      return { error: null, queued: true };
+    }
     let error;
     if (form.uuid) {
       ({ error } = await supabase.from("depenses").update(row).eq("id", form.uuid));

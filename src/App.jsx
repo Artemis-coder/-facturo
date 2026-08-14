@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "./lib/useAuth";
-import { isSupabaseConfigured } from "./lib/supabaseClient";
+import { isSupabaseConfigured, supabase } from "./lib/supabaseClient";
 import { useClients } from "./lib/useClients";
 import { useProduits } from "./lib/useProduits";
 import { useDevis } from "./lib/useDevis";
@@ -11,6 +11,8 @@ import { useProjets } from "./lib/useProjets";
 import { usePaiements } from "./lib/usePaiements";
 import { useDepenses } from "./lib/useDepenses";
 import { useAmountVisibility } from "./lib/useAmountVisibility";
+import { useOnlineStatus } from "./lib/useOnlineStatus";
+import { flushQueue, queueLength } from "./lib/offline";
 import { T } from "./lib/theme";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
@@ -92,8 +94,26 @@ export default function App() {
   const { session, profile, loading, signIn, signUp, signOut } = useAuth();
   const [view, setView] = useState("dashboard");
   const { hidden: amountsHidden, toggle: toggleAmounts } = useAmountVisibility();
+  const online = useOnlineStatus();
+  const [pendingCount, setPendingCount] = useState(queueLength());
   const [toast, setToast] = useState("");
-  const notify = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+  const notify = (msg) => { setToast(msg); setPendingCount(queueLength()); setTimeout(() => setToast(""), 2200); };
+
+  useEffect(() => {
+    if (!online || !entrepriseId) return;
+    (async () => {
+      const { synced, failed } = await flushQueue({
+        saveClient: (row) => supabase.from("clients").insert(row),
+        saveDepense: (row) => supabase.from("depenses").insert(row),
+        enregistrerPaiement: enregistrerPaiementDepuisFile,
+      });
+      setPendingCount(queueLength());
+      if (synced > 0) {
+        notify(`${synced} action${synced > 1 ? "s" : ""} synchronisée${synced > 1 ? "s" : ""}` + (failed ? `, ${failed} en attente` : ""));
+        reloadClients(); reloadDepenses(); reloadFactures();
+      }
+    })();
+  }, [online, entrepriseId]);
   const requestPrint = async (doc, type, client) => {
     await genererDocumentPDF(doc, type, client, entreprise);
   };
@@ -102,15 +122,15 @@ export default function App() {
   const userId = session?.user?.id;
   const role = profile?.role;
 
-  const { clients, saveClient, loading: loadingClients } = useClients(entrepriseId);
+  const { clients, saveClient, loading: loadingClients, reload: reloadClients } = useClients(entrepriseId);
   const { produits, saveProduit, loading: loadingProduits } = useProduits(entrepriseId);
   const { devis, createDevis, updateDevis, marquerTransforme, lierProjet: lierProjetDevis, loading: loadingDevis } = useDevis(entrepriseId, userId);
-  const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, marquerProjetTermine, lierProjet: lierProjetFacture, deleteFacture, loading: loadingFactures } = useFactures(entrepriseId, userId);
+  const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, enregistrerPaiementDepuisFile, marquerProjetTermine, lierProjet: lierProjetFacture, deleteFacture, loading: loadingFactures, reload: reloadFactures } = useFactures(entrepriseId, userId);
   const { entreprise, saveProfil, saveParametres, uploadLogo, loading: loadingEntreprise } = useEntreprise(entrepriseId);
   const { profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation } = useUsers(entrepriseId);
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
-  const { depenses, saveDepense, deleteDepense, loading: loadingDepenses } = useDepenses(entrepriseId);
+  const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
 
   if (!isSupabaseConfigured) {
     return (
@@ -195,6 +215,11 @@ export default function App() {
           </>
         )}
       </Shell>
+      {!online && (
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: T.brick, color: "#fff", padding: "9px 18px", borderRadius: 30, fontSize: 12.5, zIndex: 200, boxShadow: "0 6px 20px rgba(22,33,58,.25)" }}>
+          Hors ligne — les modifications seront synchronisées automatiquement ({pendingCount} en attente)
+        </div>
+      )}
       <Toast message={toast} />
     </>
   );
