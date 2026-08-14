@@ -77,7 +77,7 @@ export function Login({ onSignIn, onSignUp }) {
       }}>
         <div style={{ width: 440, maxWidth: "100%" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 28, justifyContent: "center" }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 32, color: "#fff", fontWeight: 700, letterSpacing: "-0.5px" }}>Facturo</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 32, color: "#fff", fontWeight: 700, letterSpacing: "-0.5px" }}>Ma Boîte</span>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.gold, display: "inline-block", boxShadow: `0 0 12px ${T.gold}` }} />
           </div>
           <Card style={{
@@ -187,10 +187,10 @@ export function Login({ onSignIn, onSignUp }) {
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: `0 4px 14px ${T.gold}44`, fontWeight: 700, fontSize: 20, color: "#fff"
             }}>
-              F
+              M
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, color: "#fff", fontWeight: 700 }}>Facturo</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, color: "#fff", fontWeight: 700 }}>Ma Boîte</span>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.gold }} />
             </div>
           </div>
@@ -216,7 +216,7 @@ export function Login({ onSignIn, onSignUp }) {
               Gérez vos devis & factures en toute simplicité.
             </h1>
             <p style={{ fontSize: 16, color: "#B9BFCF", lineHeight: 1.7, maxWidth: 500, marginBottom: 36 }}>
-              Facturo accompagne les entreprises et indépendants avec une plateforme moderne, rapide, conforme et utilisable hors ligne.
+              Ma Boîte accompagne les entreprises et indépendants avec une plateforme moderne, rapide, conforme et utilisable hors ligne.
             </p>
 
             {/* Feature checklist */}
@@ -277,9 +277,9 @@ export function Login({ onSignIn, onSignUp }) {
                 background: T.gold, display: "flex", alignItems: "center", justifyContent: "center",
                 fontWeight: 700, fontSize: 18, color: "#fff"
               }}>
-                F
+                M
               </div>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Facturo</span>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Ma Boîte</span>
             </div>
 
             <Card style={{
@@ -500,7 +500,7 @@ export function Login({ onSignIn, onSignUp }) {
                   transition: "all 0.2s ease"
                 }}
               >
-                <Download size={15} /> Installer Facturo sur cet appareil
+                <Download size={15} /> Installer Ma Boîte sur cet appareil
               </div>
             )}
           </div>

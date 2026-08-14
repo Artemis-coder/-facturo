@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icons/favicon-16.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"],
       manifest: {
-        name: "Facturo — Gestion commerciale & facturation",
-        short_name: "Facturo",
+        name: "Ma Boîte — Gestion commerciale & facturation",
+        short_name: "Ma Boîte",
         description: "Devis, factures, clients et paiements — gestion commerciale pensée pour la Côte d'Ivoire et l'UEMOA.",
         lang: "fr",
         start_url: "/",

@@ -17,7 +17,7 @@ const APP_URL = typeof window !== "undefined" ? window.location.origin : "https:
 
 function buildMessage(entrepriseNom, email, role) {
   return (
-    `Bonjour ! Vous êtes invité(e) à rejoindre "${entrepriseNom}" sur Facturo, ` +
+    `Bonjour ! Vous êtes invité(e) à rejoindre "${entrepriseNom}" sur Ma Boîte, ` +
     `avec le rôle ${ROLE_LABELS[role]}.\n\n` +
     `Un e-mail avec un lien de connexion vient de vous être envoyé à ${email} — ` +
     `il vous suffit de cliquer dessus pour rejoindre l'équipe automatiquement.\n\n` +

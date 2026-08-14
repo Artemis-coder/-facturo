@@ -37,7 +37,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
       <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: 232, background: T.ink, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "22px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>Facturo</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>Ma Boîte</span>
             <span style={{ width: 5, height: 5, background: T.gold, display: "inline-block" }} />
           </div>
           <button className="nav-close-btn" onClick={() => setNavOpen(false)} style={{ background: "none", border: "none", color: "#B9BFCF", cursor: "pointer", display: "none" }}><X size={20} /></button>
@@ -84,7 +84,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
                 </span>
               </div>
               <p style={{ fontSize: 11.5, color: "#B9BFCF", lineHeight: 1.4, margin: 0 }}>
-                Accédez à Facturo en un clic directement depuis votre écran d'accueil, même hors ligne.
+                Accédez à Ma Boîte en un clic directement depuis votre écran d'accueil, même hors ligne.
               </p>
               <button 
                 onClick={() => {
@@ -178,7 +178,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
       {confirmingLogout && (
         <Modal title="Se déconnecter ?" onClose={() => setConfirmingLogout(false)}>
           <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
-            Vous allez être déconnecté de Facturo. Vos données restent enregistrées et
+            Vous allez être déconnecté de Ma Boîte. Vos données restent enregistrées et
             vous pourrez vous reconnecter à tout moment avec votre e-mail et votre mot de passe.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -191,7 +191,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
       {showInstallModal && (
         <Modal title="Processus d'installation" onClose={() => setShowInstallModal(false)}>
           <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 16 }}>
-            Installez l'application Facturo sur votre ordinateur ou votre smartphone pour un accès direct en un clic, même hors ligne.
+            Installez l'application Ma Boîte sur votre ordinateur ou votre smartphone pour un accès direct en un clic, même hors ligne.
           </p>
 
           <div style={{ background: T.bg, padding: 14, borderRadius: 10, marginBottom: 20 }}>
