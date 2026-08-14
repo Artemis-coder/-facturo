@@ -115,3 +115,8 @@ supabase/
   migrations/         # schéma SQL à exécuter dans Supabase, dans l'ordre
   email-templates/    # modèles HTML pour les e-mails Supabase Auth
 ```
+
+## 🛡️ Contrôle de Sécurité & Pré-Déploiement
+
+Avant chaque déploiement en production, vous devez impérativement exécuter les vérifications du guide [CONTROLE_DE_SECURITE.md](file:///Users/kedakeyaoboris/Downloads/facturo-main/CONTROLE_DE_SECURITE.md) pour garantir l'isolation multi-tenant, la minimisation des données transmises au front-end et l'étanchéité des politiques RLS Supabase.
+
