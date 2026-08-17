@@ -8,7 +8,7 @@ import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar 
 const STATUTS = ["En cours", "Terminé", "Annulé"];
 const STATUT_TONE = { "En cours": T.slate, "Terminé": T.teal, "Annulé": T.brick };
 
-export function Projets({ projets, clients, devis, factures, saveProjet, changerStatut, deleteProjet, lierDevis, lierFacture, notify, canManage = true, canDelete = false }) {
+export function Projets({ projets, clients, devis, factures, prestataires = [], liensPrestataires = [], affecterPrestataire, detacherPrestataire, saveProjet, changerStatut, deleteProjet, lierDevis, lierFacture, notify, canManage = true, canDelete = false }) {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -18,6 +18,7 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
   const devisDe = (projetId) => devis.filter((d) => d.projetId === projetId);
   const facturesDe = (projetId) => factures.filter((f) => f.projetId === projetId);
   const montantEncaisseDe = (projetId) => montantEncaisseTotal(facturesDe(projetId));
+  const prestatairesDe = (projetId) => liensPrestataires.filter((l) => l.projetId === projetId);
 
   const list = projets.filter((p) => (p.nom + (cli(p.clientId)?.societe || "")).toLowerCase().includes(q.toLowerCase()));
 
@@ -97,6 +98,9 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
             devisDisponibles={devis.filter((d) => d.projetId !== detail.id)}
             facturesDisponibles={factures.filter((f) => f.projetId !== detail.id)}
             clients={clients}
+            prestatairesLies={prestatairesDe(detail.id)}
+            prestatairesDisponibles={prestataires.filter((pr) => !prestatairesDe(detail.id).some((l) => l.prestataireId === pr.id))}
+            prestataireDe={(id) => prestataires.find((p) => p.id === id)}
             canManage={canManage} canDelete={canDelete}
             onChangerStatut={(s) => changer(detail.id, s)}
             onModifier={() => { setEditing(detail); setDetail(null); }}
@@ -105,6 +109,8 @@ export function Projets({ projets, clients, devis, factures, saveProjet, changer
             onDetacherDevis={async (d) => { await lierDevis(d, null); notify("Devis détaché du projet"); }}
             onLierFacture={async (f) => { await lierFacture(f, detail.id); notify("Facture rattachée au projet"); }}
             onDetacherFacture={async (f) => { await lierFacture(f, null); notify("Facture détachée du projet"); }}
+            onAffecterPrestataire={async (prestataireId, mission) => { const res = await affecterPrestataire({ projetId: detail.id, prestataireId, mission }); notify(res.error ? "Échec : " + res.error.message : "Prestataire affecté au projet"); return res; }}
+            onDetacherPrestataire={async (linkId) => { const { error } = await detacherPrestataire(linkId); notify(error ? "Échec : " + error.message : "Prestataire détaché du projet"); }}
           />
         </Modal>
       )}
@@ -146,11 +152,16 @@ function ProjetForm({ data, clients, onSave }) {
 function ProjetDetail({
   projet, client, devisLies, facturesLiees, montantEncaisse,
   devisDisponibles, facturesDisponibles, clients,
+  prestatairesLies, prestatairesDisponibles, prestataireDe,
   canManage, canDelete, onChangerStatut, onModifier, onSupprimer,
   onLierDevis, onDetacherDevis, onLierFacture, onDetacherFacture,
+  onAffecterPrestataire, onDetacherPrestataire,
 }) {
   const [linkingDevis, setLinkingDevis] = useState(false);
   const [linkingFacture, setLinkingFacture] = useState(false);
+  const [selectingPrestataire, setSelectingPrestataire] = useState(false);
+  const [prestataireId, setPrestataireId] = useState("");
+  const [mission, setMission] = useState("");
   const cli = (id) => clients.find((c) => c.id === id);
   const toutesFacturesPayees = facturesLiees.length > 0 && facturesLiees.every((f) => f.statut === "Payée");
 
@@ -182,6 +193,41 @@ function ProjetDetail({
         <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 6 }}>Montant encaissé sur ce projet</div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, color: T.teal, fontWeight: 600 }}>{fmt(montantEncaisse)}</div>
       </Card>
+
+      {/* Prestataires */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5 }}>Prestataires ({prestatairesLies.length})</div>
+        {canManage && prestatairesDisponibles.length > 0 && <Btn variant="ghost" small icon={Link2} onClick={() => setSelectingPrestataire(!selectingPrestataire)}>Affecter un prestataire</Btn>}
+      </div>
+      {selectingPrestataire && (
+        <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: 12, marginBottom: 16, background: T.bg }}>
+          <Select value={prestataireId} onChange={(e) => setPrestataireId(e.target.value)}>
+            <option value="">— Choisir un prestataire —</option>
+            {prestatairesDisponibles.map((p) => <option key={p.id} value={p.id}>{p.nom}{p.societe ? ` — ${p.societe}` : ""}</option>)}
+          </Select>
+          <input style={{ ...inputStyle, marginTop: 8 }} placeholder="Mission confiée (ex. Développement du site web)" value={mission} onChange={(e) => setMission(e.target.value)} />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+            <Btn variant="ghost" small onClick={() => { setSelectingPrestataire(false); setPrestataireId(""); setMission(""); }}>Annuler</Btn>
+            <Btn small disabled={!prestataireId} onClick={async () => { const res = await onAffecterPrestataire(prestataireId, mission); if (res?.error) return; setSelectingPrestataire(false); setPrestataireId(""); setMission(""); }}>Affecter</Btn>
+          </div>
+        </div>
+      )}
+      {prestatairesLies.length === 0 && <div style={{ fontSize: 12.5, color: T.inkSoft, marginBottom: 16 }}>Aucun prestataire affecté à ce projet.</div>}
+      {prestatairesLies.map((l) => {
+        const p = prestataireDe(l.prestataireId);
+        return (
+          <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${T.line}` }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12.5, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 600 }}>{p?.nom || "Prestataire supprimé"}</span>
+              {p && (
+                <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace", textTransform: "uppercase", letterSpacing: 0.4 }}>{p.typeProjet}</span>
+              )}
+              {l.mission && <span style={{ color: T.inkSoft }}>{l.mission}</span>}
+            </div>
+            {canManage && <button onClick={() => onDetacherPrestataire(l.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, display: "flex" }}><X size={15} /></button>}
+          </div>
+        );
+      })}
 
       {/* Devis liés */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>

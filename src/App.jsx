@@ -11,6 +11,7 @@ import { useProjets } from "./lib/useProjets";
 import { usePaiements } from "./lib/usePaiements";
 import { useDepenses } from "./lib/useDepenses";
 import { useContracts } from "./lib/useContracts";
+import { usePrestataires } from "./lib/usePrestataires";
 import { useAmountVisibility } from "./lib/useAmountVisibility";
 import { useOnlineStatus } from "./lib/useOnlineStatus";
 import { flushQueue, queueLength } from "./lib/offline";
@@ -29,6 +30,7 @@ import { Users } from "./components/Users";
 import { Projets } from "./components/Projets";
 import { Finance } from "./components/Finance";
 import { Contracts } from "./components/Contracts";
+import { Prestataires } from "./components/Prestataires";
 import { genererDocumentPDF } from "./lib/documentPdf";
 import { Toast, LoadingState } from "./components/ui";
 
@@ -135,6 +137,7 @@ export default function App() {
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
   const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus } = useContracts(entrepriseId, userId);
+  const { prestataires, liens: liensPrestataires, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire } = usePrestataires(entrepriseId, userId);
 
   if (!isSupabaseConfigured) {
     return (
@@ -166,7 +169,7 @@ export default function App() {
     return (<><GlobalStyles /><FullscreenMessage><LoadingState label="Création de votre espace en cours…" light /></FullscreenMessage></>);
   }
 
-  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses && !loadingContracts;
+  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses && !loadingContracts && !loadingPrestataires;
   const isAdmin = role === "administrateur" || role === "super_admin";
   const canManageClients = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
   const canManageProduits = ["administrateur", "comptable", "super_admin"].includes(role);
@@ -192,8 +195,16 @@ export default function App() {
             )}
             {view === "projets" && (
               <Projets projets={projets} clients={clients} devis={devis} factures={factures}
+                prestataires={prestataires} liensPrestataires={liensPrestataires}
+                affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
                 saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}
                 lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
+                notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
+            )}
+            {view === "prestataires" && (
+              <Prestataires projets={projets} prestataires={prestataires} liens={liensPrestataires}
+                onSavePrestataire={savePrestataire} onDeletePrestataire={deletePrestataire}
+                affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
             {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} />}
