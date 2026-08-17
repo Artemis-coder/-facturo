@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Plus, Printer, Trash2, CheckCircle2, Receipt, Clock, AlertTriangle, DollarSign } from "lucide-react";
+import { Plus, Printer, Trash2, CheckCircle2, Receipt, Clock, AlertTriangle, DollarSign, MessageCircle } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
 import { TableShell, Btn, Modal, Badge, Field, Select, EmptyState, Timeline, KpiBar } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
+import { ReminderComposer } from "./ReminderComposer";
 
 export function Factures({ factures, clients, produits, projets, paiements = [], entreprise, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
@@ -14,6 +15,7 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
   const [projetsTerminesUniquement, setProjetsTerminesUniquement] = useState(false);
   const [paying, setPaying] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [reminding, setReminding] = useState(null);
   const cli = (id) => clients.find((c) => c.id === id);
   const proj = (id) => projets?.find((p) => p.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyée", "Payée", "Partiellement payée", "En retard", "Annulée"];
@@ -25,6 +27,7 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
   const payeesCount = factures.filter((f) => f.statut === "Payée").length;
   const impayeesCount = factures.filter((f) => ["Envoyée", "Partiellement payée"].includes(f.statut)).length;
   const enRetardCount = factures.filter((f) => f.statut === "En retard").length;
+  const canRemind = (facture) => ["Envoyée", "Partiellement payée", "En retard"].includes(facture.statut);
   const totalEncaisse = montantEncaisseTotal(factures);
 
   const kpiItems = [
@@ -108,6 +111,9 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
               {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
                 <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
               )}
+              {canManage && canRemind(f) && (
+                <Btn variant="ghost" small icon={MessageCircle} onClick={() => setReminding(f)}>Relancer</Btn>
+              )}
               {canManage && f.statut === "Payée" && !f.projetTermine && (
                 <Btn variant="ghost" small icon={CheckCircle2} onClick={() => marquerTermine(f)}>Marquer terminé</Btn>
               )}
@@ -154,8 +160,9 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
             } : null}
           />
           {canManage && previewing.statut !== "Payée" && previewing.statut !== "Annulée" && (
-            <div style={{ marginTop: -8, marginBottom: 4 }}>
+            <div style={{ marginTop: -8, marginBottom: 4, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Btn variant="primary" onClick={() => { setPaying(previewing); setPreviewing(null); }}>Enregistrer un paiement</Btn>
+              {canRemind(previewing) && <Btn variant="ghost" icon={MessageCircle} onClick={() => { setReminding(previewing); setPreviewing(null); }}>Préparer une relance</Btn>}
             </div>
           )}
           {canManage && previewing.statut === "Payée" && !previewing.projetTermine && (
@@ -174,6 +181,11 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
       {paying && (
         <Modal title={`Paiement — ${paying.id}`} onClose={() => setPaying(null)}>
           <PaiementForm facture={paying} onSave={payer} />
+        </Modal>
+      )}
+      {reminding && (
+        <Modal title={`Relancer — ${reminding.id}`} onClose={() => setReminding(null)}>
+          <ReminderComposer doc={reminding} client={cli(reminding.clientId)} entreprise={entreprise} type="facture" notify={notify} />
         </Modal>
       )}
       {deleting && (
