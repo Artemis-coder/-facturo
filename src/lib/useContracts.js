@@ -71,6 +71,21 @@ export function useContracts(entrepriseId, userId) {
     return { error };
   };
 
+  const updateContract = async (contract, form) => {
+    const row = {
+      template_id: form.templateId || null, client_id: form.clientId || null,
+      facture_id: form.factureId || null, devis_id: form.devisId || null, projet_id: form.projetId || null,
+      titre: form.titre.trim(), type_service: form.typeService.trim(), contenu_final: form.contenu,
+      variables: form.variables || {}, updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("contracts").update(row).eq("id", contract.id);
+    if (!error) {
+      await supabase.from("contract_history").insert({ contract_id: contract.id, action: "Modification", detail: "Contrat modifié avant envoi", created_by: userId });
+      await load();
+    }
+    return { error };
+  };
+
   const updateStatus = async (contract, statut) => {
     const patch = { statut, updated_at: new Date().toISOString() };
     if (statut === "Envoyé") patch.envoye_le = todayISO();
@@ -83,5 +98,5 @@ export function useContracts(entrepriseId, userId) {
     return { error };
   };
 
-  return { templates, contracts, loading, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateStatus, reload: load };
+  return { templates, contracts, loading, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, reload: load };
 }
