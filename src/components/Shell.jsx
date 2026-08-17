@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
@@ -14,6 +14,7 @@ export const NAV = [
   { key: "projets", label: "Projets", icon: FolderKanban, roles: ["administrateur", "comptable", "commercial"] },
   { key: "devis", label: "Devis", icon: FileText, roles: ["administrateur", "comptable", "commercial", "employe"] },
   { key: "factures", label: "Factures", icon: Receipt, roles: ["administrateur", "comptable", "employe"] },
+  { key: "contrats", label: "Contrats", icon: FileSignature, roles: ["administrateur"] },
   { key: "clients", label: "Clients", icon: Users, roles: ["administrateur", "comptable", "commercial"] },
   { key: "produits", label: "Produits & services", icon: Package, roles: ["administrateur", "comptable"] },
   { key: "rapports", label: "Rapports", icon: BarChart3, roles: ["administrateur", "comptable"] },

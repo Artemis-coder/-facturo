@@ -75,6 +75,8 @@ Vérifier les barrières d'accès pour les 4 rôles de l'application :
 | **Commercial** | ✅ Création & Suivi | ❌ Aucun accès | ✅ Prospects & Clients | 👁️ Lecture seule | ❌ Aucun accès | ❌ Aucun accès |
 | **Employé** | 👁️ Mes devis uniquement | 👁️ Mes factures uniquement | ❌ Aucun accès | 👁️ Lecture seule | ❌ Aucun accès | ❌ Aucun accès |
 
+Les **modèles de contrats**, les **contrats**, leur historique et les PDF source privés sont réservés à l’Administrateur. Toute suggestion OpenAI doit transiter par une Edge Function Supabase avec une clé serveur, jamais par le navigateur.
+
 ---
 
 ## 5. Protection des Secrets & Variables d'Environnement
@@ -97,7 +99,7 @@ Vérifier les barrières d'accès pour les 4 rôles de l'application :
 | :---: | :--- | :---: | :--- | :---: |
 | **1** | Audit `npm audit` & vulnérabilités packages npm | `[x]` | **0 vulnérabilité détectée** (0 vulnerabilities found) | Dev / Sec |
 | **2** | Compilation de production sans avertissement `npm run build` | `[x]` | **Build réussi sans erreur** (2361 modules transformés en 584ms) | Dev |
-| **3** | RLS activé sur toutes les tables Supabase (15 tables) | `[x]` | **RLS actif** sur `entreprises`, `profiles`, `clients`, `devis`, `factures`, `depenses`, `paiements`, `projets`... | Lead Dev |
+| **3** | RLS activé sur toutes les tables Supabase, y compris les contrats | `[x]` | **RLS actif** sur `entreprises`, `profiles`, `clients`, `devis`, `factures`, `depenses`, `paiements`, `projets`, `contract_templates`, `contracts`, `contract_history`... | Lead Dev |
 | **4** | Protection RBAC & Isolation API Multi-Tenant | `[x]` | **Conforme** : RLS isole par `entreprise_id` et bloque les accès non autorisés | QA / Sec |
 | **5** | Absence de secrets / clés privées exposés (`SERVICE_ROLE_KEY`) | `[x]` | **Vérifié** : Aucun `console.log` sensible, `.env` exclu dans `.gitignore` | Lead Dev |
 | **6** | Validation du masquage des données sensibles (`amountsHidden`) | `[x]` | **Validé** : Masquage visuel et chiffrement des états locaux | Design / QA |
