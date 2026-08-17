@@ -10,8 +10,11 @@ const ROLE_LABELS = {
   comptable: "Comptable",
   commercial: "Commercial",
   employe: "Employé",
+  prestataire: "Prestataire",
 };
-const ROLES = Object.keys(ROLE_LABELS).filter((r) => r !== "super_admin");
+// 'prestataire' n'est pas invitable depuis cette page : son compte est créé
+// depuis la page Prestataires (fiche → « Inviter (connexion) »).
+const ROLES = Object.keys(ROLE_LABELS).filter((r) => r !== "super_admin" && r !== "prestataire");
 
 const APP_URL = typeof window !== "undefined" ? window.location.origin : "https://facturo.app";
 
@@ -77,8 +80,8 @@ export function Users({ profiles, invitations, changeRole, invite, resendInviteE
                 <td style={{ ...td, fontWeight: 600 }}>{p.nom_complet || p.email}</td>
                 <td style={td}>{p.email}</td>
                 <td style={{ ...td, width: 200 }}>
-                  {p.role === "super_admin" || p.id === currentUserId ? (
-                    <span style={{ fontSize: 12.5, color: T.inkSoft }}>{ROLE_LABELS[p.role]}{p.id === currentUserId ? " (vous)" : ""}</span>
+                  {p.role === "super_admin" || p.role === "prestataire" || p.id === currentUserId ? (
+                    <span style={{ fontSize: 12.5, color: T.inkSoft }}>{ROLE_LABELS[p.role]}{p.id === currentUserId ? " (vous)" : ""}{p.role === "prestataire" ? " · géré depuis la page Prestataires" : ""}</span>
                   ) : (
                     <Select value={p.role} onChange={(e) => changeRole(p.id, e.target.value)}>
                       {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}

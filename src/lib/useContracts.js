@@ -3,10 +3,10 @@ import { supabase } from "./supabaseClient";
 import { todayISO } from "./helpers";
 
 const TEMPLATE_SELECT = "id, nom, type_service, contenu, source_path, created_at, updated_at";
-const CONTRACT_SELECT = "id, template_id, client_id, facture_id, devis_id, projet_id, titre, type_service, statut, contenu_final, variables, envoye_le, signe_le, created_at, updated_at";
+const CONTRACT_SELECT = "id, template_id, client_id, facture_id, devis_id, projet_id, prestataire_id, titre, type_service, statut, contenu_final, variables, envoye_le, signe_le, created_at, updated_at";
 
 const mapTemplate = (row) => ({ id: row.id, nom: row.nom, typeService: row.type_service, contenu: row.contenu, sourcePath: row.source_path, createdAt: row.created_at, updatedAt: row.updated_at });
-const mapContract = (row) => ({ id: row.id, templateId: row.template_id, clientId: row.client_id, factureId: row.facture_id, devisId: row.devis_id, projetId: row.projet_id, titre: row.titre, typeService: row.type_service, statut: row.statut, contenu: row.contenu_final, variables: row.variables || {}, envoyeLe: row.envoye_le, signeLe: row.signe_le, createdAt: row.created_at });
+const mapContract = (row) => ({ id: row.id, templateId: row.template_id, clientId: row.client_id, factureId: row.facture_id, devisId: row.devis_id, projetId: row.projet_id, prestataireId: row.prestataire_id, titre: row.titre, typeService: row.type_service, statut: row.statut, contenu: row.contenu_final, variables: row.variables || {}, envoyeLe: row.envoye_le, signeLe: row.signe_le, createdAt: row.created_at });
 
 export function useContracts(entrepriseId, userId) {
   const [templates, setTemplates] = useState([]);
@@ -60,6 +60,7 @@ export function useContracts(entrepriseId, userId) {
     const row = {
       entreprise_id: entrepriseId, template_id: form.templateId || null, client_id: form.clientId || null,
       facture_id: form.factureId || null, devis_id: form.devisId || null, projet_id: form.projetId || null,
+      prestataire_id: form.prestataireId || null,
       titre: form.titre.trim(), type_service: form.typeService.trim(), contenu_final: form.contenu,
       variables: form.variables, statut: form.statut || "Brouillon", updated_at: new Date().toISOString(),
     };
@@ -75,6 +76,7 @@ export function useContracts(entrepriseId, userId) {
     const row = {
       template_id: form.templateId || null, client_id: form.clientId || null,
       facture_id: form.factureId || null, devis_id: form.devisId || null, projet_id: form.projetId || null,
+      prestataire_id: form.prestataireId || null,
       titre: form.titre.trim(), type_service: form.typeService.trim(), contenu_final: form.contenu,
       variables: form.variables || {}, updated_at: new Date().toISOString(),
     };

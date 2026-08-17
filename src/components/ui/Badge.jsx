@@ -14,6 +14,9 @@ export function Badge({ statut }) {
     "Expiré": { bg: T.brickSoft, fg: T.brick },
     "Annulée": { bg: T.brickSoft, fg: T.brick },
     "Signé": { bg: T.tealSoft, fg: T.teal },
+    "À faire": { bg: T.slateSoft, fg: T.slate },
+    "En cours": { bg: T.goldSoft, fg: T.gold },
+    "Terminée": { bg: T.tealSoft, fg: T.teal },
     "Prospect": { bg: T.goldSoft, fg: T.gold },
     "Client": { bg: T.tealSoft, fg: T.teal },
   };

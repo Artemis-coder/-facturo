@@ -1,24 +1,41 @@
 import React, { useState } from "react";
-import { Plus, Pencil, FolderKanban, Link2, X, Trash2, Clock, CheckCircle2, AlertCircle, DollarSign } from "lucide-react";
+import { Plus, Pencil, FolderKanban, Link2, X, Trash2, Clock, CheckCircle2, AlertCircle, DollarSign, CalendarClock, ListTodo } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { totals, montantEncaisseTotal } from "../lib/helpers";
+import { totals, montantEncaisseTotal, alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
 import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar } from "./ui";
 
 const STATUTS = ["En cours", "Terminé", "Annulé"];
 const STATUT_TONE = { "En cours": T.slate, "Terminé": T.teal, "Annulé": T.brick };
+const STATUTS_TACHE = ["À faire", "En cours", "Terminée"];
 
-export function Projets({ projets, clients, devis, factures, prestataires = [], liensPrestataires = [], affecterPrestataire, detacherPrestataire, saveProjet, changerStatut, deleteProjet, lierDevis, lierFacture, notify, canManage = true, canDelete = false }) {
+function formatDate(iso) { return iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR") : "—"; }
+
+function TacheAlerteBadge({ tache }) {
+  const alr = alerteTache(tache);
+  if (!alr) return null;
+  if (alr.level === "retard") return <Badge statut="En retard" />;
+  return (
+    <span style={{ background: T.goldSoft, color: T.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, border: `1px solid ${T.gold}33`, whiteSpace: "nowrap", fontWeight: 600 }}>
+      {alr.jours === 0 ? "Aujourd'hui" : `J-${alr.jours}`}
+    </span>
+  );
+}
+
+export function Projets({ projets, clients, devis, factures, prestataires = [], liensPrestataires = [], taches = [], affecterPrestataire, detacherPrestataire, saveTache, deleteTache, saveProjet, changerStatut, deleteProjet, lierDevis, lierFacture, notify, canManage = true, canDelete = false }) {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [editingTache, setEditingTache] = useState(null);
 
   const cli = (id) => clients.find((c) => c.id === id);
   const devisDe = (projetId) => devis.filter((d) => d.projetId === projetId);
   const facturesDe = (projetId) => factures.filter((f) => f.projetId === projetId);
   const montantEncaisseDe = (projetId) => montantEncaisseTotal(facturesDe(projetId));
   const prestatairesDe = (projetId) => liensPrestataires.filter((l) => l.projetId === projetId);
+  const prestataireDe = (id) => prestataires.find((p) => p.id === id);
+  const tachesDuProjet = (projetId) => taches.filter((t) => t.projetId === projetId);
 
   const list = projets.filter((p) => (p.nom + (cli(p.clientId)?.societe || "")).toLowerCase().includes(q.toLowerCase()));
 
@@ -58,11 +75,11 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
   return (
     <div>
       <KpiBar items={kpis} />
-      <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Encaissé", ""]} onSearch={setQ}
+      <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Prestataires", "Encaissé", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un projet…"
         action={canManage && <Btn icon={Plus} onClick={() => setEditing({ nom: "", description: "", clientId: "" })}>Nouveau projet</Btn>}>
         {list.length === 0 && (
-          <tr><td colSpan={7}><EmptyState icon={FolderKanban} title="Aucun projet" subtitle="Regroupez vos devis et factures par projet pour un meilleur suivi." /></td></tr>
+          <tr><td colSpan={8}><EmptyState icon={FolderKanban} title="Aucun projet" subtitle="Regroupez vos devis et factures par projet pour un meilleur suivi." /></td></tr>
         )}
         {list.map((p) => (
           <tr key={p.id}>
@@ -75,6 +92,7 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             </td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{devisDe(p.id).length}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{facturesDe(p.id).length}</td>
+            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{prestatairesDe(p.id).length}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(montantEncaisseDe(p.id))}</td>
             <td style={{ ...td, textAlign: "right" }}>
               <Btn variant="ghost" small onClick={() => setDetail(p)}>Voir</Btn>
@@ -101,6 +119,7 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             prestatairesLies={prestatairesDe(detail.id)}
             prestatairesDisponibles={prestataires.filter((pr) => !prestatairesDe(detail.id).some((l) => l.prestataireId === pr.id))}
             prestataireDe={(id) => prestataires.find((p) => p.id === id)}
+            taches={tachesDuProjet(detail.id)}
             canManage={canManage} canDelete={canDelete}
             onChangerStatut={(s) => changer(detail.id, s)}
             onModifier={() => { setEditing(detail); setDetail(null); }}
@@ -111,6 +130,10 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             onDetacherFacture={async (f) => { await lierFacture(f, null); notify("Facture détachée du projet"); }}
             onAffecterPrestataire={async (prestataireId, mission) => { const res = await affecterPrestataire({ projetId: detail.id, prestataireId, mission }); notify(res.error ? "Échec : " + res.error.message : "Prestataire affecté au projet"); return res; }}
             onDetacherPrestataire={async (linkId) => { const { error } = await detacherPrestataire(linkId); notify(error ? "Échec : " + error.message : "Prestataire détaché du projet"); }}
+            onAjouterTache={() => setEditingTache({ projetId: detail.id, prestataireId: prestatairesDe(detail.id)[0]?.prestataireId || "", titre: "", description: "", statut: "À faire", echeance: "" })}
+            onModifierTache={(t) => setEditingTache({ ...t })}
+            onSupprimerTache={async (t) => { const { error } = await deleteTache(t.id); notify(error ? "Suppression refusée : " + error.message : "Tâche supprimée"); }}
+            onChangerStatutTache={async (t, statut) => { const { error } = await saveTache({ ...t, statut }); notify(error ? "Échec : " + error.message : "Statut de la tâche mis à jour"); }}
           />
         </Modal>
       )}
@@ -125,6 +148,19 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             <Btn variant="danger" onClick={confirmerSuppression}>Oui, supprimer le projet</Btn>
             <Btn variant="ghost" onClick={() => setDeleting(null)}>Annuler</Btn>
           </div>
+        </Modal>
+      )}
+
+      {editingTache && (
+        <Modal title={editingTache.id ? "Modifier la tâche" : "Nouvelle tâche"} onClose={() => setEditingTache(null)}>
+          <TacheProjetForm data={editingTache} prestatairesLies={prestatairesDe(detail?.id || editingTache.projetId)} prestataireDe={prestataireDe} onSave={async (form) => {
+            if (!form.prestataireId) { notify("Choisissez un prestataire pour cette tâche."); return { error: new Error("prestataire") }; }
+            if (!form.titre.trim()) { notify("Le titre de la tâche est requis."); return { error: new Error("titre") }; }
+            const { error } = await saveTache(form);
+            notify(error ? "Échec : " + error.message : (form.id ? "Tâche mise à jour" : "Tâche ajoutée"));
+            if (!error) setEditingTache(null);
+            return { error };
+          }} />
         </Modal>
       )}
     </div>
@@ -153,9 +189,11 @@ function ProjetDetail({
   projet, client, devisLies, facturesLiees, montantEncaisse,
   devisDisponibles, facturesDisponibles, clients,
   prestatairesLies, prestatairesDisponibles, prestataireDe,
+  taches,
   canManage, canDelete, onChangerStatut, onModifier, onSupprimer,
   onLierDevis, onDetacherDevis, onLierFacture, onDetacherFacture,
   onAffecterPrestataire, onDetacherPrestataire,
+  onAjouterTache, onModifierTache, onSupprimerTache, onChangerStatutTache,
 }) {
   const [linkingDevis, setLinkingDevis] = useState(false);
   const [linkingFacture, setLinkingFacture] = useState(false);
@@ -164,6 +202,8 @@ function ProjetDetail({
   const [mission, setMission] = useState("");
   const cli = (id) => clients.find((c) => c.id === id);
   const toutesFacturesPayees = facturesLiees.length > 0 && facturesLiees.every((f) => f.statut === "Payée");
+  const nbTerminees = taches.filter((t) => t.statut === "Terminée").length;
+  const avancement = taches.length > 0 ? Math.round((nbTerminees / taches.length) * 100) : 0;
 
   return (
     <div>
@@ -197,7 +237,10 @@ function ProjetDetail({
       {/* Prestataires */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5 }}>Prestataires ({prestatairesLies.length})</div>
-        {canManage && prestatairesDisponibles.length > 0 && <Btn variant="ghost" small icon={Link2} onClick={() => setSelectingPrestataire(!selectingPrestataire)}>Affecter un prestataire</Btn>}
+        <div style={{ display: "flex", gap: 8 }}>
+          {canManage && prestatairesLies.length > 0 && <Btn variant="ghost" small icon={ListTodo} onClick={onAjouterTache}>Ajouter une tâche</Btn>}
+          {canManage && prestatairesDisponibles.length > 0 && <Btn variant="ghost" small icon={Link2} onClick={() => setSelectingPrestataire(!selectingPrestataire)}>Affecter un prestataire</Btn>}
+        </div>
       </div>
       {selectingPrestataire && (
         <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: 12, marginBottom: 16, background: T.bg }}>
@@ -215,19 +258,66 @@ function ProjetDetail({
       {prestatairesLies.length === 0 && <div style={{ fontSize: 12.5, color: T.inkSoft, marginBottom: 16 }}>Aucun prestataire affecté à ce projet.</div>}
       {prestatairesLies.map((l) => {
         const p = prestataireDe(l.prestataireId);
+        const tachesDuPrestataire = taches.filter((t) => t.prestataireId === l.prestataireId);
+        const nbFaites = tachesDuPrestataire.filter((t) => t.statut === "Terminée").length;
         return (
-          <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${T.line}` }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12.5, flexWrap: "wrap" }}>
-              <span style={{ fontWeight: 600 }}>{p?.nom || "Prestataire supprimé"}</span>
-              {p && (
-                <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace", textTransform: "uppercase", letterSpacing: 0.4 }}>{p.typeProjet}</span>
-              )}
-              {l.mission && <span style={{ color: T.inkSoft }}>{l.mission}</span>}
+          <div key={l.id} style={{ borderBottom: `1px solid ${T.line}`, padding: "8px 0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12.5, flexWrap: "wrap" }}>
+                <span style={{ fontWeight: 600 }}>{p?.nom || "Prestataire supprimé"}</span>
+                {p && (
+                  <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace", textTransform: "uppercase", letterSpacing: 0.4 }}>{p.typeProjet}</span>
+                )}
+                {l.mission && <span style={{ color: T.inkSoft }}>{l.mission}</span>}
+                {tachesDuPrestataire.length > 0 && (
+                  <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{nbFaites}/{tachesDuPrestataire.length} tâches</span>
+                )}
+              </div>
+              {canManage && <button onClick={() => onDetacherPrestataire(l.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, display: "flex" }}><X size={15} /></button>}
             </div>
-            {canManage && <button onClick={() => onDetacherPrestataire(l.id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, display: "flex" }}><X size={15} /></button>}
+            {tachesDuPrestataire.length > 0 && (
+              <div style={{ marginTop: 6, marginLeft: 6 }}>
+                {tachesDuPrestataire.map((t) => (
+                  <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: `1px dashed ${T.line}`, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 12.5, flexWrap: "wrap", cursor: "pointer" }} onClick={() => onModifierTache(t)}>
+                      <span style={{ fontWeight: 500 }}>{t.titre}</span>
+                      {canManage ? (
+                        <Select wrapperStyle={{ width: 130 }} value={t.statut} onChange={(e) => onChangerStatutTache(t, e.target.value)}>
+                          {STATUTS_TACHE.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </Select>
+                      ) : (
+                        <Badge statut={t.statut} />
+                      )}
+                      {t.echeance && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: T.inkSoft, fontSize: 11.5 }}>
+                          <CalendarClock size={12} />{formatDate(t.echeance)}
+                        </span>
+                      )}
+                      <TacheAlerteBadge tache={t} />
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      {canManage && <button onClick={() => onModifierTache(t)} title="Modifier la tâche" style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex" }}><Pencil size={13} /></button>}
+                      {canDelete && <button onClick={() => onSupprimerTache(t)} title="Supprimer la tâche" style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, display: "flex" }}><Trash2 size={13} /></button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
+
+      {taches.length > 0 && (
+        <Card style={{ padding: "12px 16px", marginTop: 16, marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600 }}>Avancement des tâches</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 600, color: avancement === 100 ? T.teal : T.ink }}>{nbTerminees}/{taches.length} ({avancement}%)</div>
+          </div>
+          <div style={{ height: 7, background: T.bg, borderRadius: 4, marginTop: 8, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${avancement}%`, background: avancement === 100 ? T.teal : T.gold, transition: "width .3s ease" }} />
+          </div>
+        </Card>
+      )}
 
       {/* Devis liés */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -305,6 +395,32 @@ function DocumentPicker({ items, cli, onPick, onClose }) {
       <div style={{ marginTop: 8, textAlign: "right" }}>
         <Btn variant="ghost" small onClick={onClose}>Fermer</Btn>
       </div>
+    </div>
+  );
+}
+
+function TacheProjetForm({ data, prestatairesLies, prestataireDe, onSave }) {
+  const [form, setForm] = useState(data);
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  return (
+    <div>
+      <Field label="Titre de la tâche *"><input style={inputStyle} value={form.titre} onChange={set("titre")} placeholder="Ex. Conception des maquettes" /></Field>
+      <Field label="Prestataire">
+        <Select value={form.prestataireId || ""} onChange={set("prestataireId")}>
+          <option value="">— Choisir un prestataire —</option>
+          {prestatairesLies.map((l) => <option key={l.prestataireId} value={l.prestataireId}>{prestataireDe(l.prestataireId)?.nom || "Prestataire supprimé"}</option>)}
+        </Select>
+      </Field>
+      <Field label="Statut">
+        <Select value={form.statut} onChange={set("statut")}>
+          {STATUTS_TACHE.map((s) => <option key={s} value={s}>{s}</option>)}
+        </Select>
+      </Field>
+      <Field label={`Date d'échéance (alerte à J-${SEUIL_ALERTE_JOURS} et en retard)`}>
+        <input type="date" style={inputStyle} value={form.echeance || ""} onChange={set("echeance")} />
+      </Field>
+      <Field label="Description"><textarea style={{ ...inputStyle, height: "auto", minHeight: 80, padding: "10px 12px" }} value={form.description} onChange={set("description")} /></Field>
+      <Btn variant="gold" onClick={() => onSave(form)}>Enregistrer</Btn>
     </div>
   );
 }

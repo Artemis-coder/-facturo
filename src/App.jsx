@@ -31,6 +31,7 @@ import { Projets } from "./components/Projets";
 import { Finance } from "./components/Finance";
 import { Contracts } from "./components/Contracts";
 import { Prestataires } from "./components/Prestataires";
+import { PortalPrestataire } from "./components/PortalPrestataire";
 import { genererDocumentPDF } from "./lib/documentPdf";
 import { Toast, LoadingState } from "./components/ui";
 
@@ -137,7 +138,7 @@ export default function App() {
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
   const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus } = useContracts(entrepriseId, userId);
-  const { prestataires, liens: liensPrestataires, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire } = usePrestataires(entrepriseId, userId);
+  const { prestataires, liens: liensPrestataires, taches, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire } = usePrestataires(entrepriseId, userId);
 
   if (!isSupabaseConfigured) {
     return (
@@ -169,6 +170,15 @@ export default function App() {
     return (<><GlobalStyles /><FullscreenMessage><LoadingState label="Création de votre espace en cours…" light /></FullscreenMessage></>);
   }
 
+  if (role === "prestataire") {
+    return (
+      <>
+        <GlobalStyles />
+        <PortalPrestataire entrepriseId={entrepriseId} userId={userId} entreprise={entreprise} onLogout={signOut} />
+      </>
+    );
+  }
+
   const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses && !loadingContracts && !loadingPrestataires;
   const isAdmin = role === "administrateur" || role === "super_admin";
   const canManageClients = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
@@ -195,16 +205,19 @@ export default function App() {
             )}
             {view === "projets" && (
               <Projets projets={projets} clients={clients} devis={devis} factures={factures}
-                prestataires={prestataires} liensPrestataires={liensPrestataires}
+                prestataires={prestataires} liensPrestataires={liensPrestataires} taches={taches}
                 affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
+                saveTache={saveTache} deleteTache={deleteTache}
                 saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}
                 lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
             {view === "prestataires" && (
               <Prestataires projets={projets} prestataires={prestataires} liens={liensPrestataires}
+                taches={taches} contrats={contracts}
                 onSavePrestataire={savePrestataire} onDeletePrestataire={deletePrestataire}
                 affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
+                onSaveTache={saveTache} onDeleteTache={deleteTache} inviterPrestataire={inviterPrestataire}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
             {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} />}
@@ -221,7 +234,7 @@ export default function App() {
                 notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin} />
             )}
             {view === "contrats" && isAdmin && (
-              <Contracts templates={templates} contracts={contracts} clients={clients} factures={factures} devis={devis} projets={projets} entreprise={entreprise}
+              <Contracts templates={templates} contracts={contracts} clients={clients} factures={factures} devis={devis} projets={projets} prestataires={prestataires} entreprise={entreprise}
                 saveTemplate={saveTemplate} uploadTemplateSource={uploadTemplateSource} suggestTemplateFromSource={suggestTemplateFromSource}
                 suggestContractFields={suggestContractFields} saveContract={saveContract} updateContract={updateContract} updateStatus={updateContractStatus} notify={notify} />
             )}

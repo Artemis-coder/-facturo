@@ -37,3 +37,16 @@ export const montantEncaisseTotal = (factures) =>
 
 export const montantPaiementsPartiels = (factures) =>
   factures.filter((f) => f.statut === "Partiellement payée").reduce((s, f) => s + Number(f.regle || 0), 0);
+
+// --- Alertes d'échéance des tâches (calcul à l'affichage) ---
+export const SEUIL_ALERTE_JOURS = 3;
+
+export const alerteTache = (tache) => {
+  if (!tache || !tache.echeance || tache.statut === "Terminée") return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(`${tache.echeance}T00:00:00`);
+  const jours = Math.round((due - today) / 86400000);
+  if (jours < 0) return { level: "retard", jours: -jours };
+  if (jours <= SEUIL_ALERTE_JOURS) return { level: "proche", jours };
+  return null;
+};
