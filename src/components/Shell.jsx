@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature, Briefcase, ChevronDown,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
@@ -11,26 +11,41 @@ import { Modal, Btn } from "./ui";
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { key: "finance", label: "Finance", icon: Wallet, roles: ["administrateur", "comptable"] },
+  {
+    key: "commercial", label: "Commercial", icon: Briefcase, children: [
+      { key: "clients", label: "Clients", icon: Users, roles: ["administrateur", "comptable", "commercial"] },
+      { key: "produits", label: "Catalogue", icon: Package, roles: ["administrateur", "comptable"] },
+      { key: "devis", label: "Devis", icon: FileText, roles: ["administrateur", "comptable", "commercial", "employe"] },
+      { key: "contrats", label: "Contrats", icon: FileSignature, roles: ["administrateur"] },
+      { key: "factures", label: "Factures", icon: Receipt, roles: ["administrateur", "comptable", "employe"] },
+    ],
+  },
   { key: "projets", label: "Projets", icon: FolderKanban, roles: ["administrateur", "comptable", "commercial"] },
-  { key: "devis", label: "Devis", icon: FileText, roles: ["administrateur", "comptable", "commercial", "employe"] },
-  { key: "factures", label: "Factures", icon: Receipt, roles: ["administrateur", "comptable", "employe"] },
-  { key: "contrats", label: "Contrats", icon: FileSignature, roles: ["administrateur"] },
-  { key: "clients", label: "Clients", icon: Users, roles: ["administrateur", "comptable", "commercial"] },
-  { key: "produits", label: "Produits & services", icon: Package, roles: ["administrateur", "comptable"] },
   { key: "rapports", label: "Rapports", icon: BarChart3, roles: ["administrateur", "comptable"] },
   { key: "utilisateurs", label: "Utilisateurs", icon: UserCog, roles: ["administrateur"] },
   { key: "entreprise", label: "Entreprise", icon: Building2 },
   { key: "parametres", label: "Paramètres", icon: Settings },
 ];
 
+const isVisible = (n, role) => !n.roles || role === "super_admin" || n.roles.includes(role);
+
 export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts }) {
-  const items = NAV.filter((n) => !n.roles || role === "super_admin" || n.roles.includes(role));
-  const current = NAV.find((n) => n.key === view);
+  const items = NAV
+    .filter((n) => isVisible(n, role))
+    .map((n) => (n.children ? { ...n, children: n.children.filter((c) => isVisible(c, role)) } : n))
+    .filter((n) => !n.children || n.children.length > 0);
+  const leaves = NAV.flatMap((n) => (n.children ? n.children : [n]));
+  const current = leaves.find((n) => n.key === view);
   const [navOpen, setNavOpen] = useState(false);
+  const [groupOverride, setGroupOverride] = useState(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const { canInstall, installed, promptInstall } = useInstallPrompt();
   const online = useOnlineStatus();
+  const group = items.find((n) => n.children);
+  const activeInGroup = !!group && group.children.some((c) => c.key === view);
+  const groupOpen = groupOverride === null ? activeInGroup : groupOverride;
+  useEffect(() => { setGroupOverride(null); }, [view]);
   const go = (key) => { setView(key); setNavOpen(false); };
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -45,8 +60,43 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
         </div>
         <nav style={{ flex: 1, padding: "6px 10px" }}>
           {items.map((n) => {
-            const active = n.key === view;
             const Icon = n.icon;
+            if (n.children) {
+              return (
+                <div key={n.key}>
+                  <div onClick={() => setGroupOverride(!groupOpen)} style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 2,
+                    borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
+                    background: activeInGroup ? "#ffffff14" : "transparent", color: activeInGroup ? "#fff" : "#B9BFCF",
+                    borderLeft: activeInGroup ? `3px solid ${T.gold}` : "3px solid transparent",
+                  }}>
+                    <Icon size={16} />{n.label}
+                    <ChevronDown size={14} style={{ marginLeft: "auto", transition: "transform .2s ease", transform: groupOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+                  </div>
+                  <div style={{
+                    overflow: "hidden",
+                    maxHeight: groupOpen ? n.children.length * 44 : 0,
+                    transition: "max-height .25s ease",
+                  }}>
+                    {n.children.map((c) => {
+                      const cActive = c.key === view;
+                      const CIcon = c.icon;
+                      return (
+                        <div key={c.key} onClick={() => go(c.key)} style={{
+                          display: "flex", alignItems: "center", gap: 10, padding: "9px 12px 9px 36px", marginBottom: 2,
+                          borderRadius: 9, cursor: "pointer", fontSize: 13, position: "relative",
+                          background: cActive ? "#ffffff14" : "transparent", color: cActive ? "#fff" : "#B9BFCF",
+                          borderLeft: cActive ? `3px solid ${T.gold}` : "3px solid transparent",
+                        }}>
+                          <CIcon size={15} />{c.label}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            const active = n.key === view;
             return (
               <div key={n.key} onClick={() => go(n.key)} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 2,
