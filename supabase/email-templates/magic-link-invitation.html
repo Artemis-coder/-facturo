@@ -4,41 +4,147 @@
 
   À installer dans : Supabase → Authentication → Email Templates → "Magic Link"
   Collez ce contenu dans le champ "Message body (HTML)".
+  Objet conseillé : Bienvenue sur Facturo | Votre lien de connexion
 
-  Variables disponibles fournies par Supabase (ne pas modifier les noms) :
+  Variables disponibles fournies par Supabase (syntaxe Go, ne pas modifier) :
     {{ .Email }}            → l'adresse e-mail invitée
-    {{ .ConfirmationURL }}  → le lien magique à cliquer pour rejoindre l'équipe
+    {{ .ConfirmationURL }}  → le lien magique à cliquer pour se connecter
     {{ .SiteURL }}          → l'URL de votre application
 
-  Important : ce même modèle est aussi utilisé si quelqu'un se connecte un jour
-  par lien magique en dehors du contexte d'invitation — le texte reste générique
-  exprès ("rejoindre votre espace") pour couvrir les deux cas.
+  Important : ce même modèle est aussi utilisé si quelqu'un se connecte par
+  lien magique en dehors du contexte d'invitation — le texte reste générique
+  exprès ("accéder à votre espace") pour couvrir les deux cas.
 -->
-<div style="font-family: -apple-system, 'IBM Plex Sans', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #16213A;">
-  <div style="margin-bottom: 28px;">
-    <span style="font-family: Georgia, serif; font-size: 22px; font-weight: 700;">Facturo</span>
-    <span style="display:inline-block; width:6px; height:6px; background:#C98A2B; margin-left:4px;"></span>
-  </div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bienvenue</title>
+</head>
 
-  <h1 style="font-size: 18px; margin: 0 0 12px;">Votre lien de connexion</h1>
+<body style="margin:0;padding:0;background:#ede9de;font-family:-apple-system,BlinkMacSystemFont,'IBM Plex Mono',Roboto,Helvetica,Arial,sans-serif;color:#16213a;">
 
-  <p style="font-size: 14px; line-height: 1.7; color: #5B647A; margin: 0 0 20px;">
-    Cliquez sur le bouton ci-dessous pour rejoindre votre espace Facturo — aucun
-    mot de passe n'est nécessaire, ce lien vous connecte directement.
-  </p>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#ede9de;padding:40px 20px;">
+    <tr>
+      <td align="center">
 
-  <a href="{{ .ConfirmationURL }}"
-     style="display:inline-block; background:#C98A2B; color:#fff; text-decoration:none;
-            font-weight:600; font-size:14px; padding:12px 24px; border-radius:8px; margin-bottom:24px;">
-    Rejoindre mon espace Facturo
-  </a>
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;">
 
-  <div style="background:#EDEFE9; border-radius:8px; padding:16px 18px; font-size:13px; line-height:1.8; color:#5B647A; margin: 24px 0;">
-    <div><strong style="color:#16213A;">Adresse concernée :</strong> {{ .Email }}</div>
-  </div>
+          <!-- Header -->
+          <tr>
+            <td style="padding:40px 40px 20px;text-align:center;background:#171717;">
+              <img src="https://facturo-one.vercel.app/icons/icon-192.png" alt="Logo Facturo" width="120" style="display:block;margin:0 auto 20px;">
+              <h1 style="margin:0;font-size:28px;color:#ffffff;font-weight:700;">
+                Bienvenue sur Facturo 👋
+              </h1>
+            </td>
+          </tr>
 
-  <p style="font-size: 12.5px; line-height: 1.7; color: #5B647A;">
-    Ce lien expire après un court délai pour votre sécurité. Si vous n'êtes pas
-    à l'origine de cette demande, ignorez simplement cet e-mail.
-  </p>
-</div>
+          <!-- Content -->
+          <tr>
+            <td style="padding:40px;">
+
+              <p style="margin:0 0 20px;font-size:16px;line-height:1.7;">
+                Bonjour <strong>{{ .Email }}</strong>,
+              </p>
+
+              <p style="margin:0 0 20px;font-size:16px;line-height:1.7;">
+                Nous sommes ravis de vous accueillir sur <strong>Facturo</strong>.
+                Votre espace est prêt et vous pouvez dès maintenant accéder à votre espace de gestion.
+              </p>
+
+              <p style="margin:0 0 30px;font-size:16px;line-height:1.7;">
+                Pour vous connecter, cliquez simplement sur le bouton ci-dessous.
+              </p>
+
+              <!-- CTA -->
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto 35px;">
+                <tr>
+                  <td bgcolor="#16213a" style="border-radius:10px;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;padding:16px 32px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;">
+                      Accéder à Facturo
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Login info -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8f9fc;border:1px solid #e6e8ee;border-radius:10px;">
+                <tr>
+                  <td style="padding:24px;">
+
+                    <h3 style="margin:0 0 16px;font-size:18px;color:#171717;">
+                      Informations de connexion
+                    </h3>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="6">
+
+                      <tr>
+                        <td width="180" style="font-weight:600;color:#4a5568;">
+                          Adresse e-mail
+                        </td>
+                        <td style="color:#171717;">
+                          {{ .Email }}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="font-weight:600;color:#4a5568;">
+                          Lien de connexion
+                        </td>
+                        <td style="word-break:break-all;">
+                          <a href="{{ .ConfirmationURL }}" style="color:#0066ff;text-decoration:none;">
+                            {{ .ConfirmationURL }}
+                          </a>
+                        </td>
+                      </tr>
+
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:35px 0 15px;font-size:15px;line-height:1.7;">
+                Pour des raisons de sécurité, vos informations de connexions ne doivent pas être partagé. Garder bien vos accès de connexion.
+              </p>
+
+              <p style="margin:0;font-size:15px;line-height:1.7;">
+                Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité ou nous contacter pour signaler un problème.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:30px 40px;background:#fafafa;border-top:1px solid #ececec;">
+
+              <p style="margin:0 0 8px;font-size:14px;color:#666;">
+                Besoin d'aide ?
+              </p>
+
+              <p style="margin:0 0 20px;font-size:14px;color:#666;">
+                Contactez-nous à
+                <a href="mailto:kedakeyaoboris@gmail.com" style="color:#0066ff;text-decoration:none;">
+                  kedakeyaoboris@gmail.com
+                </a>
+              </p>
+
+              <p style="margin:0;font-size:12px;color:#999;line-height:1.6;">
+                © 2026 Facturo — Fait avec le ❤️ par Optimus Group — Tous droits réservés.
+              </p>
+
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
