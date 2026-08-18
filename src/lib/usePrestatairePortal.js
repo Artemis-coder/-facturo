@@ -108,10 +108,14 @@ export function usePrestatairePortal(entrepriseId, userId) {
   };
 
   const addSousTache = async (parentId, titre, echeance) => {
+    const parent = taches.find((t) => t.id === parentId);
+    if (!parent || !prestataire?.id) {
+      return { error: new Error("Tâche parente ou fiche prestataire introuvable.") };
+    }
     const { error } = await supabase.from("taches").insert({
       entreprise_id: entrepriseId,
-      projet_id: null,
-      prestataire_id: userId,
+      projet_id: parent.projetId,
+      prestataire_id: prestataire.id,
       parent_task_id: parentId,
       titre: titre.trim(),
       description: "",

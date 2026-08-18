@@ -98,11 +98,11 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
     setLoadingHistorique(false);
   };
 
-  const addSousTache = async (parentId, titre, echeance) => {
+  const addSousTache = async (parentId, titre, echeance, parentProjetId) => {
     const { error } = await supabase.from("taches").insert({
       entreprise_id: entrepriseId,
-      projet_id: null,
-      prestataire_id: userId,
+      projet_id: parentProjetId,
+      prestataire_id: prestataire.id,
       parent_task_id: parentId,
       titre: titre.trim(),
       description: "",
@@ -304,7 +304,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ fontSize: 12.5, color: T.inkSoft }}>
-                  {taches.filter((t) => t.statut !== "Terminée").length} tâche{taches.filter((t) => t.statut !== "Terminée").length > 1 ? "s" : ""} à réaliser
+                  {taches.filter((t) => !t.parentTaskId && t.statut !== "Terminée").length} tâche{taches.filter((t) => !t.parentTaskId && t.statut !== "Terminée").length > 1 ? "s" : ""} à réaliser
                 </div>
                 <Btn icon={Plus} onClick={() => setEditingTache({ titre: "", description: "", statut: "À faire", echeance: "", projetId: liens[0]?.projetId || "", prestataireId: prestataire.id })}>Nouvelle tâche</Btn>
               </div>
@@ -313,7 +313,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
                 {["À faire", "En cours", "Terminée"].map((statut) => {
-                  const colonneTaches = taches.filter((t) => t.statut === statut);
+                  const colonneTaches = taches.filter((t) => !t.parentTaskId && t.statut === statut);
                   const termine = statut === "Terminée";
                   return (
                     <div key={statut} style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 220px)" }}>
@@ -435,7 +435,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
             <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 10 }}>Sous-tâches</div>
-                              <SousTacheList parentId={drawerTask.id} taches={taches} onAdded={async (titre, echeance) => { await addSousTache(drawerTask.id, titre, echeance); setDrawerTask(taches.find(t => t.id === drawerTask.id) || drawerTask); }} onDeleted={async (id) => { await deleteSousTache(id); setDrawerTask(taches.find(t => t.id === drawerTask.id) || drawerTask); }} />
+                              <SousTacheList parentId={drawerTask.id} taches={taches} onAdded={async (titre, echeance) => { await addSousTache(drawerTask.id, titre, echeance, drawerTask.projetId); setDrawerTask(taches.find(t => t.id === drawerTask.id) || drawerTask); }} onDeleted={async (id) => { await deleteSousTache(id); setDrawerTask(taches.find(t => t.id === drawerTask.id) || drawerTask); }} />
             </div>
 
             <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 16 }}>
