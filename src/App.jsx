@@ -12,6 +12,7 @@ import { usePaiements } from "./lib/usePaiements";
 import { useDepenses } from "./lib/useDepenses";
 import { useContracts } from "./lib/useContracts";
 import { usePrestataires } from "./lib/usePrestataires";
+import { useFichiersProjets } from "./lib/useFichiersProjets";
 import { useAmountVisibility } from "./lib/useAmountVisibility";
 import { useOnlineStatus } from "./lib/useOnlineStatus";
 import { flushQueue, queueLength } from "./lib/offline";
@@ -140,6 +141,7 @@ export default function App() {
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
   const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus } = useContracts(entrepriseId, userId);
   const { prestataires, liens: liensPrestataires, taches, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire } = usePrestataires(entrepriseId, userId);
+  const { fichiers: fichiersProjets, loading: loadingFichiers, uploadFichier, supprimerFichier } = useFichiersProjets(entrepriseId, userId);
 
   if (!isSupabaseConfigured) {
     return (
@@ -180,7 +182,7 @@ export default function App() {
     );
   }
 
-  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses && !loadingContracts && !loadingPrestataires;
+  const dataReady = !loadingClients && !loadingProduits && !loadingDevis && !loadingFactures && !loadingEntreprise && !loadingProjets && !loadingPaiements && !loadingDepenses && !loadingContracts && !loadingPrestataires && !loadingFichiers;
   const isAdmin = role === "administrateur" || role === "super_admin";
   const canManageClients = ["administrateur", "comptable", "commercial", "super_admin"].includes(role);
   const canManageProduits = ["administrateur", "comptable", "super_admin"].includes(role);
@@ -207,10 +209,12 @@ export default function App() {
             {view === "projets" && (
               <Projets projets={projets} clients={clients} devis={devis} factures={factures}
                 prestataires={prestataires} liensPrestataires={liensPrestataires} taches={taches}
+                fichiersProjets={fichiersProjets}
                 affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
                 saveTache={saveTache} deleteTache={deleteTache}
                 saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}
                 lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
+                uploadFichier={uploadFichier} supprimerFichier={supprimerFichier}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
             {view === "prestataires" && (

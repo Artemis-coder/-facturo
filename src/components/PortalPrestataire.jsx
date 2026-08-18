@@ -3,13 +3,16 @@ import {
   FolderKanban, FileSignature, ListTodo, LogOut, X, Plus, Menu,
   Download, MessageCircle, CalendarClock, AlertTriangle, Handshake, Wifi, WifiOff,
   KeyRound, ChevronRight, ChevronDown, Clock, History, GitBranch, Trash2, Pencil,
-  CheckCircle2, Lock, FileX,
+  CheckCircle2, Lock, FileX, FolderOpen, Paperclip, Eye, Search,
 } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
 import { usePrestatairePortal } from "../lib/usePrestatairePortal";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
 import { downloadContractPdf } from "../lib/contractPdf";
+import { formatTaille, telechargerFichier } from "../lib/fichierUtils";
+import { FICHIER_CATEGORIES } from "../lib/useFichiersProjets";
+import { IconeFichier, CategorieBadge, FichierApercu } from "./FichierApercu";
 import { Btn, Modal, Field, Select, Badge, Card, EmptyState, Toast, LoadingState, KpiBar } from "./ui";
 import { supabase } from "../lib/supabaseClient";
 import { NotifsBell } from "./NotifsBell";
@@ -18,6 +21,7 @@ const NAV_ITEMS = [
   { key: "projets", label: "Mes projets", icon: FolderKanban },
   { key: "contrats", label: "Mes contrats", icon: FileSignature },
   { key: "taches", label: "Mes tâches", icon: ListTodo },
+  { key: "fichiers", label: "Mes fichiers", icon: FolderOpen },
 ];
 
 const STATUTS_TACHE = ["À faire", "En cours", "Terminée", "Bloquée"];
@@ -33,10 +37,11 @@ function AlerteBadge({ alr }) {
 }
 
 export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }) {
-  const { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache } = usePrestatairePortal(entrepriseId, userId);
+  const { prestataire, liens, projets, contrats, taches, fichiers, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache } = usePrestatairePortal(entrepriseId, userId);
   const [tab, setTab] = useState("projets");
   const [editingTache, setEditingTache] = useState(null);
   const [viewingContrat, setViewingContrat] = useState(null);
+  const [fichierEnPreview, setFichierEnPreview] = useState(null);
   const [alertesOpen, setAlertesOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [toast, setToast] = useState("");
@@ -81,6 +86,17 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
     const { error } = await changerStatutTache(tache, statut);
     notify(error ? "Échec : " + error.message : "Statut mis à jour");
   };
+
+  const telechargerFichierHandler = async (fichier) => {
+    const { error } = await telechargerFichier(fichier);
+    notify(error ? "Échec du téléchargement : " + error.message : "Téléchargement démarré");
+  };
+
+  const fichiersParProjet = fichiers.reduce((acc, f) => {
+    (acc[f.projetId] = acc[f.projetId] || []).push(f);
+    return acc;
+  }, {});
+  const projetsAvecFichiers = Object.keys(fichiersParProjet).map((id) => projetDe(id)).filter(Boolean);
 
   const ouvrirWhatsApp = (contract) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(`Bonjour,\n\nConcernant le contrat « ${contract.titre} ».\n\nCordialement,\n${prestataire?.nom || "Votre prestataire"}`)}`, "_blank", "noopener,noreferrer");
@@ -363,6 +379,23 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
               </div>
             </div>
           )}
+
+          {tab === "fichiers" && (
+            <div>
+              <KpiBar items={[
+                { label: "Fichiers reçus", value: `${fichiers.length}`, sub: "Mis à disposition par l'entreprise", tone: T.ink, icon: FolderOpen },
+                { label: "Projets concernés", value: `${projetsAvecFichiers.length}`, sub: "Projets avec documents", tone: T.gold, icon: FolderKanban },
+                { label: "Dernier ajout", value: fichiers[0] ? new Date(fichiers[0].createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "—", sub: fichiers[0] ? fichiers[0].nom.slice(0, 22) : "Aucun fichier", tone: T.teal, icon: Paperclip },
+              ]} />
+
+              {fichiers.length === 0 ? (
+                <EmptyState icon={FolderOpen} title="Aucun fichier" subtitle="Les fichiers que l'entreprise joint à vos projets apparaîtront ici, regroupés par projet." />
+              ) : (
+                <FichierPortailList fichiers={fichiers} fichiersParProjet={fichiersParProjet} projetsAvecFichiers={projetsAvecFichiers}
+                  onApercu={setFichierEnPreview} onTelecharger={telechargerFichierHandler} />
+              )}
+            </div>
+          )}
         </div>
       </main>
 
@@ -385,6 +418,10 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
             <Btn variant="ghost" icon={MessageCircle} onClick={() => ouvrirWhatsApp(viewingContrat)}>Ouvrir WhatsApp</Btn>
           </div>
         </Modal>
+      )}
+
+      {fichierEnPreview && (
+        <FichierApercu fichier={fichierEnPreview} onClose={() => setFichierEnPreview(null)} notify={notify} />
       )}
 
       {confirmingLogout && (
@@ -477,6 +514,77 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
       )}
 
       <Toast message={toast} />
+    </div>
+  );
+}
+
+function FichierPortailList({ fichiers, fichiersParProjet, projetsAvecFichiers, onApercu, onTelecharger }) {
+  const [q, setQ] = useState("");
+  const [categorie, setCategorie] = useState("Toutes");
+  const [projetId, setProjetId] = useState("Tous");
+
+  const correspond = (f) => {
+    if (categorie !== "Toutes" && f.categorie !== categorie) return false;
+    if (projetId !== "Tous" && f.projetId !== projetId) return false;
+    return f.nom.toLowerCase().includes(q.trim().toLowerCase());
+  };
+
+  const groupes = projetsAvecFichiers
+    .filter((p) => (fichiersParProjet[p.id] || []).some(correspond))
+    .map((p) => ({ projet: p, liste: (fichiersParProjet[p.id] || []).filter(correspond) }));
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 18, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.paper, border: `1px solid ${T.line}`, borderRadius: 10, padding: "0 12px", flex: "1 1 220px", minWidth: 180 }}>
+          <Search size={14} color={T.inkSoft} />
+          <input placeholder="Rechercher un fichier…" value={q} onChange={(e) => setQ(e.target.value)}
+            style={{ border: "none", outline: "none", height: 38, fontSize: 13, flex: 1, background: "transparent", fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }} />
+        </div>
+        <Select wrapperStyle={{ width: 190 }} value={categorie} onChange={(e) => setCategorie(e.target.value)}>
+          <option value="Toutes">Toutes les catégories</option>
+          {FICHIER_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </Select>
+        <Select wrapperStyle={{ width: 190 }} value={projetId} onChange={(e) => setProjetId(e.target.value)}>
+          <option value="Tous">Tous les projets</option>
+          {projetsAvecFichiers.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+        </Select>
+      </div>
+
+      {groupes.length === 0 && (
+        <EmptyState icon={Search} title="Aucun fichier correspondant" subtitle="Modifiez votre recherche ou vos filtres." />
+      )}
+
+      {groupes.map(({ projet, liste }) => (
+        <div key={projet.id} style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <FolderKanban size={14} color={T.gold} />
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, fontWeight: 600 }}>{projet.nom}</span>
+            <Badge statut={projet.statut} />
+            <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{liste.length} fichier{liste.length > 1 ? "s" : ""}</span>
+          </div>
+          <Card style={{ padding: "4px 16px" }}>
+            {liste.map((f) => {
+              const miseAJour = new Date(f.createdAt);
+              return (
+                <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${T.line}`, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 9, alignItems: "center", minWidth: 0, flexWrap: "wrap", cursor: "pointer" }} onClick={() => onApercu(f)}>
+                    <IconeFichier mimeType={f.mimeType} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>{f.nom}</span>
+                    <CategorieBadge categorie={f.categorie} />
+                    <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{formatTaille(f.tailleOctets)}</span>
+                    <span style={{ fontSize: 11, color: T.inkSoft }}>Reçu le {miseAJour.toLocaleDateString("fr-FR")}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
+                    <Btn variant="ghost" small icon={Eye} onClick={() => onApercu(f)}>Aperçu</Btn>
+                    <Btn variant="ghost" small icon={Download} onClick={() => onTelecharger(f)}>Télécharger</Btn>
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        </div>
+      ))}
     </div>
   );
 }

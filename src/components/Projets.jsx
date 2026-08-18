@@ -1,9 +1,14 @@
-import React, { useState } from "react";
-import { Plus, Pencil, FolderKanban, Link2, X, Trash2, Clock, CheckCircle2, AlertCircle, DollarSign, CalendarClock, ListTodo } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Plus, Pencil, FolderKanban, Link2, X, Trash2, Clock, CheckCircle2, AlertCircle, DollarSign, CalendarClock, ListTodo, Paperclip, Download, Upload } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal, alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
+import { formatTaille, telechargerFichier } from "../lib/fichierUtils";
+import { FICHIER_CATEGORIES } from "../lib/useFichiersProjets";
+import { IconeFichier, CategorieBadge, FichierApercu } from "./FichierApercu";
 import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar } from "./ui";
+
+const formatHorodatage = (iso) => (iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
 
 const STATUTS = ["En cours", "Terminé", "Annulé"];
 const STATUT_TONE = { "En cours": T.slate, "Terminé": T.teal, "Annulé": T.brick };
@@ -22,12 +27,13 @@ function TacheAlerteBadge({ tache }) {
   );
 }
 
-export function Projets({ projets, clients, devis, factures, prestataires = [], liensPrestataires = [], taches = [], affecterPrestataire, detacherPrestataire, saveTache, deleteTache, saveProjet, changerStatut, deleteProjet, lierDevis, lierFacture, notify, canManage = true, canDelete = false }) {
+export function Projets({ projets, clients, devis, factures, prestataires = [], liensPrestataires = [], taches = [], fichiersProjets = [], affecterPrestataire, detacherPrestataire, saveTache, deleteTache, saveProjet, changerStatut, deleteProjet, lierDevis, lierFacture, uploadFichier, supprimerFichier, notify, canManage = true, canDelete = false }) {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [editingTache, setEditingTache] = useState(null);
+  const [fichierEnPreview, setFichierEnPreview] = useState(null);
 
   const cli = (id) => clients.find((c) => c.id === id);
   const devisDe = (projetId) => devis.filter((d) => d.projetId === projetId);
@@ -36,6 +42,7 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
   const prestatairesDe = (projetId) => liensPrestataires.filter((l) => l.projetId === projetId);
   const prestataireDe = (id) => prestataires.find((p) => p.id === id);
   const tachesDuProjet = (projetId) => taches.filter((t) => t.projetId === projetId);
+  const fichiersDe = (projetId) => fichiersProjets.filter((f) => f.projetId === projetId);
 
   const list = projets.filter((p) => (p.nom + (cli(p.clientId)?.societe || "")).toLowerCase().includes(q.toLowerCase()));
 
@@ -72,14 +79,24 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
     setDetail(null);
   };
 
+  const telechargerFichierHandler = async (fichier) => {
+    const { error } = await telechargerFichier(fichier);
+    notify(error ? "Échec du téléchargement : " + error.message : "Téléchargement démarré");
+  };
+
+  const supprimerFichierHandler = async (fichier) => {
+    const { error } = await supprimerFichier(fichier);
+    notify(error ? "Suppression refusée : " + error.message : "Fichier supprimé");
+  };
+
   return (
     <div>
       <KpiBar items={kpis} />
-      <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Prestataires", "Encaissé", ""]} onSearch={setQ}
+      <TableShell headers={["Nom", "Client", "Statut", "Devis liés", "Factures liées", "Prestataires", "Fichiers", "Encaissé", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un projet…"
         action={canManage && <Btn icon={Plus} onClick={() => setEditing({ nom: "", description: "", clientId: "" })}>Nouveau projet</Btn>}>
         {list.length === 0 && (
-          <tr><td colSpan={8}><EmptyState icon={FolderKanban} title="Aucun projet" subtitle="Regroupez vos devis et factures par projet pour un meilleur suivi." /></td></tr>
+          <tr><td colSpan={9}><EmptyState icon={FolderKanban} title="Aucun projet" subtitle="Regroupez vos devis et factures par projet pour un meilleur suivi." /></td></tr>
         )}
         {list.map((p) => (
           <tr key={p.id}>
@@ -93,6 +110,7 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{devisDe(p.id).length}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{facturesDe(p.id).length}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{prestatairesDe(p.id).length}</td>
+            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fichiersDe(p.id).length}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(montantEncaisseDe(p.id))}</td>
             <td style={{ ...td, textAlign: "right" }}>
               <Btn variant="ghost" small onClick={() => setDetail(p)}>Voir</Btn>
@@ -120,7 +138,16 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             prestatairesDisponibles={prestataires.filter((pr) => !prestatairesDe(detail.id).some((l) => l.prestataireId === pr.id))}
             prestataireDe={(id) => prestataires.find((p) => p.id === id)}
             taches={tachesDuProjet(detail.id)}
+            fichiers={fichiersDe(detail.id)}
             canManage={canManage} canDelete={canDelete}
+            onFichierApercu={setFichierEnPreview}
+            onTelechargerFichier={telechargerFichierHandler}
+            onSupprimerFichier={supprimerFichierHandler}
+            onUploaderFichier={async (file, categorie) => {
+              const { error, fichier } = await uploadFichier({ projetId: detail.id, file, categorie });
+              notify(error ? "Échec de l'envoi : " + error.message : `« ${fichier.nom} » mis à disposition des prestataires`);
+              return { error };
+            }}
             onChangerStatut={(s) => changer(detail.id, s)}
             onModifier={() => { setEditing(detail); setDetail(null); }}
             onSupprimer={() => setDeleting(detail)}
@@ -136,6 +163,10 @@ export function Projets({ projets, clients, devis, factures, prestataires = [], 
             onChangerStatutTache={async (t, statut) => { const { error } = await saveTache({ ...t, statut }); notify(error ? "Échec : " + error.message : "Statut de la tâche mis à jour"); }}
           />
         </Modal>
+      )}
+
+      {fichierEnPreview && (
+        <FichierApercu fichier={fichierEnPreview} onClose={() => setFichierEnPreview(null)} notify={notify} />
       )}
 
       {deleting && (
@@ -189,17 +220,19 @@ function ProjetDetail({
   projet, client, devisLies, facturesLiees, montantEncaisse,
   devisDisponibles, facturesDisponibles, clients,
   prestatairesLies, prestatairesDisponibles, prestataireDe,
-  taches,
+  taches, fichiers = [],
   canManage, canDelete, onChangerStatut, onModifier, onSupprimer,
   onLierDevis, onDetacherDevis, onLierFacture, onDetacherFacture,
   onAffecterPrestataire, onDetacherPrestataire,
   onAjouterTache, onModifierTache, onSupprimerTache, onChangerStatutTache,
+  onUploaderFichier, onSupprimerFichier, onTelechargerFichier, onFichierApercu,
 }) {
   const [linkingDevis, setLinkingDevis] = useState(false);
   const [linkingFacture, setLinkingFacture] = useState(false);
   const [selectingPrestataire, setSelectingPrestataire] = useState(false);
   const [prestataireId, setPrestataireId] = useState("");
   const [mission, setMission] = useState("");
+  const [ajoutFichierOuvert, setAjoutFichierOuvert] = useState(false);
   const cli = (id) => clients.find((c) => c.id === id);
   const toutesFacturesPayees = facturesLiees.length > 0 && facturesLiees.every((f) => f.statut === "Payée");
   const nbTerminees = taches.filter((t) => t.statut === "Terminée").length;
@@ -319,6 +352,33 @@ function ProjetDetail({
         </Card>
       )}
 
+      {/* Fichiers mis à disposition des prestataires */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "20px 0 8px" }}>
+        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5 }}><Paperclip size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />Fichiers du projet ({fichiers.length})</div>
+        {canManage && <Btn variant="ghost" small icon={Upload} onClick={() => setAjoutFichierOuvert(!ajoutFichierOuvert)}>Joindre un fichier</Btn>}
+      </div>
+      {ajoutFichierOuvert && (
+        <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: 12, marginBottom: 16, background: T.bg }}>
+          <FichierUploadForm projet={projet} onUpload={onUploaderFichier} onDone={() => setAjoutFichierOuvert(false)} />
+        </div>
+      )}
+      {fichiers.length === 0 && <div style={{ fontSize: 12.5, color: T.inkSoft, marginBottom: 16 }}>Aucun fichier joint — les prestataires affectés ne reçoivent rien pour le moment.</div>}
+      {fichiers.map((f) => (
+        <div key={f.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${T.line}`, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 9, alignItems: "center", fontSize: 12.5, minWidth: 0, flexWrap: "wrap" }}>
+            <IconeFichier mimeType={f.mimeType} />
+            <a onClick={() => onFichierApercu(f)} title="Prévisualiser" style={{ color: T.ink, cursor: "pointer", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>{f.nom}</a>
+            <CategorieBadge categorie={f.categorie} />
+            <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{formatTaille(f.tailleOctets)}</span>
+            <span style={{ fontSize: 11, color: T.inkSoft }}>{formatHorodatage(f.createdAt)}</span>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            <Btn variant="ghost" small icon={Download} onClick={() => onTelechargerFichier(f)}>Télécharger</Btn>
+            {canDelete && <button onClick={() => onSupprimerFichier(f)} title="Supprimer le fichier" style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, display: "flex", padding: 4 }}><Trash2 size={14} /></button>}
+          </div>
+        </div>
+      ))}
+
       {/* Devis liés */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5 }}>Devis liés</div>
@@ -394,6 +454,53 @@ function DocumentPicker({ items, cli, onPick, onClose }) {
       </div>
       <div style={{ marginTop: 8, textAlign: "right" }}>
         <Btn variant="ghost" small onClick={onClose}>Fermer</Btn>
+      </div>
+    </div>
+  );
+}
+
+function FichierUploadForm({ projet, onUpload, onDone }) {
+  const [categorie, setCategorie] = useState("Autre");
+  const [choisis, setChoisis] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const ref = useRef();
+
+  const envoyer = async () => {
+    setBusy(true);
+    for (const file of choisis) {
+      const { error } = await onUpload(file, categorie);
+      if (error) break;
+    }
+    setBusy(false);
+    onDone();
+  };
+
+  return (
+    <div>
+      <input ref={ref} type="file" multiple hidden onChange={(e) => setChoisis(Array.from(e.target.files || []))} />
+      <button type="button" onClick={() => ref.current?.click()} style={{ width: "100%", border: `1px dashed ${T.line}`, borderRadius: 8, background: "#fff", padding: "18px 12px", cursor: "pointer", fontSize: 12.5, color: T.inkSoft, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <Upload size={17} color={T.gold} />
+        <span>Cliquez pour choisir un ou plusieurs fichiers (50 Mo max. chacun)</span>
+      </button>
+      {choisis.length > 0 && (
+        <div style={{ fontSize: 12.5, marginBottom: 10, display: "flex", flexDirection: "column", gap: 3 }}>
+          {choisis.map((file, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <IconeFichier mimeType={file.type} size={13} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>{file.name}</span>
+              <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{formatTaille(file.size)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <Field label="Catégorie (type de projet associé)">
+        <Select value={categorie} onChange={(e) => setCategorie(e.target.value)}>
+          {FICHIER_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </Select>
+      </Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <Btn variant="ghost" small onClick={onDone}>Annuler</Btn>
+        <Btn small disabled={!choisis.length || busy} onClick={envoyer}>{busy ? "Envoi en cours…" : "Mettre à disposition"}</Btn>
       </div>
     </div>
   );

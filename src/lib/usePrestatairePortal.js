@@ -47,6 +47,17 @@ const mapTache = (row) => ({
   echeance: row.echeance,
 });
 
+const mapFichier = (row) => ({
+  id: row.id,
+  projetId: row.projet_id,
+  nom: row.nom,
+  categorie: row.categorie || "Autre",
+  mimeType: row.mime_type || "",
+  tailleOctets: Number(row.taille_octets || 0),
+  storagePath: row.storage_path,
+  createdAt: row.created_at,
+});
+
 /**
  * Hook dédié au portail prestataire : le RLS limite automatiquement chaque
  * requête aux lignes du prestataire connecté (current_prestataire_id()).
@@ -57,22 +68,25 @@ export function usePrestatairePortal(entrepriseId, userId) {
   const [projets, setProjets] = useState([]);
   const [contrats, setContrats] = useState([]);
   const [taches, setTaches] = useState([]);
+  const [fichiers, setFichiers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!entrepriseId || !userId) return;
-    const [prestataireRes, lienRes, projetRes, contratRes, tacheRes] = await Promise.all([
+    const [prestataireRes, lienRes, projetRes, contratRes, tacheRes, fichierRes] = await Promise.all([
       supabase.from("prestataires").select("id, nom, societe, email, telephone, notes, type_projet, type_contrat").eq("user_id", userId).maybeSingle(),
       supabase.from("projet_prestataires").select("id, projet_id, mission"),
       supabase.from("projets").select("id, nom, description, statut, created_at"),
       supabase.from("contracts").select("id, titre, type_service, statut, contenu_final, envoye_le, signe_le").neq("statut", "Brouillon"),
       supabase.from("taches").select("id, projet_id, prestataire_id, parent_task_id, titre, description, statut, echeance").eq("entreprise_id", entrepriseId).order("echeance", { ascending: true }),
+      supabase.from("fichiers_projets").select("id, projet_id, nom, categorie, mime_type, taille_octets, storage_path, created_at").order("created_at", { ascending: false }),
     ]);
     if (!prestataireRes.error) setPrestataire(prestataireRes.data ? mapPrestataire(prestataireRes.data) : null);
     if (!lienRes.error) setLiens((lienRes.data || []).map(mapLien));
     if (!projetRes.error) setProjets((projetRes.data || []).map(mapProjet));
     if (!contratRes.error) setContrats((contratRes.data || []).map(mapContrat));
     if (!tacheRes.error) setTaches((tacheRes.data || []).map(mapTache));
+    if (!fichierRes.error) setFichiers((fichierRes.data || []).map(mapFichier));
     setLoading(false);
   }, [entrepriseId, userId]);
 
@@ -169,5 +183,5 @@ export function usePrestatairePortal(entrepriseId, userId) {
     return { error };
   };
 
-  return { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache, reload: load };
+  return { prestataire, liens, projets, contrats, taches, fichiers, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache, reload: load };
 }

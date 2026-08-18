@@ -1,64 +1,120 @@
-# Pré-push : fix bugs bloquants + audit §6 + commit + push
+# Suppression prestataire → compte utilisateur + KPI page Utilisateurs
 
-## But
-Pousser sur `origin/main` le lot notifications/statuts/timeline de façon sûre, conformément à AGENTS.md (Grille d'Audit §6 de CONTROLE_DE_SECURITE.md).
+## Problèmes
+1. **Utilisateurs fantômes** : supprimer une fiche prestataire ne supprime que la
+   ligne `public.prestataires`. Le compte auth (`auth.users`) et la ligne
+   `profiles` (role = 'prestataire') créés par le trigger `handle_new_user`
+   restent → le prestataire supprimé apparaît toujours dans
+   Utilisateurs → « Membres de l'équipe » (`Users.jsx:79`).
+2. **KPI manquants** sur la page Utilisateurs : nombre total d'utilisateurs +
+   nombre d'invitations acceptées (demande explicite de l'utilisateur,
+   « c'est tout » → exactement ces 2 KPI).
 
-## Contexte vérifié
-- 14 fichiers modifiés + 5 non suivis (`NotifsBell.jsx`, `useNotifications.js`, `0022_statuts_notifications.sql`, 2 plan files).
-- `Timeline` existe bien dans `src/components/ui/index.js:11`.
-- `usePrestataires.js:31-42` mappe les tâches en camelCase (`projetId`, `parentTaskId`, `statut`, `echeance`).
-- `profiles`/`entreprises` existent (0001) → la migration 0022 est valide ; l'erreur « Load failed (api.supabase.com) » est un problème d'application CLI/réseau, pas du SQL.
+## Décisions
+- Supprimer une fiche prestataire **supprime automatiquement le compte auth
+  complet** (auth.users → cascade profiles, notifications). Mécanisme choisi :
+  **trigger DB `AFTER DELETE` sur `public.prestataires`** (couvre tous les
+  chemins de suppression : app, dashboard, SQL), pas un appel RPC côté front.
+- **Garde de sécurité** : le compte n'est supprimé que si le profil lié a
+  `role = 'prestataire'` (protège un compte reconverti en employé/admin).
+- **Nettoyage ponctuel** des fantômes existants dans la migration
+  (suppression scope : profils role='prestataire' sans fiche liée).
+- La suppression admin de `profiles` côté client reste impossible (pas de
+  policy DELETE) — ce comportement n'est pas modifié, tout passe par le trigger.
 
 ## Tâches ordonnées
 
-### 1. Fix import manquant — `src/components/Prestataires.jsx:10`
-Ajouter `Timeline` à l'import `./ui`.
+### 1. Migration `supabase/migrations/0023_prestataire_suppression_compte.sql`
+```sql
+-- 1) Nettoyage des fantômes existants : comptes prestataires dont la fiche
+--    a déjà été supprimée (le profil reste sinon affiché dans Utilisateurs).
+delete from auth.users
+where id in (
+  select p.id from public.profiles p
+  where p.role = 'prestataire'
+    and not exists (select 1 from public.prestataires pr where pr.user_id = p.id)
+);
+-- (profiles cascade depuis auth.users — FK 0001 ; pas de fiche liée donc
+--  aucune FK prestataires.user_id en travers)
 
-### 2. Fix clés timeline — `src/components/Prestataires.jsx:399-456`
-Remplacer dans la section « Suivi des tâches » :
-- `t.parent_task_id` → `t.parentTaskId` (filtres lignes 408 et 424, et recherche du parent ligne 438)
-- `t.projet_id` → `t.projetId` (lignes 415 et 431)
-- Tri : ne pas parser `new Date(date formatée fr-FR)` ; trier sur `t.echeance` brut (ISO) ascendant, échéances nulles/vides à la fin (« Sans échéance » en dernier).
+-- 2) Trigger : suppression automatique du compte à la suppression de la fiche
+create or replace function public.handle_prestataire_deleted()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if old.user_id is not null
+     and exists (select 1 from public.profiles where id = old.user_id and role = 'prestataire') then
+    delete from auth.users where id = old.user_id;
+  end if;
+  return old;
+end; $$;
 
-### 3. Fix création sous-tâche — `src/components/PortalPrestataire.jsx`
-- Destructurer `addSousTache`, `deleteSousTache`, `changerStatutSousTache` depuis `usePrestatairePortal` (ligne 36).
-- Supprimer les versions locales `addSousTache` (l. 103-119) et `deleteSousTache` (l. 121-127) ; la version du hook a la bonne signature `(parentId, titre, echeance, statut)` et résout `projet_id` depuis la tâche parente.
-- Appel `onAdded` ligne 464 : `await addSousTache(drawerTask.id, titre, echeance, statut)` ; après succès, re-fetcher la tâche du tiroir depuis `taches` rechargées (le hook fait `reload()` interne).
+drop trigger if exists on_prestataire_deleted on public.prestataires;
+create trigger on_prestataire_deleted
+  after delete on public.prestataires
+  for each row execute function public.handle_prestataire_deleted();
+```
+Notes d'implémentation :
+- `security definer` requis : le delete client s'exécute en rôle `authenticated`,
+  seul le propriétaire postgres peut toucher `auth.users`.
+- Si le `delete from auth.users` échoue pour raison de droits au runtime,
+  fallback documenté : exécuter le nettoyage via l'éditeur SQL du dashboard
+  (rôle postgres) ; le reste de la migration reste valide.
+- La migration doit être idempotente-friendly (`drop trigger if exists`,
+  `create or replace`).
 
-### 4. Sélecteur de statut par sous-tâche (validation du plan) — `SousTacheList` (PortalPrestataire.jsx:506)
-- Passer `onChangeStatut` à `SousTacheList` (branché sur `changerStatutSousTache`).
-- Remplacer le simple `<Badge statut>` de chaque sous-tâche par un petit `Select` (`STATUTS_TACHE`) qui appelle `onChangeStatut(sousTache, valeur)`, comme pour la tâche parente (l. 456).
+### 2. Texte du modal de suppression — `src/components/Prestataires.jsx:192-196`
+Remplacer « Si un compte de connexion était lié, il restera actif mais sans
+fiche prestataire (portail vide). » par un texte indiquant que le compte de
+connexion est **supprimé** en même temps que la fiche (le prestataire ne pourra
+plus se connecter ; une nouvelle invitation pourra être envoyée plus tard).
 
-### 5. Audit sécurité §6 (AGENTS.md) — avant tout commit
-1. `bun install` si besoin puis `bun audit` → 0 vulnérabilité.
-2. `bun run build` → succès.
-3. Relecture intégrale de `git diff` (déjà partiellement faite cette session).
-4. Secrets :
-   - `grep -riE "SERVICE_ROLE|SUPABASE_JWT_SECRET|service_role" src/` → vide
-   - `grep -rE "eyJ[A-Za-z0-9_-]{20,}" . --include="*.js" --include="*.jsx" --include="*.ts" --include="*.json" --include="*.md"` → vide
-   - aucun `.env` stagé (seul `.env.example` sans valeurs réelles autorisé)
-5. `grep -r "console.log" src/` → rien de sensible.
-6. RLS : migration 0022 — table `notifications` avec RLS, select/update restreints à `destinataire_user_id = auth.uid()`, pas de policy insert client (inserts via `notify_evenement` security definer). ✓ déjà dans le SQL.
-7. RBAC : statuts « Bloquée »/« Résilié » bloqués côté UI **et** via check constraints DB.
+### 3. Hook `src/lib/useUsers.js` — comptage invitations acceptées
+- Ajouter `const [invitationsAcceptees, setInvitationsAcceptees] = useState(0);`
+- Dans `load()`, en parallèle des 2 requêtes existantes :
+  `supabase.from("invitations").select("id", { count: "exact", head: true }).eq("entreprise_id", entrepriseId).eq("accepted", true)`
+  → stocker `count || 0`. (RLS OK : policy select « invitations : lecture
+  entreprise » couvre admin/comptable/commercial.)
+- Retourner `invitationsAcceptees`.
 
-### 6. Commit + push
-- `git add` des fichiers suivants (explicitement, pas de `git add -A`) :
-  - `src/**` modifiés + `NotifsBell.jsx`, `useNotifications.js`
-  - `supabase/migrations/0022_statuts_notifications.sql`
-  - `supabase/email-templates/*` (rebranding Ma Bouate — confirmer avec l'utilisateur que c'est intentionnel)
-  - `.kilo/plans/*` (fichiers déjà suivis par le repo)
-- Message de commit dans le style du log existant (français, préfixe feat/fix) :
-  `feat(notifications): statuts Bloquée/Résilié, notifications temps réel, timeline suivi tâches (0022)`
-- `git push origin main`.
+### 4. Composant `src/components/Users.jsx` — KpiBar
+- Importer `KpiBar` depuis `./ui`, icônes `Users`, `UserCheck` (lucide).
+- En tête de page, avant la Card « Membres de l'équipe » :
+  - `{ label: "Utilisateurs au total", value: profiles.length, sub: "Comptes de l'entreprise", tone: T.ink, icon: Users }`
+  - `{ label: "Invitations acceptées", value: invitationsAcceptees, sub: "Ont rejoint l'équipe", tone: T.teal, icon: UserCheck }`
+- Nouvelle prop `invitationsAcceptees`.
 
-## Échec / rollback
-- Si un contrôle §6 échoue : corriger puis re-auditer avant de pousser (règle de blocage AGENTS.md).
-- Si la migration 0022 échoue à l'application sur Supabase : SQL syntaxiquement correct ; l'erreur « Load failed (api.supabase.com) » est CLI/réseau → réessayer, ou appliquer via l'éditeur SQL du dashboard, section par section.
+### 5. Branchement `src/App.jsx`
+- L. 136 : déstructurer `invitationsAcceptees` depuis `useUsers`.
+- L. 243 : passer `invitationsAcceptees={invitationsAcceptees}` à `<Users />`.
 
-## Validation post-push
-- Build vert, audit 0.
-- Côté app (après application de la migration) : ajouter une sous-tâche avec statut « Bloquée » dans le tiroir de tâche ; changer le statut d'une sous-tâche existante → notification admin reçue ; timeline de la fiche prestataire affiche tâches/sous-tâches avec projet correct et badge « Bloquée ».
+## Hors périmètre
+- Pas de modification des politiques RLS de `profiles` (pas de DELETE client).
+- Pas de suppression manuelle d'un membre de l'équipe depuis la page
+  Utilisateurs (non demandé).
+- KPI limités aux 2 demandés (l'utilisateur a dit « c'est tout »).
 
-## Notes
-- `STATUTS_TACHE` doit rester synchronisé entre `Prestataires.jsx:14`, `PortalPrestataire.jsx:23`, `Projets.jsx:10`.
-- La timeline utilise `Timeline` de `./ui` (items `{ title, date, detail }`).
+## Risques & parades
+- **Trigger + auth.users** : pattern Supabase standard (fonction definer
+  propriétaire postgres). Vérifier à l'application de la migration puis par le
+  test E2E ci-dessous ; sinon fallback dashboard.
+- **Nettoyage destructif** : strictement scopé (role='prestataire' ET aucune
+  fiche liée via `user_id`) ; aucun admin/employé/comptable/super_admin touché.
+- **Compte reconverti** : la garde `role = 'prestataire'` empêche la
+  suppression d'un compte dont le rôle a été changé entre-temps.
+- **Ré-invitation ultérieure** : le compte étant réellement supprimé,
+  `signInWithOtp({ shouldCreateUser: true })` recréera proprement compte +
+  profil + liaison (trigger `handle_new_user`) — contrairement à une
+  suppression du seul profil qui aurait cassé la ré-invitation.
+
+## Validation
+1. `bun run build` — succès.
+2. Appliquer 0023 sur Supabase ; vérifier dans le dashboard :
+   - les profils fantômes (role prestataire sans fiche) ont disparu de `auth.users` et `profiles` ;
+   - le trigger `on_prestataire_deleted` existe.
+3. Test E2E : inviter un prestataire test → accepter → vérifier présence dans
+   Utilisateurs → supprimer la fiche → vérifier disparition de Utilisateurs et
+   de `auth.users` ; puis le ré-inviter avec le même e-mail → ça fonctionne.
+4. Test KPI : les 2 compteurs affichent des valeurs cohérentes (créer/accepter
+   une invitation invitée pour voir le compteur bouger).
+5. Pré-push : Grille d'Audit §6 (AGENTS.md) — audit 0, build, relecture diff,
+   scans secrets, RLS inchangées.
