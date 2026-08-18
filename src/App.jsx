@@ -163,7 +163,7 @@ export default function App() {
   }
 
   if (!session) {
-    return (<><GlobalStyles /><Login onSignIn={signIn} onSignUp={signUp} /></>);
+    return (<><GlobalStyles /><Login onSignIn={signIn} onSignUp={signUp} onSignInWithOtp={signInWithOtp} /></>);
   }
 
   if (!profile) {

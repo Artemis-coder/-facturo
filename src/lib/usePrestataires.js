@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
+import { SITE_URL } from "./siteUrl";
 
 const PRESTATAIRE_SELECT = "id, nom, societe, email, telephone, notes, type_projet, type_contrat, user_id, created_by, created_at, updated_at";
 const LIEN_SELECT = "id, projet_id, prestataire_id, mission, created_by, created_at";
@@ -150,7 +151,7 @@ export function usePrestataires(entrepriseId, userId) {
     }
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: prestataire.email.trim(),
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+      options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
     });
     await load();
     return { error: null, emailError: otpError };

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
+import { SITE_URL } from "./siteUrl";
 
 /**
  * useAuth
@@ -43,6 +44,14 @@ export function useAuth() {
     return { error };
   };
 
+  const signInWithOtp = async (email) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: SITE_URL },
+    });
+    return { error };
+  };
+
   // entrepriseNom / nomComplet are passed to the `handle_new_user` trigger via
   // raw_user_meta_data — they seed the new entreprise + profile rows.
   const signUp = async (email, password, entrepriseNom, nomComplet) => {
@@ -56,5 +65,5 @@ export function useAuth() {
 
   const signOut = () => supabase.auth.signOut();
 
-  return { session, profile, loading, signIn, signUp, signOut, refreshProfile: () => loadProfile(session?.user?.id) };
+  return { session, profile, loading, signIn, signUp, signInWithOtp, signOut, refreshProfile: () => loadProfile(session?.user?.id) };
 }

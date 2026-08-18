@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
+import { SITE_URL } from "./siteUrl";
 
 export function useUsers(entrepriseId) {
   const [profiles, setProfiles] = useState([]);
@@ -33,7 +34,7 @@ export function useUsers(entrepriseId) {
     // l'admin peut réessayer avec "Renvoyer l'e-mail" ou partager le message manuellement.
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+      options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
     });
     await load();
     return { error: null, emailError: otpError };
@@ -43,7 +44,7 @@ export function useUsers(entrepriseId) {
   const resendInviteEmail = async (email) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+      options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
     });
     return { error };
   };

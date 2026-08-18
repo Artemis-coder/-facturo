@@ -7,8 +7,9 @@ import { T, inputStyle } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { Card, Field, Btn } from "./ui";
 import { supabase } from "../lib/supabaseClient";
+import { SITE_URL } from "../lib/siteUrl";
 
-export function Login({ onSignIn, onSignUp }) {
+export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
   const { canInstall, promptInstall } = useInstallPrompt();
   const [mode, setMode] = useState("connexion"); // 'connexion' | 'inscription' | 'reset'
   const [email, setEmail] = useState("");
@@ -49,13 +50,27 @@ export function Login({ onSignIn, onSignUp }) {
           return;
         }
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: SITE_URL,
         });
         setBusy(false);
         if (error) {
           setError(error.message || "Impossible d'envoyer l'e-mail de réinitialisation.");
         } else {
           setSuccessMsg("Un lien de réinitialisation vous a été envoyé par e-mail.");
+        }
+      } else if (mode === "otp") {
+        if (!email) {
+          setError("Veuillez saisir votre adresse e-mail.");
+          setBusy(false);
+          return;
+        }
+        const { error } = await onSignInWithOtp(email);
+        setBusy(false);
+        if (error) {
+          setError(error.message || "Impossible d'envoyer le lien de connexion.");
+        } else {
+          setSuccessMsg(`Un lien de connexion a été envoyé à ${email}. Ouvrez-le pour vous connecter.`);
+          setMode("connexion");
         }
       }
     } catch (err) {
@@ -379,7 +394,7 @@ export function Login({ onSignIn, onSignUp }) {
                   </div>
                 </Field>
 
-                {mode !== "reset" && (
+                {mode !== "reset" && mode !== "otp" && (
                   <Field label="Mot de passe">
                     <div style={{ position: "relative" }}>
                       <Lock size={15} style={{ position: "absolute", left: 12, top: 12, color: T.inkSoft }} />
@@ -419,6 +434,13 @@ export function Login({ onSignIn, onSignUp }) {
                       style={{ background: "none", border: "none", fontSize: 12.5, color: T.gold, cursor: "pointer", fontWeight: 500 }}
                     >
                       Mot de passe oublié ?
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setMode("otp"); setError(""); setSuccessMsg(""); }}
+                      style={{ background: "none", border: "none", fontSize: 12.5, color: T.gold, cursor: "pointer", fontWeight: 500, marginLeft: 12 }}
+                    >
+                      Se connecter par lien magique
                     </button>
                   </div>
                 )}
@@ -461,6 +483,17 @@ export function Login({ onSignIn, onSignUp }) {
                 </Btn>
 
                 {mode === "reset" && (
+                  <div style={{ textAlign: "center", marginTop: 16 }}>
+                    <button
+                      type="button"
+                      onClick={() => { setMode("connexion"); setError(""); setSuccessMsg(""); }}
+                      style={{ background: "none", border: "none", fontSize: 13, color: T.inkSoft, cursor: "pointer" }}
+                    >
+                      ← Retour à la connexion
+                    </button>
+                  </div>
+                )}
+                {mode === "otp" && (
                   <div style={{ textAlign: "center", marginTop: 16 }}>
                     <button
                       type="button"

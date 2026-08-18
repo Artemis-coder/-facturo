@@ -8,12 +8,13 @@ import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
 import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar } from "./ui";
+import { SITE_URL } from "../lib/siteUrl";
 
 export const TYPES_PROJET = ["Design graphique", "Développement web", "Audiovisuel", "Marketing", "Rédaction", "Autre"];
 export const TYPES_CONTRAT = ["Prestation de service", "Sous-traitance", "Freelance", "Partenariat"];
 export const STATUTS_TACHE = ["À faire", "En cours", "Terminée"];
 
-const APP_URL = typeof window !== "undefined" ? window.location.origin : "";
+const APP_URL = SITE_URL;
 
 const TYPE_PROJET_TONE = {
   "Design graphique": T.gold,

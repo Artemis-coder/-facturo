@@ -3,6 +3,7 @@ import { UserPlus, X, Copy, MessageCircle, Check, Clock, Mail, RefreshCw, AlertT
 import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { Card, Field, Btn, Select, Modal } from "./ui";
+import { SITE_URL } from "../lib/siteUrl";
 
 const ROLE_LABELS = {
   super_admin: "Super Admin",
@@ -16,7 +17,7 @@ const ROLE_LABELS = {
 // depuis la page Prestataires (fiche → « Inviter (connexion) »).
 const ROLES = Object.keys(ROLE_LABELS).filter((r) => r !== "super_admin" && r !== "prestataire");
 
-const APP_URL = typeof window !== "undefined" ? window.location.origin : "https://facturo.app";
+const APP_URL = SITE_URL;
 
 function buildMessage(entrepriseNom, email, role) {
   return (
