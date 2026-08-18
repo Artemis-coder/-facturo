@@ -1,8 +1,7 @@
-# Facturo
+# Ma Bouate
 
-Application web de gestion commerciale pour PME et indépendants en Côte d'Ivoire /
-UEMOA : devis, factures, clients, projets, trésorerie et rapports — avec rôles
-d'équipe et sécurité au niveau des données (Row Level Security Supabase).
+Une application web de gestion pour les freelance et autres / devis, factures, clients, projets, trésorerie et rapports — avec rôles
+d'équipe et sécurité au niveau des données (Row Level Security).
 
 ## Fonctionnalités
 
@@ -13,11 +12,12 @@ d'équipe et sécurité au niveau des données (Row Level Security Supabase).
 - **Finance** : journal de trésorerie (entrées de paiements + dépenses), rapports
   exportables en PDF/Excel/CSV
 - **Équipe & rôles** : Administrateur, Comptable, Commercial, Employé — chacun
-  avec un tableau de bord et des permissions dédiés ; invitation par e-mail
+  avec un tableau de bord et des permissions dédiées ; invitation par e-mail
   (lien magique, sans mot de passe)
 - **Confidentialité à l'écran** : bouton pour masquer tous les montants
   affichés d'un coup (utile en réunion ou en public)
 - **PWA installable** sur mobile et desktop
+- Suivie des prestataires via l'attribution des projets
 
 ## Stack
 
@@ -35,7 +35,7 @@ npm run dev
 ```
 
 `VITE_SUPABASE_ANON_KEY` est la clé publique ("anon") de votre projet — elle
-est conçue pour être utilisée côté client, la sécurité réelle vient des
+est conçue pour être utilisée côté client ; la sécurité réelle vient des
 policies RLS définies en base. Ne jamais utiliser la clé `service_role`
 (secrète) dans ce fichier.
 
@@ -82,8 +82,8 @@ npm run build
 
 Le dossier `dist/` est un site statique déployable sur n'importe quel hébergeur
 (Netlify, Vercel, VPS avec Nginx/Apache). Configurez `VITE_SUPABASE_URL` et
-`VITE_SUPABASE_ANON_KEY` comme variables d'environnement de build sur votre
-plateforme d'hébergement (elles sont injectées au moment du build).
+`VITE_SUPABASE_ANON_KEY` comme variable d'environnement de build sur votre
+plateforme d'hébergement (elle est injectée au moment du build).
 
 ## 5. Pousser sur GitHub
 
