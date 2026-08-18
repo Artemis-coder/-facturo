@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { UserPlus, X, Copy, MessageCircle, Check, Clock, Mail, RefreshCw, AlertTriangle } from "lucide-react";
+import { UserPlus, X, Copy, MessageCircle, Check, Clock, Mail, RefreshCw, AlertTriangle, Users as UsersIcon, UserCheck } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { Card, Field, Btn, Select, Modal } from "./ui";
+import { Card, Field, Btn, Select, Modal, KpiBar } from "./ui";
 import { SITE_URL } from "../lib/siteUrl";
 
 const ROLE_LABELS = {
@@ -34,7 +34,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-export function Users({ profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation, notify, currentUserId, entreprise }) {
+export function Users({ profiles, invitations, invitationsAcceptees, changeRole, invite, resendInviteEmail, cancelInvitation, notify, currentUserId, entreprise }) {
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("employe");
@@ -69,6 +69,11 @@ export function Users({ profiles, invitations, changeRole, invite, resendInviteE
 
   return (
     <div>
+      <KpiBar items={[
+        { label: "Utilisateurs au total", value: `${profiles.length}`, sub: "Comptes de l'entreprise", tone: T.ink, icon: UsersIcon },
+        { label: "Invitations acceptées", value: `${invitationsAcceptees}`, sub: "Ont rejoint l'équipe", tone: T.teal, icon: UserCheck },
+      ]} />
+
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderBottom: `1px solid ${T.line}` }}>
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5 }}>Membres de l'équipe</div>

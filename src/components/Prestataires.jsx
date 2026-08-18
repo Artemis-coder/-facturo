@@ -191,8 +191,9 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
         <Modal title={`Supprimer "${deleting.nom}" ?`} onClose={() => setDeleting(null)}>
           <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
             Le prestataire sera supprimé. Ses affectations aux projets et ses tâches seront <b>retirées</b>,
-            les projets et contrats restent intacts. Si un compte de connexion était lié, il restera actif
-            mais sans fiche prestataire (portail vide).
+            les projets et contrats restent intacts. Si un compte de connexion était lié, il sera{" "}
+            <b>supprimé automatiquement</b> : le prestataire ne pourra plus se connecter.
+            Vous pourrez le réinviter plus tard avec la même adresse e-mail si besoin.
           </p>
           <div style={{ display: "flex", gap: 10 }}>
             <Btn variant="danger" onClick={confirmerSuppression}>Oui, supprimer le prestataire</Btn>
