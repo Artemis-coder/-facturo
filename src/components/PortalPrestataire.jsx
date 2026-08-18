@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   FolderKanban, FileSignature, ListTodo, Bell, LogOut, X, Plus, Menu,
   Download, MessageCircle, CalendarClock, AlertTriangle, Handshake, Wifi, WifiOff,
-  KeyRound,
+  KeyRound, ChevronRight, ChevronDown, Clock, History, GitBranch, Trash2, Pencil,
 } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
@@ -31,7 +31,7 @@ function AlerteBadge({ alr }) {
 }
 
 export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }) {
-  const { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache } = usePrestatairePortal(entrepriseId, userId);
+  const { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, reload } = usePrestatairePortal(entrepriseId, userId);
   const [tab, setTab] = useState("projets");
   const [editingTache, setEditingTache] = useState(null);
   const [viewingContrat, setViewingContrat] = useState(null);
@@ -40,6 +40,10 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   const [toast, setToast] = useState("");
   const [navOpen, setNavOpen] = useState(false);
   const [authUser, setAuthUser] = useState(undefined);
+  const [drawerTask, setDrawerTask] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [historique, setHistorique] = useState([]);
+  const [loadingHistorique, setLoadingHistorique] = useState(false);
   const online = useOnlineStatus();
   const notify = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
@@ -78,6 +82,46 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
   const ouvrirWhatsApp = (contract) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(`Bonjour,\n\nConcernant le contrat « ${contract.titre} ».\n\nCordialement,\n${prestataire?.nom || "Votre prestataire"}`)}`, "_blank", "noopener,noreferrer");
+  };
+
+  const openDrawer = async (tache) => {
+    setDrawerTask(tache);
+    setDrawerOpen(true);
+    setHistorique([]);
+    setLoadingHistorique(true);
+    const { data } = await supabase
+      .from("tache_historique")
+      .select("*")
+      .eq("tache_id", tache.id)
+      .order("created_at", { ascending: false });
+    setHistorique(data || []);
+    setLoadingHistorique(false);
+  };
+
+  const addSousTache = async (parentId, titre, echeance) => {
+    const { error } = await supabase.from("taches").insert({
+      entreprise_id: entrepriseId,
+      projet_id: null,
+      prestataire_id: userId,
+      parent_task_id: parentId,
+      titre: titre.trim(),
+      description: "",
+      statut: "À faire",
+      echeance: echeance || null,
+      created_by: userId,
+    });
+    if (error) { notify("Échec : " + error.message); return { error }; }
+    await reload();
+    notify("Sous-tâche ajoutée");
+    return { error: null };
+  };
+
+  const deleteSousTache = async (id) => {
+    const { error } = await supabase.from("taches").delete().eq("id", id);
+    if (error) { notify("Échec : " + error.message); return { error }; }
+    await reload();
+    notify("Sous-tâche supprimée");
+    return { error: null };
   };
 
   if (loading || authUser === undefined) {
@@ -258,52 +302,65 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
           {tab === "taches" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ fontSize: 12.5, color: T.inkSoft }}>
                   {taches.filter((t) => t.statut !== "Terminée").length} tâche{taches.filter((t) => t.statut !== "Terminée").length > 1 ? "s" : ""} à réaliser
                 </div>
                 <Btn icon={Plus} onClick={() => setEditingTache({ titre: "", description: "", statut: "À faire", echeance: "", projetId: liens[0]?.projetId || "", prestataireId: prestataire.id })}>Nouvelle tâche</Btn>
               </div>
-              {projets.map((pr) => {
-                const tachesDuPr = tachesDe(pr.id);
-                if (tachesDuPr.length === 0) return null;
-                const done = tachesDuPr.filter((t) => t.statut === "Terminée").length;
-                const pct = Math.round((done / tachesDuPr.length) * 100);
-                return (
-                  <div key={pr.id} style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 10, marginBottom: 14 }}>
-                    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.line}` }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, fontWeight: 600 }}><FolderKanban size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />{pr.nom}</span>
-                        <span style={{ fontSize: 11.5, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{done}/{tachesDuPr.length} ({pct}%)</span>
+
+              {taches.length === 0 && <EmptyState icon={ListTodo} title="Aucune tâche" subtitle="Ajoutez les tâches que vous devez réaliser sur vos projets." />}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                {["À faire", "En cours", "Terminée"].map((statut) => {
+                  const colonneTaches = taches.filter((t) => t.statut === statut);
+                  const termine = statut === "Terminée";
+                  return (
+                    <div key={statut} style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 220px)" }}>
+                      <div style={{ padding: "12px 14px", borderBottom: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: termine ? T.tealSoft : T.bg }}>
+                        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 600, color: termine ? T.teal : T.ink }}>
+                          {statut}
+                        </span>
+                        <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace", background: "#fff", padding: "2px 8px", borderRadius: 12 }}>
+                          {colonneTaches.length}
+                        </span>
                       </div>
-                      <div style={{ height: 5, background: T.bg, borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? T.teal : T.gold, transition: "width .3s ease" }} />
+                      <div style={{ padding: 10, overflowY: "auto", flex: 1 }}>
+                        {colonneTaches.map((t) => {
+                          const alr = alerteTache(t);
+                          const projet = projetDe(t.projetId);
+                          const sousTaches = taches.filter((st) => st.parentTaskId === t.id);
+                          const sousTachesFaites = sousTaches.filter((st) => st.statut === "Terminée").length;
+                          return (
+                            <div key={t.id} onClick={() => openDrawer(t)} style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 10, padding: "12px 14px", marginBottom: 10, cursor: "pointer", transition: "box-shadow .15s, transform .1s" }} onMouseOver={(e) => { e.currentTarget.style.boxShadow = "0 4px 14px rgba(22,33,58,.08)"; e.currentTarget.style.transform = "translateY(-1px)"; }} onMouseOut={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                                <span style={{ fontSize: 12.5, color: T.inkSoft, fontWeight: 500 }}>{projet?.nom || "Projet inconnu"}</span>
+                                <Badge statut={t.statut} />
+                              </div>
+                              <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink, marginBottom: 4, lineHeight: 1.4 }}>{t.titre}</div>
+                              {t.description && <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.5, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.description}</div>}
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                  {t.echeance && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11.5, color: T.inkSoft }}><CalendarClock size={11} />{formatDate(t.echeance)}</span>}
+                                  {alr && <AlerteBadge alr={alr} />}
+                                </div>
+                                {sousTaches.length > 0 && (
+                                  <span style={{ fontSize: 11, color: T.inkSoft, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                    <GitBranch size={11} /> {sousTachesFaites}/{sousTaches.length}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {colonneTaches.length === 0 && (
+                          <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: T.inkSoft }}>Aucune tâche</div>
+                        )}
                       </div>
                     </div>
-                    {tachesDuPr.map((t) => {
-                      const alr = alerteTache(t);
-                      return (
-                        <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: `1px dashed ${T.line}`, flexWrap: "wrap" }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 13, fontWeight: 600 }}>{t.titre}</span>
-                              {alr && <AlerteBadge alr={alr} />}
-                            </div>
-                            {t.description && <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>{t.description}</div>}
-                            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4, fontSize: 11.5, color: T.inkSoft }}>
-                              {t.echeance && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><CalendarClock size={12} />{formatDate(t.echeance)}</span>}
-                            </div>
-                          </div>
-                          <Select wrapperStyle={{ width: 135 }} value={t.statut} onChange={(e) => changerStatut(t, e.target.value)}>
-                            {STATUTS_TACHE.map((s) => <option key={s} value={s}>{s}</option>)}
-                          </Select>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-              {taches.length === 0 && <EmptyState icon={ListTodo} title="Aucune tâche" subtitle="Ajoutez les tâches que vous devez réaliser sur vos projets." />}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -342,7 +399,119 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
         </Modal>
       )}
 
+      {drawerOpen && drawerTask && (
+        <div style={{ position: "fixed", top: 0, right: 0, width: 420, maxWidth: "100%", height: "100vh", background: "#fff", borderLeft: `1px solid ${T.line}`, boxShadow: "-10px 0 30px rgba(22,33,58,.12)", zIndex: 100, display: "flex", flexDirection: "column", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <div style={{ padding: "18px 20px", borderBottom: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600 }}>Détail de la tâche</div>
+            <button onClick={() => { setDrawerOpen(false); setDrawerTask(null); setHistorique([]); }} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex" }}><X size={18} /></button>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 4 }}>Projet</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{projetDe(drawerTask.projetId)?.nom || "—"}</div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 4 }}>Titre</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{drawerTask.titre}</div>
+            </div>
+            {drawerTask.description && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 4 }}>Description</div>
+                <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.6 }}>{drawerTask.description}</div>
+              </div>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 4 }}>Échéance</div>
+                <div style={{ fontSize: 13, color: T.ink }}>{drawerTask.echeance ? formatDate(drawerTask.echeance) : "—"}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 4 }}>Statut</div>
+                <Select wrapperStyle={{ width: "100%" }} value={drawerTask.statut} onChange={(e) => { changerStatut(drawerTask, e.target.value); setDrawerTask({ ...drawerTask, statut: e.target.value }); }}>
+                  {STATUTS_TACHE.map((s) => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              </div>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 10 }}>Sous-tâches</div>
+                              <SousTacheList parentId={drawerTask.id} taches={taches} onAdded={async (titre, echeance) => { await addSousTache(drawerTask.id, titre, echeance); setDrawerTask(taches.find(t => t.id === drawerTask.id) || drawerTask); }} onDeleted={async (id) => { await deleteSousTache(id); setDrawerTask(taches.find(t => t.id === drawerTask.id) || drawerTask); }} />
+            </div>
+
+            <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <History size={14} color={T.inkSoft} />
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>Historique</div>
+              </div>
+              {loadingHistorique ? (
+                <div style={{ fontSize: 12.5, color: T.inkSoft }}>Chargement…</div>
+              ) : historique.length === 0 ? (
+                <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucune modification enregistrée.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  {historique.map((h) => (
+                    <div key={h.id} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px dashed ${T.line}` }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.gold, marginTop: 5, flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12.5, color: T.ink, lineHeight: 1.5 }}>
+                          {h.type === "statut" && <><b>{h.ancienne_valeur}</b> → <b>{h.nouvelle_valeur}</b></>}
+                          {h.type === "sous_tache_ajoutee" && <>Sous-tâche ajoutée : <b>{h.nouvelle_valeur}</b></>}
+                          {h.type === "sous_tache_supprimee" && <>Sous-tâche supprimée : <b>{h.ancienne_valeur}</b></>}
+                          {h.type === "tache_creer" && <>Tâche créée</>}
+                          {h.type === "tache_modifier" && <>Tâche modifiée</>}
+                          {h.type === "tache_supprimer" && <>Tâche supprimée</>}
+                        </div>
+                        <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 2 }}>{new Date(h.created_at).toLocaleString("fr-FR")}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast message={toast} />
+    </div>
+  );
+}
+
+function SousTacheList({ parentId, taches, onAdded, onDeleted }) {
+  const [titre, setTitre] = useState("");
+  const [echeance, setEcheance] = useState("");
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+        {taches.filter((t) => t.parentTaskId === parentId).map((st) => (
+          <div key={st.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.bg, borderRadius: 8, fontSize: 12.5 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 500, color: st.statut === "Terminée" ? T.inkSoft : T.ink, textDecoration: st.statut === "Terminée" ? "line-through" : "none" }}>{st.titre}</div>
+              {st.echeance && <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 2 }}>{formatDate(st.echeance)}</div>}
+            </div>
+            <button onClick={() => onDeleted(st.id)} title="Supprimer" style={{ background: "none", border: "none", cursor: "pointer", color: T.brick, display: "flex", flexShrink: 0 }}><Trash2 size={13} /></button>
+          </div>
+        ))}
+        {taches.filter((t) => t.parentTaskId === parentId).length === 0 && (
+          <div style={{ fontSize: 12, color: T.inkSoft, padding: "6px 0" }}>Aucune sous-tâche</div>
+        )}
+      </div>
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} style={{ background: "none", border: `1px dashed ${T.line}`, borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: T.inkSoft, cursor: "pointer", width: "100%", textAlign: "left" }}>
+          + Ajouter une sous-tâche
+        </button>
+      ) : (
+        <div style={{ background: T.bg, borderRadius: 10, padding: 12, border: `1px solid ${T.line}` }}>
+          <Field label="Titre de la sous-tâche"><input style={inputStyle} value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="Ex. Livrer la maquette" /></Field>
+          <Field label="Échéance (optionnel)"><input type="date" style={inputStyle} value={echeance} onChange={(e) => setEcheance(e.target.value)} /></Field>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <Btn small variant="gold" onClick={async () => { if (!titre.trim()) return; await onAdded(titre, echeance); setTitre(""); setEcheance(""); setOpen(false); }} disabled={!titre.trim()}>Ajouter</Btn>
+            <Btn small variant="ghost" onClick={() => { setOpen(false); setTitre(""); setEcheance(""); }}>Annuler</Btn>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

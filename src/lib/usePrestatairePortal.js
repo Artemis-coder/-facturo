@@ -40,6 +40,7 @@ const mapTache = (row) => ({
   id: row.id,
   projetId: row.projet_id,
   prestataireId: row.prestataire_id,
+  parentTaskId: row.parent_task_id,
   titre: row.titre,
   description: row.description || "",
   statut: row.statut,
@@ -65,7 +66,7 @@ export function usePrestatairePortal(entrepriseId, userId) {
       supabase.from("projet_prestataires").select("id, projet_id, mission"),
       supabase.from("projets").select("id, nom, description, statut, created_at"),
       supabase.from("contracts").select("id, titre, type_service, statut, contenu_final, envoye_le, signe_le").neq("statut", "Brouillon"),
-      supabase.from("taches").select("id, projet_id, prestataire_id, titre, description, statut, echeance").eq("entreprise_id", entrepriseId).order("echeance", { ascending: true }),
+      supabase.from("taches").select("id, projet_id, prestataire_id, parent_task_id, titre, description, statut, echeance").eq("entreprise_id", entrepriseId).order("echeance", { ascending: true }),
     ]);
     if (!prestataireRes.error) setPrestataire(prestataireRes.data ? mapPrestataire(prestataireRes.data) : null);
     if (!lienRes.error) setLiens((lienRes.data || []).map(mapLien));
@@ -106,5 +107,27 @@ export function usePrestatairePortal(entrepriseId, userId) {
     return { error };
   };
 
-  return { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, reload: load };
+  const addSousTache = async (parentId, titre, echeance) => {
+    const { error } = await supabase.from("taches").insert({
+      entreprise_id: entrepriseId,
+      projet_id: null,
+      prestataire_id: userId,
+      parent_task_id: parentId,
+      titre: titre.trim(),
+      description: "",
+      statut: "À faire",
+      echeance: echeance || null,
+      created_by: userId,
+    });
+    if (!error) await load();
+    return { error };
+  };
+
+  const deleteSousTache = async (id) => {
+    const { error } = await supabase.from("taches").delete().eq("id", id);
+    if (!error) await load();
+    return { error };
+  };
+
+  return { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, addSousTache, deleteSousTache, reload: load };
 }
