@@ -8,13 +8,10 @@ import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
 import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar } from "./ui";
-import { SITE_URL } from "../lib/siteUrl";
 
 export const TYPES_PROJET = ["Design graphique", "Développement web", "Audiovisuel", "Marketing", "Rédaction", "Autre"];
 export const TYPES_CONTRAT = ["Prestation de service", "Sous-traitance", "Freelance", "Partenariat"];
 export const STATUTS_TACHE = ["À faire", "En cours", "Terminée"];
-
-const APP_URL = SITE_URL;
 
 const TYPE_PROJET_TONE = {
   "Design graphique": T.gold,
@@ -238,8 +235,10 @@ function buildMessagePrestataire(prestataire) {
     `Un espace prestataire vous a été ouvert sur Ma Bouate : vous pourrez suivre vos projets, ` +
     `consulter vos contrats et gérer vos tâches.\n\n` +
     `Un e-mail avec un lien de connexion vient de vous être envoyé à ${prestataire.email} — ` +
-    `cliquez dessus pour activer votre accès.\n\n` +
-    `Si vous ne le recevez pas, allez sur ${APP_URL} et inscrivez-vous avec CETTE adresse e-mail précise : ${prestataire.email}.`
+    `cliquez dessus pour accéder à votre espace. ` +
+    `À votre première connexion, on vous demandera de définir votre mot de passe : ` +
+    `ensuite, vous pourrez toujours vous connecter avec votre e-mail + ce mot de passe.\n\n` +
+    `Si l'e-mail n'arrive pas, demandez-nous de renvoyer l'invitation.`
   );
 }
 

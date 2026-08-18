@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   FolderKanban, FileSignature, ListTodo, Bell, LogOut, X, Plus, Menu,
   Download, MessageCircle, CalendarClock, AlertTriangle, Handshake, Wifi, WifiOff,
+  KeyRound,
 } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
@@ -38,8 +39,13 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [toast, setToast] = useState("");
   const [navOpen, setNavOpen] = useState(false);
+  const [authUser, setAuthUser] = useState(undefined);
   const online = useOnlineStatus();
   const notify = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setAuthUser(data.user ?? null));
+  }, []);
 
   const projetDe = (id) => projets.find((p) => p.id === id);
   const tachesDe = (projetId) => taches.filter((t) => t.projetId === projetId);
@@ -74,8 +80,12 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
     window.open(`https://wa.me/?text=${encodeURIComponent(`Bonjour,\n\nConcernant le contrat « ${contract.titre} ».\n\nCordialement,\n${prestataire?.nom || "Votre prestataire"}`)}`, "_blank", "noopener,noreferrer");
   };
 
-  if (loading) {
+  if (loading || authUser === undefined) {
     return <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><LoadingState label="Chargement de votre espace…" /></div>;
+  }
+
+  if (authUser && authUser.user_metadata?.password_set !== true) {
+    return <SetPasswordGate email={authUser.email} onDone={(u) => setAuthUser(u)} onLogout={onLogout} />;
   }
 
   if (!prestataire) {
@@ -333,6 +343,83 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
       )}
 
       <Toast message={toast} />
+    </div>
+  );
+}
+
+function SetPasswordGate({ email, onDone, onLogout }) {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    if (e) e.preventDefault();
+    setError("");
+    if (password.length < 8) return setError("Le mot de passe doit contenir au moins 8 caractères.");
+    if (password !== confirmation) return setError("La confirmation ne correspond pas au mot de passe.");
+    setBusy(true);
+    const { data, error: updateError } = await supabase.auth.updateUser({
+      password,
+      data: { password_set: true },
+    });
+    setBusy(false);
+    if (updateError) {
+      setError(updateError.message || "Impossible d'enregistrer le mot de passe. Réessayez.");
+      return;
+    }
+    onDone(data.user);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", padding: 20 }}>
+      <div style={{ width: 440, maxWidth: "100%" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 24, justifyContent: "center" }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Ma Bouate</span>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.gold, display: "inline-block", boxShadow: `0 0 12px ${T.gold}` }} />
+        </div>
+        <Card style={{ padding: 30, background: "#FFFFFF", borderRadius: 16, boxShadow: "0 20px 40px rgba(0,0,0,0.35)" }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.goldSoft, color: T.gold, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <KeyRound size={28} />
+          </div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, color: T.ink, textAlign: "center", marginBottom: 10 }}>
+            Définissez votre mot de passe
+          </div>
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, textAlign: "center", marginBottom: 4 }}>
+            Votre compte a été créé avec <b style={{ color: T.ink }}>{email}</b>.
+            Pour vos prochaines connexions, choisissez un mot de passe : vous pourrez
+            ensuite vous connecter avec votre e-mail et ce mot de passe.
+          </p>
+          <p style={{ fontSize: 12, color: T.gold, fontWeight: 600, textAlign: "center", marginBottom: 20 }}>
+            8 caractères minimum
+          </p>
+
+          <form onSubmit={submit}>
+            <Field label="Mot de passe">
+              <input type="password" style={inputStyle} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus />
+            </Field>
+            <Field label="Confirmez le mot de passe">
+              <input type="password" style={inputStyle} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} placeholder="••••••••" />
+            </Field>
+
+            {error && (
+              <div style={{ background: T.brickSoft, color: T.brick, fontSize: 13, borderRadius: 8, padding: "10px 14px", marginBottom: 14, lineHeight: 1.5 }}>
+                {error}
+              </div>
+            )}
+
+            <Btn variant="gold" fullWidth type="submit" disabled={busy} style={{ padding: "12px", fontSize: 14, fontWeight: 600 }}>
+              {busy ? "Enregistrement…" : "Enregistrer mon mot de passe"}
+            </Btn>
+          </form>
+
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <button type="button" onClick={onLogout} style={{ background: "none", border: "none", fontSize: 12.5, color: T.inkSoft, cursor: "pointer" }}>
+              ← Se déconnecter et réessayer plus tard
+            </button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
