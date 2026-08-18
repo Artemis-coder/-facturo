@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Bot, CheckCircle2, Copy, Download, FilePlus2, FileText, FolderOpen, MessageCircle, Pencil, Plus, Save, Send, ShieldCheck, Sparkles, Upload, Layers } from "lucide-react";
+import { Bot, CheckCircle2, Copy, Download, FilePlus2, FileText, FolderOpen, MessageCircle, Pencil, Plus, Save, Send, ShieldCheck, Sparkles, Upload, Layers, FileX } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { totals } from "../lib/helpers";
 import { Btn, EmptyState, Field, KpiBar, Modal, Select, TableShell, Badge } from "./ui";
@@ -45,12 +45,16 @@ export function Contracts({ templates, contracts, clients, factures, devis, proj
   const contratsEnCours = contracts.filter((c) => c.statut !== "Brouillon").length;
   const contratsEnvoyes = contracts.filter((c) => c.statut === "Envoyé").length;
   const contratsBrouillons = contracts.filter((c) => c.statut === "Brouillon").length;
+  const contratsSignes = contracts.filter((c) => c.statut === "Signé").length;
+  const contratsResilies = contracts.filter((c) => c.statut === "Résilié").length;
   const contratsGenerees = contracts.length;
   const modelesUtilises = new Set(contracts.map((c) => c.templateId).filter(Boolean)).size;
   const contratsKpis = [
     { label: "Contrats en cours", value: `${contratsEnCours}`, sub: "Envoyés + signés", tone: T.teal, icon: FileText },
     { label: "Contrats envoyés", value: `${contratsEnvoyes}`, sub: "En attente de signature", tone: T.gold, icon: Send },
     { label: "Brouillons", value: `${contratsBrouillons}`, sub: "À finaliser avant envoi", tone: T.slate, icon: Pencil },
+    { label: "Signés", value: `${contratsSignes}`, sub: "Contrats validés", tone: T.teal, icon: CheckCircle2 },
+    { label: "Résiliés", value: `${contratsResilies}`, sub: "Contrats rompus", tone: T.brick, icon: FileX },
   ];
   const modelesKpis = [
     { label: "Modèles disponibles", value: `${templates.length}`, sub: "Catalogue de modèles", tone: T.ink, icon: Layers },
@@ -220,7 +224,7 @@ function ContractBuilder({ templates, clients, factures, devis, projets, prestat
 }
 
 function ContractPreview({ contract, client, entreprise, onDownload, onWhatsApp, onStatus, onEdit, facture, devis, projet, prestataire }) {
-  return <div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}><Badge statut={contract.statut} />{facture && <span style={{ fontSize: 12, color: T.inkSoft }}>Facture : {facture.id}</span>}{devis && <span style={{ fontSize: 12, color: T.inkSoft }}>Devis : {devis.id}</span>}{projet && <span style={{ fontSize: 12, color: T.inkSoft }}>Projet : {projet.nom}</span>}{prestataire && <span style={{ fontSize: 12, color: T.inkSoft }}>Prestataire : {prestataire.nom}</span>}</div><div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.7, color: T.ink, border: `1px solid ${T.line}`, borderRadius: 10, padding: 16, maxHeight: 420, overflow: "auto" }}>{contract.contenu}</div><div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}><Btn icon={Download} onClick={onDownload}>Télécharger le PDF</Btn>{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Pencil} onClick={onEdit}>Modifier le brouillon</Btn>}{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Send} onClick={() => onStatus("Envoyé")}>Marquer envoyé</Btn>}{contract.statut !== "Signé" && <Btn variant="ghost" icon={CheckCircle2} onClick={() => onStatus("Signé")}>Marquer signé</Btn>}<Btn variant="ghost" icon={MessageCircle} onClick={onWhatsApp}>Ouvrir WhatsApp</Btn></div><p style={{ color: T.inkSoft, fontSize: 11.5, lineHeight: 1.5, marginTop: 12 }}>Téléchargez le PDF avant d’ouvrir WhatsApp, puis joignez-le au message. La validation juridique et la signature restent sous votre responsabilité.</p></div>;
+  return <div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}><Badge statut={contract.statut} />{facture && <span style={{ fontSize: 12, color: T.inkSoft }}>Facture : {facture.id}</span>}{devis && <span style={{ fontSize: 12, color: T.inkSoft }}>Devis : {devis.id}</span>}{projet && <span style={{ fontSize: 12, color: T.inkSoft }}>Projet : {projet.nom}</span>}{prestataire && <span style={{ fontSize: 12, color: T.inkSoft }}>Prestataire : {prestataire.nom}</span>}</div><div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.7, color: T.ink, border: `1px solid ${T.line}`, borderRadius: 10, padding: 16, maxHeight: 420, overflow: "auto" }}>{contract.contenu}</div><div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}><Btn icon={Download} onClick={onDownload}>Télécharger le PDF</Btn>{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Pencil} onClick={onEdit}>Modifier le brouillon</Btn>}{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Send} onClick={() => onStatus("Envoyé")}>Marquer envoyé</Btn>}{contract.statut !== "Signé" && contract.statut !== "Résilié" && <Btn variant="ghost" icon={CheckCircle2} onClick={() => onStatus("Signé")}>Marquer signé</Btn>}{(contract.statut === "Signé" || contract.statut === "Envoyé") && <Btn variant="ghost" icon={FileX} onClick={() => onStatus("Résilié")}>Résilier</Btn>}<Btn variant="ghost" icon={MessageCircle} onClick={onWhatsApp}>Ouvrir WhatsApp</Btn></div><p style={{ color: T.inkSoft, fontSize: 11.5, lineHeight: 1.5, marginTop: 12 }}>Téléchargez le PDF avant d’ouvrir WhatsApp, puis joignez-le au message. La validation juridique et la signature restent sous votre responsabilité.</p></div>;
 }
 
 function ContractFallbackEditor({ contract, clients, factures, devis, projets, prestataires = [], onSave }) {

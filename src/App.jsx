@@ -192,7 +192,7 @@ export default function App() {
     <>
       <GlobalStyles />
       <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
-        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts}>
+        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId}>
         {!dataReady ? (
           <LoadingState label="Chargement des données…" />
         ) : (

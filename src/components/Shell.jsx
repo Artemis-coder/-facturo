@@ -7,6 +7,7 @@ import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
 import { Modal, Btn } from "./ui";
+import { NotifsBell } from "./NotifsBell";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -30,7 +31,7 @@ export const NAV = [
 
 const isVisible = (n, role) => !n.roles || role === "super_admin" || n.roles.includes(role);
 
-export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts }) {
+export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts, userId }) {
   const items = NAV
     .filter((n) => isVisible(n, role))
     .map((n) => (n.children ? { ...n, children: n.children.filter((c) => isVisible(c, role)) } : n))
@@ -218,6 +219,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
               {online ? <Wifi size={13} /> : <WifiOff size={13} />}
               <span>{online ? "En ligne" : "Hors ligne"}</span>
             </div>
+            <NotifsBell userId={userId} entrepriseId={entreprise?.id} />
             <button onClick={onToggleAmounts} title={amountsHidden ? "Afficher les montants" : "Masquer les montants"}
               style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: amountsHidden ? T.gold : T.inkSoft, flexShrink: 0 }}>
               {amountsHidden ? <EyeOff size={17} /> : <Eye size={17} />}

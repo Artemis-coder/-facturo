@@ -1,12 +1,12 @@
 <!--
-  Modèle d'e-mail "Invite user" pour Facturo — invitation à rejoindre une équipe.
+  Modèle d'e-mail "Invite user" pour Ma Boite — invitation à rejoindre une équipe.
 
   À installer dans : Supabase → Authentication → Email Templates → "Invite user"
   Collez ce contenu dans le champ "Message body (HTML)".
-  Objet conseillé : Vous avez été invité sur Facturo
+  Objet conseillé : Vous avez été invité sur Ma Boite
 
   Note : ce template n'est utilisé que par supabase.auth.admin.inviteUserByEmail()
-  (côté serveur). Le flux d'invitation côté client de Facturo utilise
+  (côté serveur). Le flux d'invitation côté client de Ma Boite utilise
   signInWithOtp(), qui envoie le template "Magic Link"
   (voir magic-link-invitation.html).
 
@@ -39,7 +39,7 @@
     <td style="padding:40px 40px 20px;text-align:center;background:#171717;">
       <img src="https://facturo-one.vercel.app/icons/icon-192.png" alt="Logo Facturo" width="120" style="display:block;margin:0 auto 20px;">
       <h1 style="margin:0;font-size:28px;color:#ffffff;font-weight:700;">
-        Vous avez été invité sur Facturo 👋
+        Vous avez été invité sur Ma Boite 👋
       </h1>
     </td>
   </tr>
@@ -53,7 +53,7 @@
       </p>
 
       <p style="margin:0 0 20px;font-size:16px;line-height:1.7;">
-        Vous êtes invité(e) à rejoindre <strong>Facturo</strong>.
+        Vous êtes invité(e) à rejoindre <strong>Ma Boite</strong>.
       </p>
 
       <p style="margin:0 0 30px;font-size:16px;line-height:1.7;">
@@ -88,7 +88,7 @@
                 <td width="170" style="font-weight:600;color:#4a5568;">
                   Plateforme
                 </td>
-                <td>Facturo</td>
+                <td>Ma Boite</td>
               </tr>
 
               <tr>

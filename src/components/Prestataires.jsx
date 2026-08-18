@@ -7,11 +7,11 @@ import {
 import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
-import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar } from "./ui";
+import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar, Timeline } from "./ui";
 
 export const TYPES_PROJET = ["Design graphique", "Développement web", "Audiovisuel", "Marketing", "Rédaction", "Autre"];
 export const TYPES_CONTRAT = ["Prestation de service", "Sous-traitance", "Freelance", "Partenariat"];
-export const STATUTS_TACHE = ["À faire", "En cours", "Terminée"];
+export const STATUTS_TACHE = ["À faire", "En cours", "Terminée", "Bloquée"];
 
 const TYPE_PROJET_TONE = {
   "Design graphique": T.gold,
@@ -392,9 +392,47 @@ function PrestataireDetail({ prestataire, projetsLies, projetDe, projetsDisponib
           <input style={{ ...inputStyle, marginTop: 8 }} value={mission} onChange={(e) => setMission(e.target.value)} placeholder="Mission confiée (ex. Conception des maquettes)" />
           <div style={{ marginTop: 10, textAlign: "right" }}>
             <Btn small disabled={!projetId} onClick={validerAffectation}>Affecter</Btn>
-          </div>
-        </div>
-      )}
+</div>
+         </div>
+       )}
+       
+       {/* --- Suivi des tâches --- */}
+       {canManage && (
+         <div style={{ marginBottom: 26, padding: 18, border: `1px solid ${T.line}`, borderRadius: 10, background: T.bg }}>
+           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5 }}>Suivi des tâches</div>
+           </div>
+           <Timeline
+             items={tachesLies
+               .slice()
+               .sort((a, b) => {
+                 if (!a.echeance && !b.echeance) return 0;
+                 if (!a.echeance) return 1;
+                 if (!b.echeance) return -1;
+                 return a.echeance < b.echeance ? -1 : a.echeance > b.echeance ? 1 : 0;
+               })
+               .map((t) => ({
+                 title: t.titre,
+                 date: t.echeance ? formatDate(t.echeance) : "Sans échéance",
+                 detail: (
+                   <>
+                     <div style={{ marginBottom: 4 }}>
+                       Projet : {projetDe(t.projetId)?.nom || "Projet supprimé"}
+                     </div>
+                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                       Statut : <Badge statut={t.statut} />
+                     </div>
+                     {t.parentTaskId && (
+                       <div style={{ marginTop: 4, fontSize: 11, color: T.inkSoft }}>
+                         Sous-tâche de <b>{tachesLies.find((p) => p.id === t.parentTaskId)?.titre || "tâche supprimée"}</b>
+                       </div>
+                     )}
+                   </>
+                 ),
+               }))}
+           />
+         </div>
+       )}
 
       {/* --- Contrats --- */}
       <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 10 }}>Contrats ({contratsLies.length})</div>

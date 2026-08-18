@@ -1,10 +1,10 @@
 <!--
-  Modèle d'e-mail "Magic Link" pour Facturo — utilisé pour les invitations
+  Modèle d'e-mail "Magic Link" pour Ma Boite — utilisé pour les invitations
   d'équipe (Utilisateurs → Inviter), envoyées via supabase.auth.signInWithOtp().
 
   À installer dans : Supabase → Authentication → Email Templates → "Magic Link"
   Collez ce contenu dans le champ "Message body (HTML)".
-  Objet conseillé : Bienvenue sur Facturo | Votre lien de connexion
+  Objet conseillé : Bienvenue sur Ma Boite | Votre lien de connexion
 
   Variables disponibles fournies par Supabase (syntaxe Go, ne pas modifier) :
     {{ .Email }}            → l'adresse e-mail invitée
@@ -36,7 +36,7 @@
             <td style="padding:40px 40px 20px;text-align:center;background:#171717;">
               <img src="https://facturo-one.vercel.app/icons/icon-192.png" alt="Logo Facturo" width="120" style="display:block;margin:0 auto 20px;">
               <h1 style="margin:0;font-size:28px;color:#ffffff;font-weight:700;">
-                Bienvenue sur Facturo 👋
+                Bienvenue sur Ma Bouate 👋
               </h1>
             </td>
           </tr>
@@ -50,7 +50,7 @@
               </p>
 
               <p style="margin:0 0 20px;font-size:16px;line-height:1.7;">
-                Nous sommes ravis de vous accueillir sur <strong>Facturo</strong>.
+                Nous sommes ravis de vous accueillir sur <strong>Ma Bouate</strong>.
                 Votre espace est prêt et vous pouvez dès maintenant accéder à votre espace de gestion.
               </p>
 
@@ -64,7 +64,7 @@
                   <td bgcolor="#16213a" style="border-radius:10px;">
                     <a href="{{ .ConfirmationURL }}"
                        style="display:inline-block;padding:16px 32px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;">
-                      Accéder à Facturo
+                      Accéder à Ma Boite
                     </a>
                   </td>
                 </tr>

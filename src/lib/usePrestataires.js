@@ -4,7 +4,7 @@ import { SITE_URL } from "./siteUrl";
 
 const PRESTATAIRE_SELECT = "id, nom, societe, email, telephone, notes, type_projet, type_contrat, user_id, created_by, created_at, updated_at";
 const LIEN_SELECT = "id, projet_id, prestataire_id, mission, created_by, created_at";
-const TACHE_SELECT = "id, projet_id, prestataire_id, titre, description, statut, echeance, created_by, created_at, updated_at";
+const TACHE_SELECT = "id, projet_id, prestataire_id, parent_task_id, titre, description, statut, echeance, created_by, created_at, updated_at";
 
 const mapPrestataire = (row) => ({
   id: row.id,
@@ -32,6 +32,7 @@ const mapTache = (row) => ({
   id: row.id,
   projetId: row.projet_id,
   prestataireId: row.prestataire_id,
+  parentTaskId: row.parent_task_id || null,
   titre: row.titre,
   description: row.description || "",
   statut: row.statut,
@@ -100,7 +101,20 @@ export function usePrestataires(entrepriseId, userId) {
     if (error?.code === "23505") {
       return { error: new Error("Ce prestataire est déjà affecté à ce projet.") };
     }
-    if (!error) await load();
+    if (!error) {
+      const cible = prestataires.find((p) => p.id === prestataireId);
+      if (cible?.userId) {
+        const projetRes = await supabase.from("projets").select("nom").eq("id", projetId).maybeSingle();
+        await supabase.rpc("notify_evenement", {
+          p_destinataire_user_id: cible.userId,
+          p_entreprise_id: entrepriseId,
+          p_type: "mission_attribuee",
+          p_titre: "Nouvelle mission",
+          p_message: `Vous avez été affecté au projet « ${projetRes.data?.nom || "sans nom"} »${mission ? ` (${mission})` : ""}.`,
+        });
+      }
+      await load();
+    }
     return { error };
   };
 
@@ -126,6 +140,18 @@ export function usePrestataires(entrepriseId, userId) {
       ({ error } = await supabase.from("taches").update(row).eq("id", form.id));
     } else {
       ({ error } = await supabase.from("taches").insert({ ...row, created_by: userId }));
+      if (!error) {
+        const cible = prestataires.find((p) => p.id === form.prestataireId);
+        if (cible?.userId) {
+          await supabase.rpc("notify_evenement", {
+            p_destinataire_user_id: cible.userId,
+            p_entreprise_id: entrepriseId,
+            p_type: "tache_attribuee",
+            p_titre: "Nouvelle tâche",
+            p_message: `Une tâche vous a été attribuée : « ${form.titre.trim()} »${form.echeance ? ` (échéance : ${form.echeance})` : ""}.`,
+          });
+        }
+      }
     }
     if (!error) await load();
     return { error };

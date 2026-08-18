@@ -7,7 +7,7 @@ import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar 
 
 const STATUTS = ["En cours", "Terminé", "Annulé"];
 const STATUT_TONE = { "En cours": T.slate, "Terminé": T.teal, "Annulé": T.brick };
-const STATUTS_TACHE = ["À faire", "En cours", "Terminée"];
+const STATUTS_TACHE = ["À faire", "En cours", "Terminée", "Bloquée"];
 
 function formatDate(iso) { return iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR") : "—"; }
 

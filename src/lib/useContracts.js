@@ -95,6 +95,33 @@ export function useContracts(entrepriseId, userId) {
     const { error } = await supabase.from("contracts").update(patch).eq("id", contract.id);
     if (!error) {
       await supabase.from("contract_history").insert({ contract_id: contract.id, action: statut, detail: `Contrat marqué comme ${statut.toLowerCase()}`, created_by: userId });
+      if (statut === "Signé" || statut === "Résilié") {
+        const titre = statut === "Signé" ? "Contrat signé" : "Contrat résilié";
+        const message = `Le contrat « ${contract.titre} » vient d'être ${statut.toLowerCase()}.`;
+        const { data: adminIds } = await supabase.rpc("get_admin_user_ids", { p_entreprise_id: entrepriseId });
+        for (const adminId of (adminIds || [])) {
+          if (adminId === userId) continue;
+          await supabase.rpc("notify_evenement", {
+            p_destinataire_user_id: adminId,
+            p_entreprise_id: entrepriseId,
+            p_type: "contrat_change",
+            p_titre: titre,
+            p_message: message,
+          });
+        }
+        if (contract.prestataireId) {
+          const { data: prest } = await supabase.from("prestataires").select("user_id").eq("id", contract.prestataireId).maybeSingle();
+          if (prest?.user_id) {
+            await supabase.rpc("notify_evenement", {
+              p_destinataire_user_id: prest.user_id,
+              p_entreprise_id: entrepriseId,
+              p_type: "contrat_change",
+              p_titre: titre,
+              p_message: message,
+            });
+          }
+        }
+      }
       await load();
     }
     return { error };

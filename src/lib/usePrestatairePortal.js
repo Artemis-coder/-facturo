@@ -99,15 +99,51 @@ export function usePrestatairePortal(entrepriseId, userId) {
     return { error };
   };
 
+  const notifierAdmins = async (type, titre, message) => {
+    const { data: adminIds } = await supabase.rpc("get_admin_user_ids", { p_entreprise_id: entrepriseId });
+    if (!adminIds) return;
+    for (const adminId of adminIds) {
+      await supabase.rpc("notify_evenement", {
+        p_destinataire_user_id: adminId,
+        p_entreprise_id: entrepriseId,
+        p_type: type,
+        p_titre: titre,
+        p_message: message,
+      });
+    }
+  };
+
   const changerStatutTache = async (tache, statut) => {
     const { error } = await supabase.from("taches")
       .update({ statut, updated_at: new Date().toISOString() })
       .eq("id", tache.id);
-    if (!error) await load();
+    if (!error) {
+      await load();
+      if (statut === "Bloquée") {
+        await notifierAdmins("tache_bloquee", "Tâche bloquée", `« ${tache.titre} » a été marquée comme bloquée.`);
+      } else if (statut === "Terminée") {
+        await notifierAdmins("tache_terminee", "Tâche terminée", `« ${tache.titre} » a été terminée.`);
+      }
+    }
     return { error };
   };
 
-  const addSousTache = async (parentId, titre, echeance) => {
+  const changerStatutSousTache = async (sousTache, statut) => {
+    const { error } = await supabase.from("taches")
+      .update({ statut, updated_at: new Date().toISOString() })
+      .eq("id", sousTache.id);
+    if (!error) {
+      await load();
+      if (statut === "Bloquée") {
+        await notifierAdmins("tache_bloquee", "Sous-tâche bloquée", `« ${sousTache.titre} » a été marquée comme bloquée.`);
+      } else if (statut === "Terminée") {
+        await notifierAdmins("tache_terminee", "Sous-tâche terminée", `« ${sousTache.titre} » a été terminée.`);
+      }
+    }
+    return { error };
+  };
+
+  const addSousTache = async (parentId, titre, echeance, statut) => {
     const parent = taches.find((t) => t.id === parentId);
     if (!parent || !prestataire?.id) {
       return { error: new Error("Tâche parente ou fiche prestataire introuvable.") };
@@ -119,7 +155,7 @@ export function usePrestatairePortal(entrepriseId, userId) {
       parent_task_id: parentId,
       titre: titre.trim(),
       description: "",
-      statut: "À faire",
+      statut: statut || "À faire",
       echeance: echeance || null,
       created_by: userId,
     });
@@ -133,5 +169,5 @@ export function usePrestatairePortal(entrepriseId, userId) {
     return { error };
   };
 
-  return { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, addSousTache, deleteSousTache, reload: load };
+  return { prestataire, liens, projets, contrats, taches, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache, reload: load };
 }
