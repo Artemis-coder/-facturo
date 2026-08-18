@@ -96,7 +96,7 @@ function FullscreenMessage({ children }) {
 }
 
 export default function App() {
-  const { session, profile, loading, signIn, signUp, signOut } = useAuth();
+  const { session, profile, loading, signIn, signUp, signInWithOtp, signOut } = useAuth();
   const [view, setView] = useState("dashboard");
   const { hidden: amountsHidden, toggle: toggleAmounts } = useAmountVisibility();
   const online = useOnlineStatus();
