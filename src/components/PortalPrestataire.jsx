@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  FolderKanban, FileSignature, ListTodo, Bell, LogOut, X, Plus, Menu,
+  FolderKanban, FileSignature, ListTodo, LogOut, X, Plus, Menu,
   Download, MessageCircle, CalendarClock, AlertTriangle, Handshake, Wifi, WifiOff,
   KeyRound, ChevronRight, ChevronDown, Clock, History, GitBranch, Trash2, Pencil,
   CheckCircle2, Lock, FileX,
@@ -193,7 +193,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
             <NotifsBell userId={userId} entrepriseId={entrepriseId} />
             <button onClick={() => setAlertesOpen(!alertesOpen)} title="Alertes d'échéance"
               style={{ position: "relative", background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: alertes.length > 0 ? T.brick : T.inkSoft, flexShrink: 0 }}>
-              <Bell size={17} />
+              <CalendarClock size={17} />
               {alertes.length > 0 && (
                 <span style={{ position: "absolute", top: -5, right: -5, background: T.brick, color: "#fff", fontSize: 9.5, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 10, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>{alertes.length}</span>
               )}
