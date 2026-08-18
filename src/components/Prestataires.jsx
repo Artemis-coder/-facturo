@@ -156,7 +156,8 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
             ) : <span style={{ fontSize: 11.5, color: T.inkSoft }}>—</span>}</td>
             <td style={{ ...td, textAlign: "right" }}>
               {canManage && <Btn variant="ghost" small icon={Pencil} onClick={() => setEditing(p)}>Modifier</Btn>}{" "}
-              <Btn variant="ghost" small onClick={() => setDetail(p)}>Voir</Btn>
+              <Btn variant="ghost" small onClick={() => setDetail(p)}>Voir</Btn>{" "}
+              {canDelete && <Btn variant="danger" small icon={Trash2} onClick={() => setDeleting(p)}>Supprimer</Btn>}
             </td>
           </tr>
         ))}
