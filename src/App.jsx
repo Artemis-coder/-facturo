@@ -64,6 +64,7 @@ const GLOBAL_STYLE = `
     .app-sidebar.open { transform: translateX(0); box-shadow: 12px 0 32px rgba(22,33,58,.25); }
     .nav-close-btn { display: flex !important; }
     .nav-menu-btn { display: flex !important; }
+    .nav-collapse-btn { display: none !important; }
     .nav-overlay { display: block; position: fixed; inset: 0; background: #16213A66; z-index: 55; animation: fadeIn .2s ease; }
     .app-header { padding: 14px 16px !important; }
     .app-header-title { font-size: 17px !important; }

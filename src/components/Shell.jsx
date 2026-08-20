@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature, Briefcase, ChevronDown, Handshake,
+  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature, Briefcase, ChevronDown, Handshake, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
@@ -38,6 +38,20 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
     .filter((n) => !n.children || n.children.length > 0);
   const leaves = NAV.flatMap((n) => (n.children ? n.children : [n]));
   const current = leaves.find((n) => n.key === view);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem("mabouate:sidebar:collapsed") === "1"; } catch { return false; }
+  });
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 880px)").matches);
+  useEffect(() => {
+    try { localStorage.setItem("mabouate:sidebar:collapsed", collapsed ? "1" : "0"); } catch {}
+  }, [collapsed]);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 880px)");
+    const onChange = (e) => setIsMobile(e.matches);
+    mql.addEventListener?.("change", onChange);
+    return () => mql.removeEventListener?.("change", onChange);
+  }, []);
+  const rail = collapsed && !isMobile;
   const [navOpen, setNavOpen] = useState(false);
   const [groupOverride, setGroupOverride] = useState(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
@@ -52,28 +66,52 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
       {navOpen && <div className="nav-overlay" onClick={() => setNavOpen(false)} />}
-      <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: 232, background: T.ink, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-        <div style={{ padding: "22px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>Ma Bouate</span>
-            <span style={{ width: 5, height: 5, background: T.gold, display: "inline-block" }} />
+      <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: rail ? 64 : 232, transition: "width .2s ease", background: T.ink, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <div style={{ padding: "22px 20px", display: "flex", alignItems: "center", justifyContent: rail ? "center" : "space-between" }}>
+            <div style={{ display: rail ? "flex" : "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+              {rail
+                ? <span title="Ma Bouate" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>M</span>
+                : (
+                  <>
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>Ma Bouate</span>
+                    <span style={{ width: 5, height: 5, background: T.gold, display: "inline-block" }} />
+                  </>
+                )
+              }
+            </div>
+            {!rail && (
+              <>
+                <button className="nav-collapse-btn" onClick={() => setCollapsed(!collapsed)}
+                  title={collapsed ? "Ouvrir le menu" : "Réduire le menu"}
+                  style={{ background: "none", border: "none", color: "#B9BFCF", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                  {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                </button>
+                <button className="nav-close-btn" onClick={() => setNavOpen(false)} style={{ background: "none", border: "none", color: "#B9BFCF", cursor: "pointer", display: "none" }}><X size={20} /></button>
+              </>
+            )}
+            {rail && (
+              <button className="nav-collapse-btn" onClick={() => setCollapsed(false)}
+                title="Ouvrir le menu"
+                style={{ background: "none", border: "none", color: "#B9BFCF", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                <PanelLeftOpen size={18} />
+              </button>
+            )}
           </div>
-          <button className="nav-close-btn" onClick={() => setNavOpen(false)} style={{ background: "none", border: "none", color: "#B9BFCF", cursor: "pointer", display: "none" }}><X size={20} /></button>
-        </div>
         <nav style={{ flex: 1, padding: "6px 10px" }}>
           {items.map((n) => {
             const Icon = n.icon;
             if (n.children) {
               return (
                 <div key={n.key}>
-                  <div onClick={() => setGroupOverride(!groupOpen)} style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 2,
+                  <div onClick={rail ? (() => { setCollapsed(false); setGroupOverride(true); }) : () => setGroupOverride(!groupOpen)} style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
                     borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
                     background: activeInGroup ? "#ffffff14" : "transparent", color: activeInGroup ? "#fff" : "#B9BFCF",
                     borderLeft: activeInGroup ? `3px solid ${T.gold}` : "3px solid transparent",
-                  }}>
-                    <Icon size={16} />{n.label}
-                    <ChevronDown size={14} style={{ marginLeft: "auto", transition: "transform .2s ease", transform: groupOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+                    justifyContent: rail ? "center" : "flex-start",
+                  }} title={n.label}>
+                    <Icon size={16} />{!rail && n.label}
+                    {!rail && <ChevronDown size={14} style={{ marginLeft: "auto", transition: "transform .2s ease", transform: groupOpen ? "rotate(180deg)" : "rotate(0deg)" }} />}
                   </div>
                   <div style={{
                     overflow: "hidden",
@@ -101,12 +139,13 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             const active = n.key === view;
             return (
               <div key={n.key} onClick={() => go(n.key)} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 2,
+                display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
                 borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
                 background: active ? "#ffffff14" : "transparent", color: active ? "#fff" : "#B9BFCF",
                 borderLeft: active ? `3px solid ${T.gold}` : "3px solid transparent",
-              }}>
-                <Icon size={16} />{n.label}
+                justifyContent: rail ? "center" : "flex-start",
+              }} title={n.label}>
+                <Icon size={16} />{!rail && n.label}
               </div>
             );
           })}
