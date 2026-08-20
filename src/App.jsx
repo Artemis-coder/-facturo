@@ -65,6 +65,7 @@ const GLOBAL_STYLE = `
     .nav-close-btn { display: flex !important; }
     .nav-menu-btn { display: flex !important; }
     .nav-collapse-btn { display: none !important; }
+    .user-profile-name { display: none !important; }
     .nav-overlay { display: block; position: fixed; inset: 0; background: #16213A66; z-index: 55; animation: fadeIn .2s ease; }
     .app-header { padding: 14px 16px !important; }
     .app-header-title { font-size: 17px !important; }
@@ -196,7 +197,7 @@ export default function App() {
     <>
       <GlobalStyles />
       <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
-        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId}>
+        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId} profile={profile}>
         {!dataReady ? (
           <LoadingState label="Chargement des données…" />
         ) : (

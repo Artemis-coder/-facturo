@@ -1,0 +1,7 @@
+{
+    "kilo-code.new.attention.enabled": true,
+    "kilo-code.new.attention.sound": "system",
+    "kilo-code.new.autoApprove.enabled": true,
+    "kilo-code.new.autocomplete.enableChatAutocomplete": true,
+    "kilo-code.new.autocomplete.enableSmartInlineTaskKeybinding": true
+}

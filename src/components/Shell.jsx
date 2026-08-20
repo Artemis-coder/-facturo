@@ -31,7 +31,7 @@ export const NAV = [
 
 const isVisible = (n, role) => !n.roles || role === "super_admin" || n.roles.includes(role);
 
-export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts, userId }) {
+export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts, userId, profile }) {
   const items = NAV
     .filter((n) => isVisible(n, role))
     .map((n) => (n.children ? { ...n, children: n.children.filter((c) => isVisible(c, role)) } : n))
@@ -53,6 +53,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   }, []);
   const rail = collapsed && !isMobile;
   const [navOpen, setNavOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [groupOverride, setGroupOverride] = useState(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
@@ -63,6 +64,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const groupOpen = groupOverride === null ? activeInGroup : groupOverride;
   useEffect(() => { setGroupOverride(null); }, [view]);
   const go = (key) => { setView(key); setNavOpen(false); };
+  const initiales = (profile?.nom_complet || "").split(" ").filter(Boolean).map((p) => p[0].toUpperCase()).slice(0, 2).join("") || profile?.email?.[0]?.toUpperCase() || "U";
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
       {navOpen && <div className="nav-overlay" onClick={() => setNavOpen(false)} />}
@@ -263,6 +265,48 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
               style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: amountsHidden ? T.gold : T.inkSoft, flexShrink: 0 }}>
               {amountsHidden ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setProfileOpen((o) => !o)} title="Mon profil"
+                style={{ background: "none", border: "none", borderRadius: 8, padding: "4px 6px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {initiales}
+                </span>
+                <span className="user-profile-name" style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, maxWidth: 140, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{profile?.nom_complet}</span>
+                <ChevronDown size={14} className="user-profile-name" style={{ color: T.inkSoft, transition: "transform .2s ease", transform: profileOpen ? "rotate(180deg)" : "none" }} />
+              </button>
+              {profileOpen && (
+                <>
+                  <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={() => setProfileOpen(false)} />
+                  <div style={{ position: "absolute", top: 44, right: 0, width: 260, maxWidth: "calc(100vw - 32px)", background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(22,33,58,.16)", zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    <div style={{ padding: 14, borderBottom: `1px solid ${T.line}`, background: T.bg, display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {initiales}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink, fontFamily: "'Space Grotesk', sans-serif" }}>{profile?.nom_complet || "Utilisateur"}</div>
+                        <div style={{ fontSize: 11.5, color: T.inkSoft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{profile?.email}</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", fontSize: 12.5, color: T.ink }}>
+                        <span style={{ color: T.inkSoft }}>Rôle</span>
+                        <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{role?.replace("_", " ")}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", paddingTop: 0, fontSize: 12.5, color: T.ink, gap: 10 }}>
+                        <span style={{ color: T.inkSoft, flexShrink: 0 }}>Entreprise</span>
+                        <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entreprise?.nom}</span>
+                      </div>
+                    </div>
+                    <div style={{ padding: "10px 14px", borderTop: `1px solid ${T.line}` }}>
+                      <button onClick={() => { setProfileOpen(false); setConfirmingLogout(true); }}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", background: "none", border: `1px solid ${T.line}`, borderRadius: 8, padding: "8px 12px", fontSize: 12.5, fontWeight: 600, color: T.brick, cursor: "pointer" }}>
+                        <LogOut size={14} /> Se déconnecter
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
         <div className="app-content" style={{ padding: 30 }}>{children}</div>
