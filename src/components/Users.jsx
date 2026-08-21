@@ -13,9 +13,8 @@ const ROLE_LABELS = {
   employe: "Employé",
   prestataire: "Prestataire",
 };
-// 'prestataire' n'est pas invitable depuis cette page : son compte est créé
-// depuis la page Prestataires (fiche → « Inviter (connexion) »).
-const ROLES = Object.keys(ROLE_LABELS).filter((r) => r !== "super_admin" && r !== "prestataire");
+// super_admin n'est pas invitable depuis cette page
+const ROLES = Object.keys(ROLE_LABELS).filter((r) => r !== "super_admin");
 
 const APP_URL = SITE_URL;
 

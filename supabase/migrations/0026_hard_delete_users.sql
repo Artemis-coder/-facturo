@@ -46,11 +46,21 @@ begin
     raise exception 'Impossible de supprimer un super_admin';
   end if;
 
-  -- 1. Supprimer le compte d'authentification dans auth.users
+  -- Ne pas permettre de supprimer le dernier administrateur de l'entreprise
+  if exists (select 1 from public.profiles where id = p_profile_id and role = 'administrateur') then
+    if (select count(*) from public.profiles where entreprise_id = v_entreprise_id and role = 'administrateur' and id != p_profile_id) = 0 then
+      raise exception 'Impossible de supprimer le dernier administrateur de l''entreprise';
+    end if;
+  end if;
+
+  -- 1. Si l'utilisateur est un prestataire, supprimer aussi l'entrée dans la table prestataires
+  delete from public.prestataires where user_id = v_user_id;
+
+  -- 2. Supprimer le compte d'authentification dans auth.users
   -- (nécessite les droits security definer)
   delete from auth.users where id = v_user_id;
 
-  -- 2. Supprimer le profil (CASCADE supprimera les données liées)
+  -- 3. Supprimer le profil (CASCADE supprimera les données liées)
   delete from public.profiles where id = p_profile_id;
 
   -- Note : Les données liées (devis créés, factures, etc.) sont conservées

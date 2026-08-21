@@ -27,8 +27,9 @@ export function useUsers(entrepriseId, userId) {
   useEffect(() => { load(); }, [load]);
 
   const changeRole = async (profileId, role) => {
-    await supabase.from("profiles").update({ role }).eq("id", profileId);
+    const { error } = await supabase.rpc("change_profile_role", { p_profile_id: profileId, p_new_role: role, p_by: userId });
     await load();
+    return { error };
   };
 
   const invite = async (email, role) => {
