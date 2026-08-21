@@ -1,19 +1,21 @@
 import React, { useState } from "react";
-import { Plus, Printer, Trash2, CheckCircle2 } from "lucide-react";
+import { Plus, Printer, Trash2, CheckCircle2, Receipt, Clock, AlertTriangle, DollarSign, MessageCircle } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { totals } from "../lib/helpers";
-import { TableShell, Btn, Modal, Badge, Field, Select } from "./ui";
+import { totals, montantEncaisseTotal } from "../lib/helpers";
+import { TableShell, Btn, Modal, Badge, Field, Select, EmptyState, Timeline, KpiBar } from "./ui";
 import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
+import { ReminderComposer } from "./ReminderComposer";
 
-export function Factures({ factures, clients, produits, projets, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
+export function Factures({ factures, clients, produits, projets, paiements = [], entreprise, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
   const [creating, setCreating] = useState(false);
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
   const [projetsTerminesUniquement, setProjetsTerminesUniquement] = useState(false);
   const [paying, setPaying] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [reminding, setReminding] = useState(null);
   const cli = (id) => clients.find((c) => c.id === id);
   const proj = (id) => projets?.find((p) => p.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyée", "Payée", "Partiellement payée", "En retard", "Annulée"];
@@ -21,14 +23,29 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
     .filter((f) => filter === "Tous" || f.statut === filter)
     .filter((f) => !projetsTerminesUniquement || f.projetTermine);
 
+  const totalFacturesCount = factures.length;
+  const payeesCount = factures.filter((f) => f.statut === "Payée").length;
+  const impayeesCount = factures.filter((f) => ["Envoyée", "Partiellement payée"].includes(f.statut)).length;
+  const enRetardCount = factures.filter((f) => f.statut === "En retard").length;
+  const canRemind = (facture) => ["Envoyée", "Partiellement payée", "En retard"].includes(facture.statut);
+  const totalEncaisse = montantEncaisseTotal(factures);
+
+  const kpiItems = [
+    { label: "Total Factures", value: `${totalFacturesCount}`, sub: "Toutes factures émises", tone: T.ink, icon: Receipt, onClick: () => setFilter("Tous") },
+    { label: "Factures Payées", value: `${payeesCount}`, sub: "Règlements intégralement perçus", tone: T.teal, icon: CheckCircle2, onClick: () => setFilter("Payée") },
+    { label: "En Attente / Partiel", value: `${impayeesCount}`, sub: "Règlements en cours", tone: T.gold, icon: Clock, onClick: () => setFilter("Envoyée") },
+    { label: "Factures en Retard", value: `${enRetardCount}`, sub: "Échéances dépassées", tone: T.brick, icon: AlertTriangle, onClick: () => setFilter("En retard") },
+    { label: "Total Encaissé", value: fmt(totalEncaisse), sub: "Règlements cumulés perçus", tone: T.teal, icon: DollarSign },
+  ];
+
   const save = async (data) => {
     await createFacture(data);
     notify("Facture créée");
     setCreating(false);
   };
 
-  const payer = async (montant, mode) => {
-    await enregistrerPaiement(paying, montant, mode);
+  const payer = async (montant, mode, date) => {
+    await enregistrerPaiement(paying, montant, mode, date);
     notify("Paiement enregistré");
     setPaying(null);
   };
@@ -47,6 +64,7 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
 
   return (
     <div>
+      <KpiBar items={kpiItems} />
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {statuts.map((s) => (
@@ -68,6 +86,9 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
       </div>
       <TableShell headers={["N°", "Client", "Projet", "Échéance", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle facture</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={7}><EmptyState icon={Receipt} title="Aucune facture" subtitle="Vos factures apparaîtront ici." /></td></tr>
+        )}
         {list.map((f) => (
           <tr key={f.uuid}>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -76,7 +97,7 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
             <td style={td}>{cli(f.clientId)?.societe}</td>
             <td style={{ ...td, color: proj(f.projetId) ? T.ink : T.inkSoft }}>{proj(f.projetId)?.nom || "—"}</td>
             <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{f.echeance}</td>
-            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes).ttc)}</td>
+            <td style={{ ...td, fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(totals(f.lignes, f.remiseGlobale).ttc)}</td>
             <td style={td}>
               <Badge statut={f.statut} />
               {f.projetTermine && (
@@ -89,6 +110,9 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
               <Btn variant="ghost" small onClick={() => setPreviewing(f)}>Aperçu</Btn>
               {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
                 <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
+              )}
+              {canManage && canRemind(f) && (
+                <Btn variant="ghost" small icon={MessageCircle} onClick={() => setReminding(f)}>Relancer</Btn>
               )}
               {canManage && f.statut === "Payée" && !f.projetTermine && (
                 <Btn variant="ghost" small icon={CheckCircle2} onClick={() => marquerTermine(f)}>Marquer terminé</Btn>
@@ -118,6 +142,14 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
                     <CheckCircle2 size={14} /> Facture marquée comme terminée le {previewing.termineLe}
                   </div>
                 )}
+                {paiements.filter((p) => p.factureId === previewing.uuid).length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 10 }}>Historique des paiements</div>
+                    <Timeline items={paiements.filter((p) => p.factureId === previewing.uuid)
+                      .slice().sort((a, b) => (a.date < b.date ? 1 : -1))
+                      .map((p) => ({ title: fmt(p.montant), date: p.date, detail: p.mode }))} />
+                  </div>
+                )}
               </div>
             }
             projets={canManage ? projets : null}
@@ -128,8 +160,9 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
             } : null}
           />
           {canManage && previewing.statut !== "Payée" && previewing.statut !== "Annulée" && (
-            <div style={{ marginTop: -8, marginBottom: 4 }}>
+            <div style={{ marginTop: -8, marginBottom: 4, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Btn variant="primary" onClick={() => { setPaying(previewing); setPreviewing(null); }}>Enregistrer un paiement</Btn>
+              {canRemind(previewing) && <Btn variant="ghost" icon={MessageCircle} onClick={() => { setReminding(previewing); setPreviewing(null); }}>Préparer une relance</Btn>}
             </div>
           )}
           {canManage && previewing.statut === "Payée" && !previewing.projetTermine && (
@@ -141,13 +174,18 @@ export function Factures({ factures, clients, produits, projets, createFacture, 
       )}
 
       {creating && (
-        <Modal title="Nouvelle facture" onClose={() => setCreating(false)} wide>
-          <DocBuilder clients={clients} produits={produits} projets={projets} onSave={save} docType="facture" />
+        <Modal title="Nouvelle facture" onClose={() => setCreating(false)} extraWide>
+          <DocBuilder clients={clients} produits={produits} projets={projets} entreprise={entreprise} onSave={save} docType="facture" onClose={() => setCreating(false)} />
         </Modal>
       )}
       {paying && (
         <Modal title={`Paiement — ${paying.id}`} onClose={() => setPaying(null)}>
           <PaiementForm facture={paying} onSave={payer} />
+        </Modal>
+      )}
+      {reminding && (
+        <Modal title={`Relancer — ${reminding.id}`} onClose={() => setReminding(null)}>
+          <ReminderComposer doc={reminding} client={cli(reminding.clientId)} entreprise={entreprise} type="facture" notify={notify} />
         </Modal>
       )}
       {deleting && (
@@ -172,16 +210,18 @@ function PaiementForm({ facture, onSave }) {
   const resteA = t - (facture.regle || 0);
   const [montant, setMontant] = useState(resteA);
   const [mode, setMode] = useState("Virement");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   return (
     <div>
       <div style={{ fontSize: 13, color: T.inkSoft, marginBottom: 14 }}>Reste à payer : <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: T.ink }}>{fmt(resteA)}</b></div>
       <Field label="Montant reçu (FCFA)"><input type="number" style={inputStyle} value={montant} onChange={(e) => setMontant(e.target.value)} /></Field>
+      <Field label="Date d'encaissement"><input type="date" style={inputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
       <Field label="Mode de paiement">
         <Select value={mode} onChange={(e) => setMode(e.target.value)}>
           {["Espèces", "Virement", "Mobile Money", "Chèque", "Carte bancaire"].map((m) => <option key={m}>{m}</option>)}
         </Select>
       </Field>
-      <Btn variant="gold" onClick={() => onSave(montant, mode)}>Confirmer le paiement</Btn>
+      <Btn variant="gold" onClick={() => onSave(montant, mode, date)}>Confirmer le paiement</Btn>
     </div>
   );
 }

@@ -1,13 +1,25 @@
 import React, { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
-import { fmt, inputStyle } from "../lib/theme";
+import { Plus, Pencil, Package, Layers, Zap, DollarSign } from "lucide-react";
+import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { TableShell, Btn, Modal, Field, Select } from "./ui";
+import { TableShell, Btn, Modal, Field, Select, Card, EmptyState, KpiBar } from "./ui";
 
 export function Produits({ produits, onSaveProduit, notify, canEdit = true }) {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const list = produits.filter((p) => p.nom.toLowerCase().includes(q.toLowerCase()));
+
+  const totalProduits = produits.length;
+  const servicesCount = produits.filter((p) => ["Service", "Formation", "Abonnement"].includes(p.categorie)).length;
+  const produitsPhysiquesCount = produits.filter((p) => p.categorie === "Produit").length;
+  const prixMoyenHT = totalProduits > 0 ? (produits.reduce((acc, p) => acc + Number(p.prixHT || 0), 0) / totalProduits) : 0;
+
+  const kpis = [
+    { label: "Catalogue Total", value: `${totalProduits}`, sub: "Articles & Prestations", tone: T.ink, icon: Layers },
+    { label: "Services & Formations", value: `${servicesCount}`, sub: "Prestations immatérielles", tone: T.gold, icon: Zap },
+    { label: "Produits Physiques", value: `${produitsPhysiquesCount}`, sub: "Articles en stock / vente", tone: T.teal, icon: Package },
+    { label: "Prix Unitaire Moyen HT", value: fmt(prixMoyenHT), sub: "Moyenne du catalogue", tone: T.slate, icon: DollarSign },
+  ];
 
   const save = async (form) => {
     await onSaveProduit(form);
@@ -17,9 +29,14 @@ export function Produits({ produits, onSaveProduit, notify, canEdit = true }) {
 
   return (
     <div>
+      <KpiBar items={kpis} />
+
       <TableShell headers={["Nom", "Catégorie", "Prix HT", "TVA", "Prix TTC", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un produit…"
         action={canEdit && <Btn icon={Plus} onClick={() => setEditing({ nom: "", categorie: "Service", prixHT: 0, tva: 18 })}>Nouveau produit</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={6}><EmptyState icon={Package} title="Aucun produit ou service" subtitle="Ajoutez votre catalogue pour accélérer la création de devis." /></td></tr>
+        )}
         {list.map((p) => (
           <tr key={p.id}>
             <td style={{ ...td, fontWeight: 600 }}>{p.nom}</td>

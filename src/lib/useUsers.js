@@ -1,19 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
+import { SITE_URL } from "./siteUrl";
 
 export function useUsers(entrepriseId) {
   const [profiles, setProfiles] = useState([]);
   const [invitations, setInvitations] = useState([]);
+  const [invitationsAcceptees, setInvitationsAcceptees] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!entrepriseId) return;
-    const [{ data: p }, { data: i }] = await Promise.all([
+    const [{ data: p }, { data: i }, { count }] = await Promise.all([
       supabase.from("profiles").select("*").eq("entreprise_id", entrepriseId).order("created_at"),
       supabase.from("invitations").select("*").eq("entreprise_id", entrepriseId).eq("accepted", false).order("created_at"),
+      supabase.from("invitations").select("id", { count: "exact", head: true }).eq("entreprise_id", entrepriseId).eq("accepted", true),
     ]);
     setProfiles(p || []);
     setInvitations(i || []);
+    setInvitationsAcceptees(count || 0);
     setLoading(false);
   }, [entrepriseId]);
 
@@ -33,7 +37,7 @@ export function useUsers(entrepriseId) {
     // l'admin peut réessayer avec "Renvoyer l'e-mail" ou partager le message manuellement.
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+      options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
     });
     await load();
     return { error: null, emailError: otpError };
@@ -43,7 +47,7 @@ export function useUsers(entrepriseId) {
   const resendInviteEmail = async (email) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
+      options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
     });
     return { error };
   };
@@ -53,5 +57,5 @@ export function useUsers(entrepriseId) {
     await load();
   };
 
-  return { profiles, invitations, changeRole, invite, resendInviteEmail, cancelInvitation, loading, reload: load };
+  return { profiles, invitations, invitationsAcceptees, changeRole, invite, resendInviteEmail, cancelInvitation, loading, reload: load };
 }

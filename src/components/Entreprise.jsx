@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { T, inputStyle } from "../lib/theme";
 import { Card, Field, Btn, Select } from "./ui";
 
-export function Entreprise({ entreprise, onSaveProfil, notify, canEdit = true }) {
+export function Entreprise({ entreprise, onSaveProfil, uploadLogo, notify, canEdit = true }) {
   const [form, setForm] = useState(entreprise);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
   useEffect(() => { setForm(entreprise); }, [entreprise]);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -17,19 +19,41 @@ export function Entreprise({ entreprise, onSaveProfil, notify, canEdit = true })
     else notify("Profil entreprise enregistré");
   };
 
+  const choisirLogo = () => fileRef.current?.click();
+
+  const surChangementFichier = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { notify("Le logo doit être une image (PNG, JPG, SVG…)"); return; }
+    if (file.size > 2 * 1024 * 1024) { notify("Image trop lourde (2 Mo maximum)"); return; }
+    setUploading(true);
+    const { error } = await uploadLogo(file);
+    setUploading(false);
+    notify(error ? "Échec de l'envoi : " + error.message : "Logo mis à jour");
+  };
+
   return (
     <Card style={{ padding: 24, maxWidth: 640 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 22 }}>
-        <div style={{ width: 64, height: 64, background: T.goldSoft, border: `1px solid ${T.line}`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22 }}>
-          {form.nom?.[0] || "F"}
+        <div style={{ width: 64, height: 64, background: T.goldSoft, border: `1px solid ${T.line}`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", color: T.gold, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 22, overflow: "hidden", flexShrink: 0 }}>
+          {entreprise.logoUrl
+            ? <img src={entreprise.logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : (form.nom?.[0] || "F")}
         </div>
-        {canEdit && <Btn variant="ghost" small>Changer le logo</Btn>}
+        {canEdit && (
+          <>
+            <input ref={fileRef} type="file" accept="image/*" onChange={surChangementFichier} style={{ display: "none" }} />
+            <Btn variant="ghost" small onClick={choisirLogo}>{uploading ? "Envoi en cours…" : entreprise.logoUrl ? "Changer le logo" : "Ajouter un logo"}</Btn>
+          </>
+        )}
       </div>
       <fieldset disabled={!canEdit} style={{ border: "none", padding: 0, margin: 0 }}>
         <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          <Field label="Nom de l'entreprise"><input style={inputStyle} value={form.nom} onChange={set("nom")} /></Field>
-          <Field label="Téléphone"><input style={inputStyle} value={form.tel} onChange={set("tel")} /></Field>
-          <Field label="RCCM"><input style={inputStyle} value={form.rccm} onChange={set("rccm")} /></Field>
+          <Field label="Nom de l'entreprise"><input style={inputStyle} value={form.nom || ""} onChange={set("nom")} /></Field>
+          <Field label="E-mail de l'entreprise (affiché sur devis & factures)"><input type="email" style={inputStyle} value={form.email || ""} onChange={set("email")} placeholder="contact@votre-entreprise.com" /></Field>
+          <Field label="Téléphone"><input style={inputStyle} value={form.tel || ""} onChange={set("tel")} /></Field>
+          <Field label="RCCM"><input style={inputStyle} value={form.rccm || ""} onChange={set("rccm")} /></Field>
           <Field label="NIF"><input style={inputStyle} value={form.nif} onChange={set("nif")} /></Field>
           <Field label="Devise">
             <Select value={form.devise} onChange={set("devise")}>

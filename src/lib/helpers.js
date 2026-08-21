@@ -15,14 +15,17 @@ export const mkLine = (produit, qty = 1, remise = 0) => ({
 
 export const ligneMontant = (l) => l.prixHT * l.qty * (1 - l.remise / 100);
 
-export const totals = (lignes) => {
+export const totals = (lignes, remiseGlobale = 0) => {
   let ht = 0, tvaTot = 0;
   lignes.forEach((l) => {
     const base = ligneMontant(l);
     ht += base;
     tvaTot += base * (l.tva / 100);
   });
-  return { ht, tva: tvaTot, ttc: ht + tvaTot };
+  const discountFactor = remiseGlobale > 0 ? (1 - Math.min(100, Math.max(0, Number(remiseGlobale))) / 100) : 1;
+  const htNet = ht * discountFactor;
+  const tvaNet = tvaTot * discountFactor;
+  return { ht: htNet, htBrut: ht, tva: tvaNet, ttc: htNet + tvaNet };
 };
 
 // Source unique de vérité pour "montant encaissé" — utilisée partout
@@ -34,3 +37,16 @@ export const montantEncaisseTotal = (factures) =>
 
 export const montantPaiementsPartiels = (factures) =>
   factures.filter((f) => f.statut === "Partiellement payée").reduce((s, f) => s + Number(f.regle || 0), 0);
+
+// --- Alertes d'échéance des tâches (calcul à l'affichage) ---
+export const SEUIL_ALERTE_JOURS = 3;
+
+export const alerteTache = (tache) => {
+  if (!tache || !tache.echeance || tache.statut === "Terminée") return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(`${tache.echeance}T00:00:00`);
+  const jours = Math.round((due - today) / 86400000);
+  if (jours < 0) return { level: "retard", jours: -jours };
+  if (jours <= SEUIL_ALERTE_JOURS) return { level: "proche", jours };
+  return null;
+};

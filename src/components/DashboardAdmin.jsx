@@ -1,8 +1,9 @@
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { DollarSign, PieChart, Receipt, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
-import { Card, Badge } from "./ui";
+import { Card, Badge, KpiBar } from "./ui";
 
 const MOIS_FR = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
 
@@ -13,10 +14,6 @@ function caParMois(factures) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, mois: MOIS_FR[d.getMonth()], ca: 0 });
   }
-  // On additionne `regle` (montant réellement encaissé, paiements partiels
-  // inclus) plutôt que le total facturé — c'est la même source que la carte
-  // "Montant total encaissé" au-dessus, pour que le graphique évolue avec
-  // exactement le chiffre affiché à l'écran.
   factures.forEach((f) => {
     const d = new Date(f.date);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
@@ -37,29 +34,23 @@ export function DashboardAdmin({ factures, devis, clients, setView }) {
   const historique = caParMois(factures);
 
   const kpis = [
-    { label: "Montant total encaissé (paiements partiels inclus)", value: fmt(montantEncaisse), tone: T.teal },
-    { label: "Dont paiements partiels reçus", value: fmt(paiementsPartiels), tone: T.gold },
-    { label: "Factures impayées", value: `${impayees.length}`, tone: T.gold, view: "factures" },
-    { label: "Factures en retard", value: `${enRetard}`, tone: T.brick, view: "factures" },
-    { label: "Devis en attente", value: `${devisEnAttente}`, tone: T.slate, view: "devis" },
-    { label: "Projets terminés", value: `${projetsTermines}`, tone: T.teal, view: "factures" },
+    { label: "Montant Total Encaissé", value: fmt(montantEncaisse), sub: "Paiements partiels inclus", tone: T.teal, icon: DollarSign },
+    { label: "Paiements Partiels Reçus", value: fmt(paiementsPartiels), sub: "Acomptes & versements", tone: T.gold, icon: PieChart },
+    { label: "Factures Impayées", value: `${impayees.length}`, sub: "Règlements en attente", tone: T.gold, icon: Receipt, onClick: () => setView("factures") },
+    { label: "Factures en Retard", value: `${enRetard}`, sub: "Échéances dépassées", tone: T.brick, icon: AlertTriangle, onClick: () => setView("factures") },
+    { label: "Devis en Attente", value: `${devisEnAttente}`, sub: "À relancer ou signer", tone: T.slate, icon: FileText, onClick: () => setView("devis") },
+    { label: "Projets Terminés", value: `${projetsTermines}`, sub: "Clôturés avec succès", tone: T.teal, icon: CheckCircle2, onClick: () => setView("factures") },
   ];
 
   return (
     <div>
-      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
-        {kpis.map((k) => (
-          <Card key={k.label} style={{ padding: "16px 18px", cursor: k.view ? "pointer" : "default" }}
-            onClick={k.view ? () => setView(k.view) : undefined}>
-            <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: k.tone, fontWeight: 600 }}>{k.value}</div>
-          </Card>
-        ))}
-      </div>
+      <KpiBar items={kpis} />
 
       <div className="grid-dash" style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16 }}>
         <Card style={{ padding: "20px 22px" }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Évolution du chiffre d'affaires (6 derniers mois)</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, fontWeight: 600, marginBottom: 14 }}>
+            Évolution du chiffre d'affaires (6 derniers mois)
+          </div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={historique}>
               <CartesianGrid stroke={T.line} vertical={false} />
@@ -72,13 +63,15 @@ export function DashboardAdmin({ factures, devis, clients, setView }) {
         </Card>
 
         <Card style={{ padding: "20px 22px" }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Dernières factures</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, fontWeight: 600, marginBottom: 14 }}>
+            Dernières factures
+          </div>
           {factures.length === 0 && <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucune facture pour le moment.</div>}
           {factures.slice(0, 5).map((f) => (
             <div key={f.uuid} onClick={() => setView("factures")} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: `1px solid ${T.line}`, cursor: "pointer" }}>
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5 }}>{f.id}</div>
-                <div style={{ fontSize: 11.5, color: T.inkSoft }}>{cli(f.clientId)?.societe}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, fontWeight: 600 }}>{f.id}</div>
+                <div style={{ fontSize: 11.5, color: T.inkSoft }}>{cli(f.clientId)?.societe || cli(f.clientId)?.nom}</div>
               </div>
               <Badge statut={f.statut} />
             </div>

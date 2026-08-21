@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Users as UsersIcon, UserCheck, UserPlus, FolderKanban } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
-import { TableShell, Btn, Modal, Field, Badge, Select } from "./ui";
+import { TableShell, Btn, Modal, Field, Badge, Select, EmptyState, KpiBar } from "./ui";
 
 export function Clients({ clients, onSaveClient, devis, factures, projets, notify, canEdit = true }) {
   const [q, setQ] = useState("");
@@ -15,6 +15,18 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
     .filter((c) => (c.nom + c.societe).toLowerCase().includes(q.toLowerCase()))
     .filter((c) => filtre === "Tous" || c.statut === filtre);
 
+  const totalClientsCount = clients.length;
+  const clientsValidesCount = clients.filter((c) => c.statut === "Client").length;
+  const prospectsCount = clients.filter((c) => c.statut === "Prospect" || !c.statut).length;
+  const avecProjetsCount = clients.filter((c) => Boolean(projetEnCoursDe(c.id))).length;
+
+  const kpiItems = [
+    { label: "Répertoire Total", value: `${totalClientsCount}`, sub: "Contacts enregistrés", tone: T.ink, icon: UsersIcon, onClick: () => setFiltre("Tous") },
+    { label: "Clients Validés", value: `${clientsValidesCount}`, sub: "Comptes actifs avec factures", tone: T.teal, icon: UserCheck, onClick: () => setFiltre("Client") },
+    { label: "Prospects", value: `${prospectsCount}`, sub: "En cours de prospection", tone: T.gold, icon: UserPlus, onClick: () => setFiltre("Prospect") },
+    { label: "Avec Projets En Cours", value: `${avecProjetsCount}`, sub: "Dossiers de réalisation actifs", tone: T.slate, icon: FolderKanban },
+  ];
+
   const save = async (form) => {
     const { error } = await onSaveClient(form);
     notify(error ? "Échec : " + error.message : (form.id ? "Client mis à jour" : "Client ajouté"));
@@ -23,6 +35,7 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
 
   return (
     <div>
+      <KpiBar items={kpiItems} />
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
         {["Tous", "Prospect", "Client"].map((f) => (
           <button key={f} onClick={() => setFiltre(f)} style={{
@@ -35,6 +48,9 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
       <TableShell headers={["Nom", "Société", "Statut", "Email", "Téléphone", "Ville", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un client…"
         action={canEdit && <Btn icon={Plus} onClick={() => setEditing({ nom: "", societe: "", email: "", tel: "", ville: "", notes: "", statut: "Prospect" })}>Nouveau client</Btn>}>
+        {list.length === 0 && (
+          <tr><td colSpan={7}><EmptyState icon={UsersIcon} title="Aucun client" subtitle="Ajoutez votre premier client pour commencer à créer des devis." /></td></tr>
+        )}
         {list.map((c) => (
           <tr key={c.id}>
             <td style={td}><a style={{ color: T.ink, cursor: "pointer", fontWeight: 600 }} onClick={() => setDetail(c)}>{c.nom}</a></td>

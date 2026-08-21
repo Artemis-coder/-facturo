@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet } from "lucide-react";
+import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet, ChevronLeft, ChevronRight, Smartphone } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { Card, Btn, Modal, Field, Select, TableShell } from "./ui";
+import { Card, Btn, Modal, Field, Select, TableShell, EmptyState, KpiBar } from "./ui";
 
 const CATEGORIES = [
   "Loyer", "Salaires", "Achats & fournitures", "Transport & carburant",
@@ -37,23 +37,61 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [filtre, setFiltre] = useState("Tout");
+  const [annee, setAnnee] = useState(new Date().getFullYear());
   const cli = (id) => clients.find((c) => c.id === id);
 
-  const totalEntrees = paiements.reduce((s, p) => s + p.montant, 0);
-  const totalSorties = depenses.reduce((s, d) => s + d.montant, 0);
+  const annees = Array.from(new Set([
+    ...paiements.map((p) => new Date(p.date).getFullYear()),
+    ...depenses.map((d) => new Date(d.date).getFullYear()),
+    new Date().getFullYear(),
+  ])).sort((a, b) => b - a);
+
+  const paiementsAnnee = annee === "Toutes" ? paiements : paiements.filter((p) => new Date(p.date).getFullYear() === annee);
+  const depensesAnnee = annee === "Toutes" ? depenses : depenses.filter((d) => new Date(d.date).getFullYear() === annee);
+
+  const totalEntrees = paiementsAnnee.reduce((s, p) => s + p.montant, 0);
+  const totalSorties = depensesAnnee.reduce((s, d) => s + d.montant, 0);
   const solde = totalEntrees - totalSorties;
-  const historique = fluxParMois(paiements, depenses);
+  const historique = fluxParMois(paiementsAnnee, depensesAnnee);
+
+  const kpis = [
+    {
+      label: "Solde de Trésorerie",
+      value: fmt(solde),
+      sub: solde >= 0 ? "Résultat net positif" : "Déficit de trésorerie",
+      tone: solde >= 0 ? T.teal : T.brick,
+      icon: Wallet,
+      onClick: () => setFiltre("Tout")
+    },
+    {
+      label: "Total des Entrées",
+      value: fmt(totalEntrees),
+      sub: "Paiements clients encaissés",
+      tone: T.teal,
+      icon: ArrowDownCircle,
+      onClick: () => setFiltre("Entrée")
+    },
+    {
+      label: "Total des Sorties",
+      value: fmt(totalSorties),
+      sub: "Dépenses & charges décaissées",
+      tone: T.brick,
+      icon: ArrowUpCircle,
+      onClick: () => setFiltre("Sortie")
+    },
+  ];
 
   const parCategorie = CATEGORIES.map((cat) => ({
-    categorie: cat, total: depenses.filter((d) => d.categorie === cat).reduce((s, d) => s + d.montant, 0),
+    categorie: cat, total: depensesAnnee.filter((d) => d.categorie === cat).reduce((s, d) => s + d.montant, 0),
   })).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
 
-  // Journal unifié : chaque entrée (paiement client) et chaque sortie
-  // (dépense) fusionnées et triées par date, la même vue que l'utilisateur
-  // demande — "les allées et les retours, tout ce qui rentre et tout ce qui sort".
+  const parMode = MODES.map((mode) => ({
+    mode, total: paiementsAnnee.filter((p) => p.mode === mode).reduce((s, p) => s + p.montant, 0),
+  })).filter((x) => x.total > 0).sort((a, b) => b.total - a.total);
+
   const mouvements = [
-    ...paiements.map((p) => ({ type: "Entrée", date: p.date, montant: p.montant, libelle: `Paiement facture ${p.factureNumero}`, detail: cli(p.clientId)?.societe, mode: p.mode, source: p })),
-    ...depenses.map((d) => ({ type: "Sortie", date: d.date, montant: d.montant, libelle: d.categorie, detail: d.description, mode: d.mode, source: d })),
+    ...paiementsAnnee.map((p) => ({ type: "Entrée", date: p.date, montant: p.montant, libelle: `Paiement facture ${p.factureNumero}`, detail: cli(p.clientId)?.societe || cli(p.clientId)?.nom, mode: p.mode, source: p })),
+    ...depensesAnnee.map((d) => ({ type: "Sortie", date: d.date, montant: d.montant, libelle: d.categorie, detail: d.description, mode: d.mode, source: d })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const mouvementsFiltres = mouvements.filter((m) => filtre === "Tout" || m.type === filtre);
@@ -70,22 +108,25 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
     setDeleting(null);
   };
 
+  const annIdx = annees.indexOf(annee);
+
   return (
     <div>
-      <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 16, marginBottom: 22 }}>
-        <Card style={{ padding: "16px 18px" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>Solde de trésorerie</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: solde >= 0 ? T.teal : T.brick, fontWeight: 600 }}>{fmt(solde)}</div>
-        </Card>
-        <Card style={{ padding: "16px 18px" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>Total des entrées</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: T.teal, fontWeight: 600 }}>{fmt(totalEntrees)}</div>
-        </Card>
-        <Card style={{ padding: "16px 18px" }}>
-          <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>Total des sorties</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 22, color: T.brick, fontWeight: 600 }}>{fmt(totalSorties)}</div>
-        </Card>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <Btn variant="ghost" small icon={ChevronLeft}
+          onClick={() => annIdx < annees.length - 1 && setAnnee(annees[annIdx + 1])}
+          disabled={annee === "Toutes" || annIdx >= annees.length - 1}>{""}</Btn>
+        <select value={annee} onChange={(e) => setAnnee(e.target.value === "Toutes" ? "Toutes" : Number(e.target.value))}
+          style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 600, color: T.ink, background: "#fff" }}>
+          {annees.map((a) => <option key={a} value={a}>{a}</option>)}
+          <option value="Toutes">Toutes les années</option>
+        </select>
+        <Btn variant="ghost" small icon={ChevronRight}
+          onClick={() => annIdx > 0 && setAnnee(annees[annIdx - 1])}
+          disabled={annee === "Toutes" || annIdx <= 0}>{""}</Btn>
       </div>
+
+      <KpiBar items={kpis} />
 
       <div className="grid-dash" style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 16, marginBottom: 22 }}>
         <Card style={{ padding: "20px 22px" }}>
@@ -103,21 +144,41 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           </ResponsiveContainer>
         </Card>
 
-        <Card style={{ padding: "20px 22px" }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Dépenses par catégorie</div>
-          {parCategorie.length === 0 && <div style={{ fontSize: 12.5, color: T.inkSoft }}>Aucune dépense enregistrée.</div>}
-          {parCategorie.map(({ categorie, total }) => (
-            <div key={categorie} style={{ marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                <span style={{ color: T.inkSoft }}>{categorie}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(total)}</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Card style={{ padding: "18px 20px" }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 12 }}>Encaissements par moyen de paiement</div>
+            {parMode.length === 0 && <div style={{ fontSize: 12, color: T.inkSoft }}>Aucun encaissement.</div>}
+            {parMode.map(({ mode, total }) => (
+              <div key={mode} style={{ marginBottom: 9 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}>
+                  <span style={{ color: T.inkSoft, display: "flex", alignItems: "center", gap: 4 }}>
+                    {mode === "Mobile Money" && <Smartphone size={11} />}{mode}
+                  </span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(total)}</span>
+                </div>
+                <div style={{ height: 5, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, (total / (parMode[0]?.total || 1)) * 100)}%`, background: T.teal }} />
+                </div>
               </div>
-              <div style={{ height: 5, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, (total / (parCategorie[0]?.total || 1)) * 100)}%`, background: T.gold }} />
+            ))}
+          </Card>
+
+          <Card style={{ padding: "18px 20px" }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 12 }}>Dépenses par catégorie</div>
+            {parCategorie.length === 0 && <div style={{ fontSize: 12, color: T.inkSoft }}>Aucune dépense enregistrée.</div>}
+            {parCategorie.map(({ categorie, total }) => (
+              <div key={categorie} style={{ marginBottom: 9 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}>
+                  <span style={{ color: T.inkSoft }}>{categorie}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(total)}</span>
+                </div>
+                <div style={{ height: 5, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, (total / (parCategorie[0]?.total || 1)) * 100)}%`, background: T.gold }} />
+                </div>
               </div>
-            </div>
-          ))}
-        </Card>
+            ))}
+          </Card>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
@@ -133,7 +194,7 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
       <TableShell headers={["Date", "Type", "Libellé", "Détail", "Mode", "Montant", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle dépense</Btn>}>
         {mouvementsFiltres.length === 0 && (
-          <tr><td style={{ ...td, color: T.inkSoft }} colSpan={7}>Aucun mouvement pour le moment.</td></tr>
+          <tr><td colSpan={7}><EmptyState icon={Wallet} title="Aucun mouvement" subtitle="Les encaissements de factures et vos dépenses apparaîtront ici." /></td></tr>
         )}
         {mouvementsFiltres.map((m, i) => (
           <tr key={i}>
