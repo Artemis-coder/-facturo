@@ -87,7 +87,7 @@ export function usePrestataires(entrepriseId, userId) {
   };
 
   const deletePrestataire = async (id) => {
-    const { error } = await supabase.rpc('soft_delete_prestataire', {
+    const { error } = await supabase.rpc('hard_delete_prestataire', {
       p_prestataire_id: id,
       p_deleted_by: userId
     });
@@ -188,9 +188,9 @@ export function usePrestataires(entrepriseId, userId) {
     return { error: null, emailError: otpError };
   };
 
-  // Soft delete pour prestataire
+  // Suppression définitive pour prestataire
   const softDeletePrestataire = async (id) => {
-    const { error } = await supabase.rpc('soft_delete_prestataire', {
+    const { error } = await supabase.rpc('hard_delete_prestataire', {
       p_prestataire_id: id,
       p_deleted_by: userId
     });
@@ -198,15 +198,5 @@ export function usePrestataires(entrepriseId, userId) {
     return { error };
   };
 
-  // Restaurer un prestataire
-  const restorePrestataire = async (id) => {
-    const { error } = await supabase.rpc('restore_prestataire', {
-      p_prestataire_id: id,
-      p_restored_by: userId
-    });
-    if (!error) await load();
-    return { error };
-  };
-
-  return { prestataires, liens, taches, loading, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, softDeletePrestataire, restorePrestataire, reload: load };
+  return { prestataires, liens, taches, loading, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, softDeletePrestataire, reload: load };
 }

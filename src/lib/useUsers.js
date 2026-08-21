@@ -60,9 +60,9 @@ export function useUsers(entrepriseId, userId) {
     await load();
   };
 
-  // Soft delete pour utilisateur (admin seulement)
+  // Suppression définitive pour utilisateur (admin seulement)
   const softDeleteUser = async (profileId) => {
-    const { error } = await supabase.rpc('soft_delete_user', {
+    const { error } = await supabase.rpc('hard_delete_user', {
       p_profile_id: profileId,
       p_deleted_by: userId
     });
@@ -70,31 +70,11 @@ export function useUsers(entrepriseId, userId) {
     await load();
   };
 
-  // Soft delete pour prestataire (admin seulement)
+  // Suppression définitive pour prestataire (admin seulement)
   const softDeletePrestataire = async (prestataireId) => {
-    const { error } = await supabase.rpc('soft_delete_prestataire', {
+    const { error } = await supabase.rpc('hard_delete_prestataire', {
       p_prestataire_id: prestataireId,
       p_deleted_by: userId
-    });
-    if (error) throw error;
-    await load();
-  };
-
-  // Restaurer un utilisateur
-  const restoreUser = async (profileId) => {
-    const { error } = await supabase.rpc('restore_user', {
-      p_profile_id: profileId,
-      p_restored_by: userId
-    });
-    if (error) throw error;
-    await load();
-  };
-
-  // Restaurer un prestataire
-  const restorePrestataire = async (prestataireId) => {
-    const { error } = await supabase.rpc('restore_prestataire', {
-      p_prestataire_id: prestataireId,
-      p_restored_by: userId
     });
     if (error) throw error;
     await load();
@@ -117,8 +97,6 @@ export function useUsers(entrepriseId, userId) {
     cancelInvitation,
     softDeleteUser,
     softDeletePrestataire,
-    restoreUser,
-    restorePrestataire,
     getPrestataireByUserId,
     load
   };

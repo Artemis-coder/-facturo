@@ -52,10 +52,7 @@ export function Users({
   entreprise,
   prestataires,
   softDeleteUser,
-  softDeletePrestataire,
-  restoreUser,
-  restorePrestataire,
-  getPrestataireByUserId
+  softDeletePrestataire
 }) {
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
@@ -64,8 +61,6 @@ export function Users({
   const [sharing, setSharing] = useState(null); // invitation existante dont on montre le message
   const [deletingUser, setDeletingUser] = useState(null);
   const [deletingPrestataire, setDeletingPrestataire] = useState(null);
-  const [restoring, setRestoring] = useState(null);
-  const [showDeleted, setShowDeleted] = useState(false);
 
   const sendInvite = async () => {
     if (!email.trim()) { notify("Renseignez une adresse e-mail"); return; }
@@ -94,7 +89,7 @@ export function Users({
   };
 
   // Préparer la liste combinée : users + prestataires
-  const userList = profiles.filter(p => !p.deleted_at).map(p => ({
+  const userList = profiles.map(p => ({
     ...p,
     type: 'user',
     displayRole: p.role,
@@ -104,7 +99,7 @@ export function Users({
     hasAccount: true,
   }));
 
-  const prestataireList = (prestataires || []).filter(p => !p.deleted_at).map(p => ({
+  const prestataireList = (prestataires || []).map(p => ({
     ...p,
     type: 'prestataire',
     displayRole: 'prestataire',
@@ -121,12 +116,9 @@ export function Users({
     return (a.nom_complet || a.email || '').localeCompare(b.nom_complet || b.email || '');
   });
 
-  const totalUsers = profiles.filter(p => !p.deleted_at).length;
-  const totalPrestataires = (prestataires || []).filter(p => !p.deleted_at).length;
+  const totalUsers = profiles.length;
+  const totalPrestataires = (prestataires || []).length;
   const totalWithAccount = allMembers.filter(m => m.hasAccount).length;
-
-  const deletedUsers = profiles.filter(p => p.deleted_at);
-  const deletedPrestataires = (prestataires || []).filter(p => p.deleted_at);
 
   return (
     <div>
@@ -136,22 +128,12 @@ export function Users({
         { label: "Comptes actifs", value: `${totalWithAccount}`, sub: "Avec accès à la plateforme", tone: T.teal, icon: UserCheck },
       ]} />
 
-      {deletedUsers.length > 0 || deletedPrestataires.length > 0 ? (
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: T.inkSoft }}>
-            <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} />
-            Afficher les membres supprimés ({deletedUsers.length + deletedPrestataires.length})
-          </label>
-        </div>
-      ) : null}
-
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderBottom: `1px solid ${T.line}`, flexWrap: "wrap", gap: 10 }}>
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5 }}>
             Membres de l'équipe
-            {showDeleted && <span style={{ marginLeft: 10, fontSize: 11, color: T.brick, fontWeight: 600 }}>Mode restauration</span>}
           </div>
-          {!showDeleted && <Btn icon={UserPlus} small onClick={() => setInviting(true)}>Inviter un membre</Btn>}
+          <Btn icon={UserPlus} small onClick={() => setInviting(true)}>Inviter un membre</Btn>
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -164,8 +146,8 @@ export function Users({
                 </tr>
               </thead>
               <tbody>
-                {(showDeleted ? [...deletedUsers, ...deletedPrestataires] : allMembers).map((m) => (
-                  <tr key={m.id} style={m.deleted_at ? { opacity: 0.6, background: T.brickSoft } : {}}>
+                {allMembers.map((m) => (
+                  <tr key={m.id}>
                     <td style={{ ...td, fontWeight: 600 }}>
                       {m.nom_complet || m.email}
                       {m.isCurrentUser && <span style={{ marginLeft: 6, fontSize: 11, color: T.teal, fontWeight: 600 }}> (vous)</span>}
@@ -195,40 +177,32 @@ export function Users({
                       )}
                     </td>
                     <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      {!showDeleted ? (
-                        <>
-                          {m.type === 'user' && m.canChangeRole && (
-                            <Select
-                              value={m.role}
-                              onChange={(e) => changeRole(m.id, e.target.value)}
-                              style={{ minWidth: 140 }}
-                            >
-                              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                            </Select>
-                          )}
-                          {m.type === 'prestataire' && m.hasAccount && (
-                            <Btn variant="ghost" small icon={Lock} onClick={() => setDeletingPrestataire(m)} title="Restreindre l'accès">
-                              Restreindre
-                            </Btn>
-                          )}
-                          {m.canDelete && (
-                            <Btn variant="danger" small icon={UserX} onClick={() => m.type === 'user' ? setDeletingUser(m) : setDeletingPrestataire(m)} title="Supprimer">
-                              Supprimer
-                            </Btn>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <Btn variant="gold" small icon={Unlock} onClick={() => setRestoring(m)}>Restaurer</Btn>
-                        </>
+                      {m.type === 'user' && m.canChangeRole && (
+                        <Select
+                          value={m.role}
+                          onChange={(e) => changeRole(m.id, e.target.value)}
+                          style={{ minWidth: 140 }}
+                        >
+                          {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                        </Select>
+                      )}
+                      {m.type === 'prestataire' && m.hasAccount && (
+                        <Btn variant="ghost" small icon={Lock} onClick={() => setDeletingPrestataire(m)} title="Restreindre l'accès">
+                          Restreindre
+                        </Btn>
+                      )}
+                      {m.canDelete && (
+                        <Btn variant="danger" small icon={UserX} onClick={() => m.type === 'user' ? setDeletingUser(m) : setDeletingPrestataire(m)} title="Supprimer">
+                          Supprimer
+                        </Btn>
                       )}
                     </td>
                   </tr>
                 ))}
-                {(showDeleted ? [...deletedUsers, ...deletedPrestataires] : allMembers).length === 0 && (
+                {allMembers.length === 0 && (
                   <tr>
                     <td colSpan={5} style={{ ...td, textAlign: 'center', color: T.inkSoft, padding: 24 }}>
-                      {showDeleted ? 'Aucun membre supprimé' : 'Aucun membre dans l\'équipe'}
+                      Aucun membre dans l'équipe
                     </td>
                   </tr>
                 )}
@@ -370,32 +344,6 @@ export function Users({
               setDeletingPrestataire(null);
             }}>{deletingPrestataire.hasAccount ? "Confirmer la restriction" : "Confirmer la suppression"}</Btn>
             <Btn variant="ghost" onClick={() => setDeletingPrestataire(null)}>Annuler</Btn>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modal restauration */}
-      {restoring && (
-        <Modal title="Restaurer ce membre ?" onClose={() => setRestoring(null)} size="sm">
-          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
-            Voulez-vous restaurer <strong>{restoring.nom_complet || restoring.nom || restoring.email}</strong> ?
-            Il retrouvera son accès complet à la plateforme.
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Btn variant="gold" onClick={async () => {
-              try {
-                if (restoring.type === 'prestataire') {
-                  await restorePrestataire(restoring.id);
-                } else {
-                  await restoreUser(restoring.id);
-                }
-                notify("Membre restauré", "Accès rétabli avec succès", "success");
-              } catch (err) {
-                notify("Erreur", err.message, "error");
-              }
-              setRestoring(null);
-            }}>Confirmer la restauration</Btn>
-            <Btn variant="ghost" onClick={() => setRestoring(null)}>Annuler</Btn>
           </div>
         </Modal>
       )}

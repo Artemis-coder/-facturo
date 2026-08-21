@@ -137,7 +137,7 @@ export default function App() {
   const { devis, createDevis, updateDevis, marquerTransforme, lierProjet: lierProjetDevis, loading: loadingDevis } = useDevis(entrepriseId, userId);
   const { factures, createFacture, creerDepuisDevis, enregistrerPaiement, enregistrerPaiementDepuisFile, marquerProjetTermine, lierProjet: lierProjetFacture, deleteFacture, loading: loadingFactures, reload: reloadFactures } = useFactures(entrepriseId, userId);
   const { entreprise, saveProfil, saveParametres, uploadLogo, loading: loadingEntreprise } = useEntreprise(entrepriseId);
-  const { profiles, prestataires: prestatairesFromUsers, invitations, invitationsAcceptees, changeRole, invite, resendInviteEmail, cancelInvitation, softDeleteUser, softDeletePrestataire, restoreUser, restorePrestataire } = useUsers(entrepriseId, userId);
+  const { profiles, prestataires: prestatairesFromUsers, invitations, invitationsAcceptees, changeRole, invite, resendInviteEmail, cancelInvitation, softDeleteUser, softDeletePrestataire } = useUsers(entrepriseId, userId);
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
@@ -249,8 +249,7 @@ export default function App() {
             {view === "utilisateurs" && isAdmin && (
               <Users profiles={profiles} prestataires={prestatairesFromUsers} invitations={invitations} invitationsAcceptees={invitationsAcceptees} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}
                 cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise}
-                softDeleteUser={softDeleteUser} softDeletePrestataire={softDeletePrestataire}
-                restoreUser={restoreUser} restorePrestataire={restorePrestataire} />
+                softDeleteUser={softDeleteUser} softDeletePrestataire={softDeletePrestataire} />
             )}
             {view === "entreprise" && <Entreprise entreprise={entreprise} onSaveProfil={saveProfil} uploadLogo={uploadLogo} notify={notify} canEdit={isAdmin} />}
             {view === "parametres" && <Parametres entreprise={entreprise} onSaveParametres={saveParametres} notify={notify} canEdit={isAdmin} />}
