@@ -16,7 +16,7 @@ create index if not exists idx_taches_parent on public.taches(parent_task_id);
 -- 2. Table d'historique
 create table if not exists public.tache_historique (
   id uuid primary key default gen_random_uuid(),
-  tache_id uuid not null references public.taches(id) on delete cascade,
+  tache_id uuid not null references public.taches(id) on delete cascade deferrable initially deferred,
   type text not null check (type in (
     'tache_creer',
     'tache_modifier',
