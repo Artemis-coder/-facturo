@@ -11,6 +11,8 @@ Ce document sert de **Checklist de Sécurité Obligatoire** à exécuter avant c
 4. [Gestion des Rôles & Autorisations (RBAC)](#4-gestion-des-rôles--autorisations-rbac)
 5. [Protection des Secrets & Variables d'Environnement](#5-protection-des-secrets--variables-denvironnement)
 6. [Grille d'Audit Pré-Déploiement (Step-by-Step)](#6-grille-daudit-pré-déploiement-step-by-step)
+7. [Automatisation du Contrôle de Sécurité](#7-automatisation-du-contrôle-de-sécurité)
+8. [Changelog de Sécurité](#8-changelog-de-sécurité)
 
 ---
 
@@ -35,6 +37,65 @@ Ce document sert de **Checklist de Sécurité Obligatoire** à exécuter avant c
 
 - [ ] **Sanitization des saisies utilisateur (Prévention XSS & Injection)**
   - Assurer l'échappement correct des textes dynamiques injectés dans le générateur de PDF (`documentPdf.js`) et dans les tableaux React.
+
+- [ ] **Validation des URLs d'Images Utilisateur**
+  - Valider que `logoUrl` et autres URLs d'images proviennent uniquement de Supabase Storage (domaine autorisé).
+  - Rejeter les data URIs (`data:`, `blob:`, `javascript:`) pour éviter XSS et SSRF.
+  - Implémenter une fonction de validation côté client ET serveur :
+  ```javascript
+  const isValidImageUrl = (url) => {
+    if (!url) return false;
+    const allowedDomains = [process.env.VITE_SUPABASE_URL];
+    try {
+      const parsed = new URL(url);
+      return allowedDomains.some(domain => parsed.origin.includes(domain));
+    } catch {
+      return false;
+    }
+  };
+  ```
+  - Ajouter un attribut `referrerpolicy="no-referrer"` sur les balises `<img>` chargeant des ressources externes.
+
+- [ ] **Sécurité du LocalStorage & SessionStorage**
+  - Ne jamais stocker de tokens JWT, mots de passe, ou données sensibles dans le localStorage.
+  - Valider et typer strictement les valeurs lues (ex: `collapsed` doit être "0" ou "1" uniquement).
+  - Implémenter une fonction sanitizer pour les données localStorage :
+  ```javascript
+  const getSecureLocalStorage = (key, allowedValues) => {
+    try {
+      const value = localStorage.getItem(key);
+      return allowedValues.includes(value) ? value : null;
+    } catch {
+      return null;
+    }
+  };
+  ```
+  - **Préférer sessionStorage** pour les données temporaires de session.
+
+- [ ] **Protection Contre le Clickjacking & UI Redressing**
+  - Ajouter dans la configuration Vercel/serveur les headers HTTP anti-clickjacking :
+  ```
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  ```
+  - Vérifier que l'app ne peut pas être embarquée dans une iframe malveillante.
+  - Les actions comme "Déconnexion", "Suppression", "Modification de rôle" doivent toujours être validées côté serveur.
+
+- [ ] **Patterns React Sécurisés (Best Practices)**
+  - ❌ Interdiction stricte de `dangerouslySetInnerHTML` (sauf exception validée avec sanitization DOMPurify).
+  - ❌ Interdiction de `eval()`, `Function()`, `setTimeout(string)` avec du code dynamique.
+  - ❌ Interdiction de `<a href={userInput}>` sans validation (risque `javascript:` protocol).
+  - Toujours valider les props provenant d'API/utilisateurs avant le rendu.
+  - Utiliser TypeScript ou PropTypes pour typer strictement les composants.
+  - Implémenter une Content Security Policy (CSP) stricte :
+  ```
+  Content-Security-Policy: 
+    default-src 'self'; 
+    script-src 'self'; 
+    style-src 'self' 'unsafe-inline'; 
+    img-src 'self' https://*.supabase.co data:; 
+    connect-src 'self' https://*.supabase.co;
+  ```
 
 ---
 
@@ -105,4 +166,40 @@ Les **modèles de contrats**, les **contrats**, leur historique et les PDF sourc
 | **6** | Validation du masquage des données sensibles (`amountsHidden`) | `[x]` | **Validé** : Masquage visuel et chiffrement des états locaux | Design / QA |
 
 ---
+
+## 7. Automatisation du Contrôle de Sécurité
+
+- [ ] **Pre-commit Hooks de Sécurité**
+  - Installer `husky` et `lint-staged` pour exécuter des checks automatiques avant chaque commit.
+  - Vérifier l'absence de `console.log` avec secrets ou données sensibles.
+  - Scanner les patterns dangereux : `eval()`, `dangerouslySetInnerHTML`, `innerHTML`.
+
+- [ ] **CI/CD Security Checks**
+  - Intégrer GitHub Actions pour :
+    - `npm audit` automatique sur chaque Pull Request.
+    - Scan de secrets avec `trufflehog` ou `gitleaks`.
+    - Vérification RLS Supabase (script custom).
+
+- [ ] **Monitoring des Dépendances**
+  - Activer Dependabot sur GitHub pour les mises à jour de sécurité automatiques.
+  - Définir une politique de mise à jour des dépendances (max 30 jours pour les vulnérabilités critiques).
+
+- [ ] **Changelog de Sécurité**
+  - Maintenir un journal des vulnérabilités identifiées et corrigées.
+  - Documenter chaque amélioration de sécurité avec date, contexte et solution appliquée.
+
+---
+
+## 8. Changelog de Sécurité
+
+| Date | Vulnérabilité/Amélioration | Sévérité | Action Prise | Statut |
+| :--- | :--- | :---: | :--- | :---: |
+| 2026-08-21 | Ajout validation URLs images (logoUrl) | Moyenne | Contrainte ajoutée section 2.5 | ✅ Documenté |
+| 2026-08-21 | Sécurisation localStorage/sessionStorage | Faible | Contrainte ajoutée section 2.6 | ✅ Documenté |
+| 2026-08-21 | Protection clickjacking & CSP | Moyenne | Contraintes ajoutées section 2.7 | ✅ Documenté |
+| 2026-08-21 | Patterns React sécurisés | Faible | Best practices ajoutées section 2.8 | ✅ Documenté |
+| 2026-08-21 | Automatisation contrôles sécurité | - | Section 7 créée | ✅ Documenté |
+
+---
 *Rapport d'audit validé pour le déploiement courant de **Ma Bouate** — Août 2026.*
+*Dernière mise à jour du contrôle de sécurité : 21 août 2026*
