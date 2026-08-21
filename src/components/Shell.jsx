@@ -152,7 +152,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             );
           })}
         </nav>
-        {!installed && (
+        {!installed && !rail && (
           <div style={{ padding: "0 14px 16px 14px" }}>
             <div style={{
               background: "rgba(255, 255, 255, 0.05)",
@@ -180,7 +180,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
               <p style={{ fontSize: 11.5, color: "#B9BFCF", lineHeight: 1.4, margin: 0 }}>
                 Accédez à Ma Bouate en un clic directement depuis votre écran d'accueil, même hors ligne.
               </p>
-              <button 
+              <button
                 onClick={() => {
                   if (canInstall) {
                     promptInstall();
@@ -212,22 +212,24 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             </div>
           </div>
         )}
-        <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-              {entreprise?.logoUrl
-                ? <img src={entreprise.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : entreprise?.nom?.[0]?.toUpperCase() || "F"}
+        {!rail && (
+          <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                {entreprise?.logoUrl
+                  ? <img src={entreprise.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : entreprise?.nom?.[0]?.toUpperCase() || "F"}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, color: "#fff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entreprise?.nom}</div>
+                {role && <div style={{ fontSize: 10.5, color: "#8891A3", textTransform: "capitalize" }}>{role.replace("_", " ")}</div>}
+              </div>
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12.5, color: "#fff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entreprise?.nom}</div>
-              {role && <div style={{ fontSize: 10.5, color: "#8891A3", textTransform: "capitalize" }}>{role.replace("_", " ")}</div>}
+            <div onClick={() => setConfirmingLogout(true)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#B9BFCF", cursor: "pointer" }}>
+              <LogOut size={15} /> Déconnexion
             </div>
           </div>
-          <div onClick={() => setConfirmingLogout(true)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#B9BFCF", cursor: "pointer" }}>
-            <LogOut size={15} /> Déconnexion
-          </div>
-        </div>
+        )}
       </aside>
       <main style={{ flex: 1, minWidth: 0 }}>
         <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
