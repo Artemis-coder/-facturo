@@ -60,17 +60,12 @@ export function Users({
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("employe");
-  const [justInvited, setJustInvited] = useState(null);
-  const [sharing, setSharing] = useState(null);
+  const [justInvited, setJustInvited] = useState(null); // { email, role, emailError }
+  const [sharing, setSharing] = useState(null); // invitation existante dont on montre le message
   const [deletingUser, setDeletingUser] = useState(null);
   const [deletingPrestataire, setDeletingPrestataire] = useState(null);
   const [restoring, setRestoring] = useState(null);
   const [showDeleted, setShowDeleted] = useState(false);
-  const [inviting, setInviting] = useState(false);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("employe");
-  const [justInvited, setJustInvited] = useState(null); // { email, role, emailError }
-  const [sharing, setSharing] = useState(null); // invitation existante dont on montre le message
 
   const sendInvite = async () => {
     if (!email.trim()) { notify("Renseignez une adresse e-mail"); return; }
