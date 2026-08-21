@@ -1,4 +1,5 @@
 export { Badge } from "./Badge";
+export { BottomSheet } from "./BottomSheet";
 export { Btn } from "./Btn";
 export { Card } from "./Card";
 export { Field } from "./Field";

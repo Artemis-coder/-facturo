@@ -72,10 +72,11 @@ export function useUsers(entrepriseId, userId) {
   };
 
   // Suppression définitive pour prestataire (admin seulement)
-  const softDeletePrestataire = async (prestataireId) => {
+  const softDeletePrestataire = async (prestataireId, { supprimerProjets = false } = {}) => {
     const { error } = await supabase.rpc('hard_delete_prestataire', {
       p_prestataire_id: prestataireId,
-      p_deleted_by: userId
+      p_deleted_by: userId,
+      p_supprimer_projets: supprimerProjets,
     });
     if (error) throw error;
     await load();

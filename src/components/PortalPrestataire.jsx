@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  FolderKanban, FileSignature, ListTodo, LogOut, X, Plus, Menu,
+  FolderKanban, FileSignature, ListTodo, LogOut, X, Plus,
   Download, MessageCircle, CalendarClock, AlertTriangle, Handshake, Wifi, WifiOff,
   KeyRound, ChevronRight, ChevronDown, Clock, History, GitBranch, Trash2, Pencil,
   CheckCircle2, Lock, FileX, FolderOpen, Paperclip, Eye, Search,
@@ -16,6 +16,8 @@ import { IconeFichier, CategorieBadge, FichierApercu } from "./FichierApercu";
 import { Btn, Modal, Field, Select, Badge, Card, EmptyState, Toast, LoadingState, KpiBar } from "./ui";
 import { supabase } from "../lib/supabaseClient";
 import { NotifsBell } from "./NotifsBell";
+import { MobileTabBar } from "./MobileTabBar";
+import { useIsMobile } from "../lib/useIsMobile";
 
 const NAV_ITEMS = [
   { key: "projets", label: "Mes projets", icon: FolderKanban },
@@ -52,6 +54,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   const [historique, setHistorique] = useState([]);
   const [loadingHistorique, setLoadingHistorique] = useState(false);
   const online = useOnlineStatus();
+  const isMobile = useIsMobile();
   const notify = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
 
   useEffect(() => {
@@ -141,7 +144,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
+    <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
       {navOpen && <div className="nav-overlay" onClick={() => setNavOpen(false)} />}
       <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: 232, background: T.ink, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "22px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -193,10 +196,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
       <main style={{ flex: 1, minWidth: 0 }}>
         <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
-          <button className="nav-menu-btn" onClick={() => setNavOpen(true)} style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "none", alignItems: "center", justifyContent: "center", cursor: "pointer", color: T.ink, flexShrink: 0 }}>
-            <Menu size={18} />
-          </button>
-          <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1 }}>
+          <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {NAV_ITEMS.find((n) => n.key === tab)?.label}
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
@@ -511,6 +511,18 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
             </div>
           </div>
         </div>
+      )}
+
+      {isMobile && (
+        <MobileTabBar
+          tabs={NAV_ITEMS}
+          menuItems={[...NAV_ITEMS, { key: "__logout__", label: "Déconnexion", icon: LogOut }]}
+          view={tab}
+          setView={(key) => {
+            if (key === "__logout__") { setConfirmingLogout(true); return; }
+            go(key);
+          }}
+        />
       )}
 
       <Toast message={toast} />

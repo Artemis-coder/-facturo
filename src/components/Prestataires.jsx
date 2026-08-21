@@ -59,6 +59,7 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [supprimerAussiProjets, setSupprimerAussiProjets] = useState(false);
   const [invitationResultat, setInvitationResultat] = useState(null);
 
   const projetDe = (id) => projets.find((p) => p.id === id);
@@ -90,10 +91,11 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
   };
 
   const confirmerSuppression = async () => {
-    const { error } = await onDeletePrestataire(deleting.id);
+    const { error } = await onDeletePrestataire(deleting.id, { supprimerProjets: supprimerAussiProjets });
     notify(error ? "Suppression refusée : " + error.message : "Prestataire supprimé (ses affectations et tâches ont été retirées des projets)");
     setDeleting(null);
     setDetail(null);
+    setSupprimerAussiProjets(false);
   };
 
   const affecter = async ({ projetId, mission }) => {
@@ -195,16 +197,25 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
       )}
 
       {deleting && (
-        <Modal title={`Supprimer "${deleting.nom}" ?`} onClose={() => setDeleting(null)}>
-          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
-            Le prestataire sera supprimé. Ses affectations aux projets et ses tâches seront <b>retirées</b>,
-            les projets et contrats restent intacts. Si un compte de connexion était lié, il sera{" "}
+        <Modal title={`Supprimer "${deleting.nom}" ?`} onClose={() => { setDeleting(null); setSupprimerAussiProjets(false); }}>
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 14 }}>
+            Le prestataire sera supprimé. Ses affectations aux projets et ses tâches seront <b>retirées</b>
+            des autres projets, les contrats restent intacts. Si un compte de connexion était lié, il sera{" "}
             <b>supprimé automatiquement</b> : le prestataire ne pourra plus se connecter.
             Vous pourrez le réinviter plus tard avec la même adresse e-mail si besoin.
           </p>
+          {canDelete && liensDe(deleting.id).length > 0 && (
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, background: T.bg, border: `1px solid ${T.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 12.5, color: T.ink, cursor: "pointer", lineHeight: 1.5 }}>
+              <input type="checkbox" checked={supprimerAussiProjets} onChange={(e) => setSupprimerAussiProjets(e.target.checked)} style={{ marginTop: 2, accentColor: T.brick }} />
+              <span>
+                Supprimer aussi <b>{liensDe(deleting.id).length} projet{liensDe(deleting.id).length > 1 ? "s" : ""}</b> lié{liensDe(deleting.id).length > 1 ? "s" : ""} au prestataire.
+                <span style={{ display: "block", color: T.inkSoft, marginTop: 2 }}>Les devis et factures rattachés à ces projets seront conservés et détachés.</span>
+              </span>
+            </label>
+          )}
           <div style={{ display: "flex", gap: 10 }}>
             <Btn variant="danger" onClick={confirmerSuppression}>Oui, supprimer le prestataire</Btn>
-            <Btn variant="ghost" onClick={() => setDeleting(null)}>Annuler</Btn>
+            <Btn variant="ghost" onClick={() => { setDeleting(null); setSupprimerAussiProjets(false); }}>Annuler</Btn>
           </div>
         </Modal>
       )}

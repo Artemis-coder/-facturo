@@ -108,12 +108,19 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
         .slice(0, 3)
     : [];
   const mobileMenuItems = isMobile
-    ? items
-        .filter((n) => !n.children && !mobileLeaves.has(n.key))
-        .slice(0, 5)
+    ? [
+        ...items
+          .flatMap((n) => (n.children ? n.children : [n]))
+          .filter((n) => !mobileLeaves.has(n.key)),
+        { key: "__logout__", label: "Déconnexion", icon: LogOut },
+      ]
     : [];
 
-const go = (key) => { setView(key); setNavOpen(false); };
+const go = (key) => {
+  if (key === "__logout__") { setNavOpen(false); setConfirmingLogout(true); return; }
+  setView(key);
+  setNavOpen(false);
+};
   const initiales = (profile?.nom_complet || "").split(" ").filter(Boolean).map((p) => p[0].toUpperCase()).slice(0, 2).join("") || profile?.email?.[0]?.toUpperCase() || "U";
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>

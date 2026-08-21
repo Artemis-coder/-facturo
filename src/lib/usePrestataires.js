@@ -86,10 +86,11 @@ export function usePrestataires(entrepriseId, userId) {
     return { error };
   };
 
-  const deletePrestataire = async (id) => {
+  const deletePrestataire = async (id, { supprimerProjets = false } = {}) => {
     const { error } = await supabase.rpc('hard_delete_prestataire', {
       p_prestataire_id: id,
-      p_deleted_by: userId
+      p_deleted_by: userId,
+      p_supprimer_projets: supprimerProjets,
     });
     if (!error) await load();
     return { error };

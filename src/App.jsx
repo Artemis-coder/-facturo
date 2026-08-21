@@ -61,9 +61,11 @@ const GLOBAL_STYLE = `
   .kpi-card { transition: box-shadow .15s, transform .15s; }
   .kpi-card:hover { box-shadow: 0 4px 14px rgba(22,33,58,.08); transform: translateY(-1px); }
   .nav-overlay { display: none; }
+  .mobile-tabbar { display: none; }
   .modal-handle, .notifs-handle { display: none; }
   .table-cards { display: none; }
   @media (max-width: 880px) {
+    .mobile-tabbar { display: block; }
     input, select, textarea { font-size: 16px !important; }
     .app-shell { min-height: 100vh; min-height: 100dvh; padding-top: env(safe-area-inset-top); }
     .app-sidebar { position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; z-index: 60; transform: translateX(-100%); transition: transform .25s ease; width: min(300px, 86vw) !important; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
@@ -278,7 +280,7 @@ export default function App() {
             {view === "utilisateurs" && isAdmin && (
               <Users profiles={profiles} prestataires={prestatairesFromUsers} invitations={invitations} invitationsAcceptees={invitationsAcceptees} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}
                 cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise}
-                softDeleteUser={softDeleteUser} softDeletePrestataire={softDeletePrestataire} />
+                softDeleteUser={softDeleteUser} softDeletePrestataire={softDeletePrestataire} liensPrestataires={liensPrestataires} />
             )}
             {view === "entreprise" && <Entreprise entreprise={entreprise} onSaveProfil={saveProfil} uploadLogo={uploadLogo} notify={notify} canEdit={isAdmin} />}
             {view === "parametres" && <Parametres entreprise={entreprise} onSaveParametres={saveParametres} notify={notify} canEdit={isAdmin} />}

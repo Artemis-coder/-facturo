@@ -51,15 +51,17 @@ export function Users({
   entreprise,
   prestataires,
   softDeleteUser,
-  softDeletePrestataire
+  softDeletePrestataire,
+  liensPrestataires = []
 }) {
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("employe");
-  const [justInvited, setJustInvited] = useState(null); // { email, role, emailError }
-  const [sharing, setSharing] = useState(null); // invitation existante dont on montre le message
+  const [justInvited, setJustInvited] = useState(null);
+  const [sharing, setSharing] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [deletingPrestataire, setDeletingPrestataire] = useState(null);
+  const [supprimerAussiProjets, setSupprimerAussiProjets] = useState(false);
 
   const sendInvite = async () => {
     if (!email.trim()) { notify("Renseignez une adresse e-mail"); return; }
@@ -298,13 +300,14 @@ export function Users({
         <Modal title="Supprimer ce membre ?" onClose={() => setDeletingUser(null)} size="sm">
           <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
             Voulez-vous vraiment supprimer <strong>{deletingUser.nom_complet || deletingUser.email}</strong> ?
-            Ses données seront conservées en base pour une éventuelle restauration, mais il perdra immédiatement l'accès à la plateforme.
+            Cette action est <strong>définitive</strong> : son compte et son accès seront supprimés.
+            Les documents qu'il a créés (clients, devis, factures…) sont conservés.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Btn variant="danger" onClick={async () => {
               try {
                 await softDeleteUser(deletingUser.id);
-                notify("Membre supprimé", "Ses données sont conservées pour restauration", "success");
+                notify("Membre supprimé", "Son compte et son accès ont été supprimés", "success");
               } catch (err) {
                 notify("Erreur", err.message, "error");
               }
@@ -316,36 +319,49 @@ export function Users({
       )}
 
       {/* Modal confirmation suppression/restriction prestataire */}
-      {deletingPrestataire && (
-        <Modal title={deletingPrestataire.hasAccount ? "Restreindre l'accès ?" : "Supprimer ce prestataire ?"} onClose={() => setDeletingPrestataire(null)} size="sm">
-          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
-            {deletingPrestataire.hasAccount ? (
-              <>
-                Voulez-vous <strong>restreindre l'accès</strong> à <strong>{deletingPrestataire.nom}</strong> ?
-                Son compte sera désactivé (suppression douce) et ses données conservées pour restauration.
-                Il ne pourra plus se connecter à la plateforme.
-              </>
-            ) : (
-              <>
-                Voulez-vous vraiment <strong>supprimer</strong> <strong>{deletingPrestataire.nom}</strong> ?
-                Ses données seront conservées en base pour une éventuelle restauration.
-              </>
+      {deletingPrestataire && (() => {
+        const projetsLies = liensPrestataires.filter((l) => l.prestataireId === deletingPrestataire.id).length;
+        return (
+          <Modal title={deletingPrestataire.hasAccount ? "Restreindre l'accès ?" : "Supprimer ce prestataire ?"} onClose={() => { setDeletingPrestataire(null); setSupprimerAussiProjets(false); }} size="sm">
+            <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 14 }}>
+              {deletingPrestataire.hasAccount ? (
+                <>
+                  Voulez-vous <strong>restreindre l'accès</strong> à <strong>{deletingPrestataire.nom}</strong> ?
+                  Son compte sera désactivé (suppression douce) et ses données conservées pour restauration.
+                  Il ne pourra plus se connecter à la plateforme.
+                </>
+              ) : (
+                <>
+                  Voulez-vous vraiment <strong>supprimer</strong> <strong>{deletingPrestataire.nom}</strong> ?
+                  Ses données seront conservées en base pour une éventuelle restauration.
+                </>
+              )}
+            </p>
+            {projetsLies > 0 && (
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, background: T.bg, border: `1px solid ${T.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 12.5, color: T.ink, cursor: "pointer", lineHeight: 1.5 }}>
+                <input type="checkbox" checked={supprimerAussiProjets} onChange={(e) => setSupprimerAussiProjets(e.target.checked)} style={{ marginTop: 2, accentColor: T.brick }} />
+                <span>
+                  Supprimer aussi <b>{projetsLies} projet{projetsLies > 1 ? "s" : ""}</b> lié{projetsLies > 1 ? "s" : ""} à ce prestataire.
+                  <span style={{ display: "block", color: T.inkSoft, marginTop: 2 }}>Les devis et factures rattachés à ces projets seront conservés et détachés.</span>
+                </span>
+              </label>
             )}
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Btn variant="danger" onClick={async () => {
-              try {
-                await softDeletePrestataire(deletingPrestataire.id);
-                notify(deletingPrestataire.hasAccount ? "Accès restreint" : "Prestataire supprimé", "Données conservées pour restauration", "success");
-              } catch (err) {
-                notify("Erreur", err.message, "error");
-              }
-              setDeletingPrestataire(null);
-            }}>{deletingPrestataire.hasAccount ? "Confirmer la restriction" : "Confirmer la suppression"}</Btn>
-            <Btn variant="ghost" onClick={() => setDeletingPrestataire(null)}>Annuler</Btn>
-          </div>
-        </Modal>
-      )}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Btn variant="danger" onClick={async () => {
+                try {
+                  await softDeletePrestataire(deletingPrestataire.id, { supprimerProjets: supprimerAussiProjets });
+                  notify(deletingPrestataire.hasAccount ? "Accès restreint" : "Prestataire supprimé", "Données conservées pour restauration", "success");
+                } catch (err) {
+                  notify("Erreur", err.message, "error");
+                }
+                setDeletingPrestataire(null);
+                setSupprimerAussiProjets(false);
+              }}>{deletingPrestataire.hasAccount ? "Confirmer la restriction" : "Confirmer la suppression"}</Btn>
+              <Btn variant="ghost" onClick={() => { setDeletingPrestataire(null); setSupprimerAussiProjets(false); }}>Annuler</Btn>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
