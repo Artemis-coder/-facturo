@@ -2,20 +2,23 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabaseClient";
 import { SITE_URL } from "./siteUrl";
 
-export function useUsers(entrepriseId) {
+export function useUsers(entrepriseId, userId) {
   const [profiles, setProfiles] = useState([]);
+  const [prestataires, setPrestataires] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [invitationsAcceptees, setInvitationsAcceptees] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!entrepriseId) return;
-    const [{ data: p }, { data: i }, { count }] = await Promise.all([
+    const [{ data: p }, { data: pr }, { data: i }, { count }] = await Promise.all([
       supabase.from("profiles").select("*").eq("entreprise_id", entrepriseId).order("created_at"),
+      supabase.from("prestataires").select("id, nom, societe, email, telephone, notes, type_projet, type_contrat, user_id, created_at, updated_at, deleted_at, deleted_by").eq("entreprise_id", entrepriseId).order("created_at"),
       supabase.from("invitations").select("*").eq("entreprise_id", entrepriseId).eq("accepted", false).order("created_at"),
       supabase.from("invitations").select("id", { count: "exact", head: true }).eq("entreprise_id", entrepriseId).eq("accepted", true),
     ]);
     setProfiles(p || []);
+    setPrestataires(pr || []);
     setInvitations(i || []);
     setInvitationsAcceptees(count || 0);
     setLoading(false);
@@ -44,9 +47,9 @@ export function useUsers(entrepriseId) {
   };
 
   // Renvoie l'e-mail d'invitation (lien magique) pour une invitation déjà créée.
-  const resendInviteEmail = async (email) => {
+  const resendInviteEmail = async (invitation) => {
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: invitation.email,
       options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
     });
     return { error };
@@ -57,5 +60,66 @@ export function useUsers(entrepriseId) {
     await load();
   };
 
-  return { profiles, invitations, invitationsAcceptees, changeRole, invite, resendInviteEmail, cancelInvitation, loading, reload: load };
+  // Soft delete pour utilisateur (admin seulement)
+  const softDeleteUser = async (profileId) => {
+    const { error } = await supabase.rpc('soft_delete_user', {
+      p_profile_id: profileId,
+      p_deleted_by: userId
+    });
+    if (error) throw error;
+    await load();
+  };
+
+  // Soft delete pour prestataire (admin seulement)
+  const softDeletePrestataire = async (prestataireId) => {
+    const { error } = await supabase.rpc('soft_delete_prestataire', {
+      p_prestataire_id: prestataireId,
+      p_deleted_by: userId
+    });
+    if (error) throw error;
+    await load();
+  };
+
+  // Restaurer un utilisateur
+  const restoreUser = async (profileId) => {
+    const { error } = await supabase.rpc('restore_user', {
+      p_profile_id: profileId,
+      p_restored_by: userId
+    });
+    if (error) throw error;
+    await load();
+  };
+
+  // Restaurer un prestataire
+  const restorePrestataire = async (prestataireId) => {
+    const { error } = await supabase.rpc('restore_prestataire', {
+      p_prestataire_id: prestataireId,
+      p_restored_by: userId
+    });
+    if (error) throw error;
+    await load();
+  };
+
+  // Trouver un prestataire par son user_id
+  const getPrestataireByUserId = (userId) => {
+    return prestataires.find(p => p.user_id === userId);
+  };
+
+  return {
+    profiles,
+    prestataires,
+    invitations,
+    invitationsAcceptees,
+    loading,
+    changeRole,
+    invite,
+    resendInviteEmail,
+    cancelInvitation,
+    softDeleteUser,
+    softDeletePrestataire,
+    restoreUser,
+    restorePrestataire,
+    getPrestataireByUserId,
+    load
+  };
 }
