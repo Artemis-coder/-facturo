@@ -7,6 +7,7 @@ import {
 import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
+import { SITE_URL } from "../lib/siteUrl";
 import { TableShell, Btn, Modal, Field, Select, Badge, Card, EmptyState, KpiBar, Timeline } from "./ui";
 
 export const TYPES_PROJET = ["Design graphique", "Développement web", "Audiovisuel", "Marketing", "Rédaction", "Autre"];
@@ -53,7 +54,7 @@ export function badgeAlerte(alr) {
 
 const formatDate = (iso) => (iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR") : "—");
 
-export function Prestataires({ projets, prestataires, liens, taches = [], contrats = [], onSavePrestataire, onDeletePrestataire, affecterPrestataire, detacherPrestataire, onSaveTache, onDeleteTache, inviterPrestataire, notify, canManage = true, canDelete = false }) {
+export function Prestataires({ projets, prestataires, liens, taches = [], contrats = [], onSavePrestataire, onDeletePrestataire, affecterPrestataire, detacherPrestataire, onSaveTache, onDeleteTache, inviterPrestataire, renvoyerInvitationPrestataire, notify, canManage = true, canDelete = false }) {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -113,6 +114,12 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
       return;
     }
     setInvitationResultat({ prestataire, emailError });
+  };
+
+  const renvoyer = async () => {
+    if (!invitationResultat?.prestataire || !renvoyerInvitationPrestataire) return;
+    const { error } = await renvoyerInvitationPrestataire(invitationResultat.prestataire);
+    notify(error ? "Échec du renvoi : " + error.message : "E-mail d'invitation renvoyé");
   };
 
   const saveTacheHandler = async (form) => {
@@ -216,13 +223,16 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
             </div>
           )}
           <p style={{ fontSize: 11.5, color: T.inkSoft, marginBottom: 8 }}>En secours, vous pouvez aussi partager ce message vous-même :</p>
-          <textarea readOnly value={buildMessagePrestataire(invitationResultat.prestataire)}
+          <textarea readOnly value={buildMessagePrestataire(invitationResultat.prestataire, invitationResultat.emailError)}
             style={{ ...inputStyle, height: "auto", minHeight: 140, padding: "10px 12px", fontSize: 12, lineHeight: 1.6, marginBottom: 14 }} />
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Btn variant="ghost" icon={Copy} onClick={() => copierMessage(buildMessagePrestataire(invitationResultat.prestataire), notify)}>Copier le message</Btn>
-            <a href={`https://wa.me/?text=${encodeURIComponent(buildMessagePrestataire(invitationResultat.prestataire))}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+            <Btn variant="ghost" icon={Copy} onClick={() => copierMessage(buildMessagePrestataire(invitationResultat.prestataire, invitationResultat.emailError), notify)}>Copier le message</Btn>
+            <a href={`https://wa.me/?text=${encodeURIComponent(buildMessagePrestataire(invitationResultat.prestataire, invitationResultat.emailError))}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <Btn variant="ghost" icon={MessageCircle}>Envoyer via WhatsApp</Btn>
             </a>
+            {invitationResultat.emailError && renvoyerInvitationPrestataire && (
+              <Btn variant="ghost" icon={Mail} onClick={renvoyer}>Renvoyer l'e-mail</Btn>
+            )}
           </div>
         </Modal>
       )}
@@ -230,16 +240,28 @@ export function Prestataires({ projets, prestataires, liens, taches = [], contra
   );
 }
 
-function buildMessagePrestataire(prestataire) {
-  return (
+function buildMessagePrestataire(prestataire, emailError) {
+  const base =
     `Bonjour ${prestataire.nom} !\n\n` +
     `Un espace prestataire vous a été ouvert sur Ma Bouate : vous pourrez suivre vos projets, ` +
-    `consulter vos contrats et gérer vos tâches.\n\n` +
+    `consulter vos contrats et gérer vos tâches.\n\n`;
+
+  if (emailError) {
+    return (
+      base +
+      `L'e-mail automatique n'a pas pu être envoyé (erreur technique). ` +
+      `Pour accéder à votre espace, allez directement sur ${SITE_URL} et inscrivez-vous avec CETTE adresse e-mail précise : ${prestataire.email}.\n\n` +
+      `Votre compte sera automatiquement reconnu comme prestataire.`
+    );
+  }
+
+  return (
+    base +
     `Un e-mail avec un lien de connexion vient de vous être envoyé à ${prestataire.email} — ` +
     `cliquez dessus pour accéder à votre espace. ` +
     `À votre première connexion, on vous demandera de définir votre mot de passe : ` +
     `ensuite, vous pourrez toujours vous connecter avec votre e-mail + ce mot de passe.\n\n` +
-    `Si l'e-mail n'arrive pas, demandez-nous de renvoyer l'invitation.`
+    `Si l'e-mail n'arrive pas, allez sur ${SITE_URL} et inscrivez-vous avec CETTE adresse e-mail précise : ${prestataire.email}.`
   );
 }
 

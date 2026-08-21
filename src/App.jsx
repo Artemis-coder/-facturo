@@ -168,7 +168,7 @@ export default function App() {
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
   const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus } = useContracts(entrepriseId, userId);
-  const { prestataires, liens: liensPrestataires, taches, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire } = usePrestataires(entrepriseId, userId);
+  const { prestataires, liens: liensPrestataires, taches, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, renvoyerInvitationPrestataire } = usePrestataires(entrepriseId, userId);
   const { fichiers: fichiersProjets, loading: loadingFichiers, uploadFichier, supprimerFichier } = useFichiersProjets(entrepriseId, userId);
 
   if (!isSupabaseConfigured) {
@@ -246,14 +246,14 @@ export default function App() {
                 uploadFichier={uploadFichier} supprimerFichier={supprimerFichier}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
-            {view === "prestataires" && (
-              <Prestataires projets={projets} prestataires={prestataires} liens={liensPrestataires}
-                taches={taches} contrats={contracts}
-                onSavePrestataire={savePrestataire} onDeletePrestataire={deletePrestataire}
-                affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
-                onSaveTache={saveTache} onDeleteTache={deleteTache} inviterPrestataire={inviterPrestataire}
-                notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
-            )}
+             {view === "prestataires" && (
+               <Prestataires projets={projets} prestataires={prestataires} liens={liensPrestataires}
+                 taches={taches} contrats={contracts}
+                 onSavePrestataire={savePrestataire} onDeletePrestataire={deletePrestataire}
+                 affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
+                 onSaveTache={saveTache} onDeleteTache={deleteTache} inviterPrestataire={inviterPrestataire} renvoyerInvitationPrestataire={renvoyerInvitationPrestataire}
+                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
+             )}
             {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} createRequest={createRequest} onCreateHandled={() => setCreateRequest(null)} />}
             {view === "produits" && <Produits produits={produits} onSaveProduit={saveProduit} notify={notify} canEdit={canManageProduits} />}
             {view === "devis" && (

@@ -188,6 +188,15 @@ export function usePrestataires(entrepriseId, userId) {
     return { error: null, emailError: otpError };
   };
 
+  const renvoyerInvitationPrestataire = async (prestataire) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: prestataire.email.trim(),
+      options: { shouldCreateUser: true, emailRedirectTo: SITE_URL },
+    });
+    await load();
+    return { error };
+  };
+
   // Suppression définitive pour prestataire
   const softDeletePrestataire = async (id) => {
     const { error } = await supabase.rpc('hard_delete_prestataire', {
@@ -198,5 +207,5 @@ export function usePrestataires(entrepriseId, userId) {
     return { error };
   };
 
-  return { prestataires, liens, taches, loading, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, softDeletePrestataire, reload: load };
+  return { prestataires, liens, taches, loading, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, renvoyerInvitationPrestataire, softDeletePrestataire, reload: load };
 }
