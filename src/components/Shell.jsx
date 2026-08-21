@@ -107,6 +107,11 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
         .filter((a) => mobileLeaves.has(a.targetView))
         .slice(0, 3)
     : [];
+  const mobileMenuItems = isMobile
+    ? items
+        .filter((n) => !n.children && !mobileLeaves.has(n.key))
+        .slice(0, 5)
+    : [];
 
 const go = (key) => { setView(key); setNavOpen(false); };
   const initiales = (profile?.nom_complet || "").split(" ").filter(Boolean).map((p) => p[0].toUpperCase()).slice(0, 2).join("") || profile?.email?.[0]?.toUpperCase() || "U";
@@ -361,9 +366,10 @@ const go = (key) => { setView(key); setNavOpen(false); };
         <MobileTabBar
           tabs={mobileTabs}
           quickActions={mobileQuickActions}
+          menuItems={mobileMenuItems}
           view={view}
           setView={go}
-          onOpenMenu={() => setNavOpen(true)}
+          onOpenMenu={() => {}}
           onQuickCreate={onQuickCreate}
         />
       )}
