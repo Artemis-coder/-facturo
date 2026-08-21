@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { UserPlus, X, Copy, MessageCircle, Check, Clock, Mail, RefreshCw, AlertTriangle, Users as UsersIcon, UserCheck } from "lucide-react";
+import { UserPlus, X, Copy, MessageCircle, Check, Clock, Mail, RefreshCw, AlertTriangle, Users as UsersIcon, UserCheck, Trash2, Shield, ShieldOff, Lock, Unlock, UserX } from "lucide-react";
 import { T, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
-import { Card, Field, Btn, Select, Modal, KpiBar } from "./ui";
+import { Card, Field, Btn, Select, Modal, KpiBar, Badge } from "./ui";
 import { SITE_URL } from "../lib/siteUrl";
 
 const ROLE_LABELS = {
@@ -34,7 +34,38 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-export function Users({ profiles, invitations, invitationsAcceptees, changeRole, invite, resendInviteEmail, cancelInvitation, notify, currentUserId, entreprise }) {
+function formatDateTime(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("fr-FR", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+export function Users({
+  profiles,
+  invitations,
+  invitationsAcceptees,
+  changeRole,
+  invite,
+  resendInviteEmail,
+  cancelInvitation,
+  notify,
+  currentUserId,
+  entreprise,
+  prestataires,
+  softDeleteUser,
+  softDeletePrestataire,
+  restoreUser,
+  restorePrestataire,
+  getPrestataireByUserId
+}) {
+  const [inviting, setInviting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("employe");
+  const [justInvited, setJustInvited] = useState(null);
+  const [sharing, setSharing] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [deletingPrestataire, setDeletingPrestataire] = useState(null);
+  const [restoring, setRestoring] = useState(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("employe");
@@ -67,38 +98,148 @@ export function Users({ profiles, invitations, invitationsAcceptees, changeRole,
     }
   };
 
+  // Préparer la liste combinée : users + prestataires
+  const userList = profiles.filter(p => !p.deleted_at).map(p => ({
+    ...p,
+    type: 'user',
+    displayRole: p.role,
+    isCurrentUser: p.id === currentUserId,
+    canChangeRole: p.role !== "super_admin" && p.role !== "prestataire" && !p.isCurrentUser,
+    canDelete: p.role !== "super_admin" && !p.isCurrentUser,
+    hasAccount: true,
+  }));
+
+  const prestataireList = (prestataires || []).filter(p => !p.deleted_at).map(p => ({
+    ...p,
+    type: 'prestataire',
+    displayRole: 'prestataire',
+    isCurrentUser: false,
+    canChangeRole: false,
+    canDelete: true,
+    hasAccount: !!p.userId,
+  }));
+
+  const allMembers = [...userList, ...prestataireList].sort((a, b) => {
+    // Trier : super_admin en premier, puis par nom
+    if (a.displayRole === 'super_admin') return -1;
+    if (b.displayRole === 'super_admin') return 1;
+    return (a.nom_complet || a.email || '').localeCompare(b.nom_complet || b.email || '');
+  });
+
+  const totalUsers = profiles.filter(p => !p.deleted_at).length;
+  const totalPrestataires = (prestataires || []).filter(p => !p.deleted_at).length;
+  const totalWithAccount = allMembers.filter(m => m.hasAccount).length;
+
+  const deletedUsers = profiles.filter(p => p.deleted_at);
+  const deletedPrestataires = (prestataires || []).filter(p => p.deleted_at);
+
   return (
     <div>
       <KpiBar items={[
-        { label: "Utilisateurs au total", value: `${profiles.length}`, sub: "Comptes de l'entreprise", tone: T.ink, icon: UsersIcon },
-        { label: "Invitations acceptées", value: `${invitationsAcceptees}`, sub: "Ont rejoint l'équipe", tone: T.teal, icon: UserCheck },
+        { label: "Utilisateurs", value: `${totalUsers}`, sub: "Comptes de l'entreprise", tone: T.ink, icon: UsersIcon },
+        { label: "Prestataires", value: `${totalPrestataires}`, sub: "Partenaires enregistrés", tone: T.gold, icon: UserCheck },
+        { label: "Comptes actifs", value: `${totalWithAccount}`, sub: "Avec accès à la plateforme", tone: T.teal, icon: UserCheck },
       ]} />
 
+      {deletedUsers.length > 0 || deletedPrestataires.length > 0 ? (
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: T.inkSoft }}>
+            <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} />
+            Afficher les membres supprimés ({deletedUsers.length + deletedPrestataires.length})
+          </label>
+        </div>
+      ) : null}
+
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderBottom: `1px solid ${T.line}` }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5 }}>Membres de l'équipe</div>
-          <Btn icon={UserPlus} small onClick={() => setInviting(true)}>Inviter</Btn>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 18px", borderBottom: `1px solid ${T.line}`, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5 }}>
+            Membres de l'équipe
+            {showDeleted && <span style={{ marginLeft: 10, fontSize: 11, color: T.brick, fontWeight: 600 }}>Mode restauration</span>}
+          </div>
+          {!showDeleted && <Btn icon={UserPlus} small onClick={() => setInviting(true)}>Inviter un membre</Btn>}
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <tbody>
-            {profiles.map((p) => (
-              <tr key={p.id}>
-                <td style={{ ...td, fontWeight: 600 }}>{p.nom_complet || p.email}</td>
-                <td style={td}>{p.email}</td>
-                <td style={{ ...td, width: 200 }}>
-                  {p.role === "super_admin" || p.role === "prestataire" || p.id === currentUserId ? (
-                    <span style={{ fontSize: 12.5, color: T.inkSoft }}>{ROLE_LABELS[p.role]}{p.id === currentUserId ? " (vous)" : ""}{p.role === "prestataire" ? " · géré depuis la page Prestataires" : ""}</span>
-                  ) : (
-                    <Select value={p.role} onChange={(e) => changeRole(p.id, e.target.value)}>
-                      {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                    </Select>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+          <thead>
+                <tr style={{ background: T.bg }}>
+                  <th style={{ ...td, textAlign: 'left', fontWeight: 600, color: T.inkSoft, fontSize: 11.5, padding: '10px 12px' }}>Membre</th>
+                  <th style={{ ...td, textAlign: 'left', fontWeight: 600, color: T.inkSoft, fontSize: 11.5, padding: '10px 12px' }}>Email</th>
+                  <th style={{ ...td, textAlign: 'left', fontWeight: 600, color: T.inkSoft, fontSize: 11.5, padding: '10px 12px', width: '180px' }}>Rôle / Type</th>
+                  <th style={{ ...td, textAlign: 'left', fontWeight: 600, color: T.inkSoft, fontSize: 11.5, padding: '10px 12px', width: '120px' }}>Compte</th>
+                  <th style={{ ...td, textAlign: 'right', fontWeight: 600, color: T.inkSoft, fontSize: 11.5, padding: '10px 12px', width: '200px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(showDeleted ? [...deletedUsers, ...deletedPrestataires] : allMembers).map((m) => (
+                  <tr key={m.id} style={m.deleted_at ? { opacity: 0.6, background: T.brickSoft } : {}}>
+                    <td style={{ ...td, fontWeight: 600 }}>
+                      {m.nom_complet || m.email}
+                      {m.isCurrentUser && <span style={{ marginLeft: 6, fontSize: 11, color: T.teal, fontWeight: 600 }}> (vous)</span>}
+                    </td>
+                    <td style={td}>{m.email || '—'}</td>
+                    <td style={td}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 12.5,
+                        color: m.deleted_at ? T.brick : (m.displayRole === 'prestataire' ? T.gold : T.ink),
+                        fontWeight: m.deleted_at ? 400 : 600
+                      }}>
+                        {m.type === 'prestataire' && <Badge statut="Prestataire" />}
+                        {m.displayRole === 'super_admin' && <Badge statut="Super Admin" />}
+                        {ROLE_LABELS[m.displayRole] || m.displayRole}
+                      </span>
+                    </td>
+                    <td style={td}>
+                      {m.hasAccount ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, color: T.teal, fontWeight: 600 }}>
+                          <UserCheck size={13} /> Actif
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11.5, color: T.inkSoft }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                      {!showDeleted ? (
+                        <>
+                          {m.type === 'user' && m.canChangeRole && (
+                            <Select
+                              value={m.role}
+                              onChange={(e) => changeRole(m.id, e.target.value)}
+                              style={{ minWidth: 140 }}
+                            >
+                              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                            </Select>
+                          )}
+                          {m.type === 'prestataire' && m.hasAccount && (
+                            <Btn variant="ghost" small icon={Lock} onClick={() => setDeletingPrestataire(m)} title="Restreindre l'accès">
+                              Restreindre
+                            </Btn>
+                          )}
+                          {m.canDelete && (
+                            <Btn variant="danger" small icon={UserX} onClick={() => m.type === 'user' ? setDeletingUser(m) : setDeletingPrestataire(m)} title="Supprimer">
+                              Supprimer
+                            </Btn>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Btn variant="gold" small icon={Unlock} onClick={() => setRestoring(m)}>Restaurer</Btn>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {(showDeleted ? [...deletedUsers, ...deletedPrestataires] : allMembers).length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ ...td, textAlign: 'center', color: T.inkSoft, padding: 24 }}>
+                      {showDeleted ? 'Aucun membre supprimé' : 'Aucun membre dans l\'équipe'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Card>
 
       {invitations.length > 0 && (
         <Card style={{ marginTop: 16 }}>
@@ -180,6 +321,86 @@ export function Users({ profiles, invitations, invitationsAcceptees, changeRole,
               target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <Btn variant="ghost" icon={MessageCircle}>Envoyer via WhatsApp</Btn>
             </a>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal confirmation suppression utilisateur */}
+      {deletingUser && (
+        <Modal title="Supprimer ce membre ?" onClose={() => setDeletingUser(null)} size="sm">
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
+            Voulez-vous vraiment supprimer <strong>{deletingUser.nom_complet || deletingUser.email}</strong> ?
+            Ses données seront conservées en base pour une éventuelle restauration, mais il perdra immédiatement l'accès à la plateforme.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Btn variant="danger" onClick={async () => {
+              try {
+                await softDeleteUser(deletingUser.id);
+                notify("Membre supprimé", "Ses données sont conservées pour restauration", "success");
+              } catch (err) {
+                notify("Erreur", err.message, "error");
+              }
+              setDeletingUser(null);
+            }}>Confirmer la suppression</Btn>
+            <Btn variant="ghost" onClick={() => setDeletingUser(null)}>Annuler</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal confirmation suppression/restriction prestataire */}
+      {deletingPrestataire && (
+        <Modal title={deletingPrestataire.hasAccount ? "Restreindre l'accès ?" : "Supprimer ce prestataire ?"} onClose={() => setDeletingPrestataire(null)} size="sm">
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
+            {deletingPrestataire.hasAccount ? (
+              <>
+                Voulez-vous <strong>restreindre l'accès</strong> à <strong>{deletingPrestataire.nom}</strong> ?
+                Son compte sera désactivé (suppression douce) et ses données conservées pour restauration.
+                Il ne pourra plus se connecter à la plateforme.
+              </>
+            ) : (
+              <>
+                Voulez-vous vraiment <strong>supprimer</strong> <strong>{deletingPrestataire.nom}</strong> ?
+                Ses données seront conservées en base pour une éventuelle restauration.
+              </>
+            )}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Btn variant="danger" onClick={async () => {
+              try {
+                await softDeletePrestataire(deletingPrestataire.id);
+                notify(deletingPrestataire.hasAccount ? "Accès restreint" : "Prestataire supprimé", "Données conservées pour restauration", "success");
+              } catch (err) {
+                notify("Erreur", err.message, "error");
+              }
+              setDeletingPrestataire(null);
+            }}>{deletingPrestataire.hasAccount ? "Confirmer la restriction" : "Confirmer la suppression"}</Btn>
+            <Btn variant="ghost" onClick={() => setDeletingPrestataire(null)}>Annuler</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal restauration */}
+      {restoring && (
+        <Modal title="Restaurer ce membre ?" onClose={() => setRestoring(null)} size="sm">
+          <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.7, marginBottom: 20 }}>
+            Voulez-vous restaurer <strong>{restoring.nom_complet || restoring.nom || restoring.email}</strong> ?
+            Il retrouvera son accès complet à la plateforme.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Btn variant="gold" onClick={async () => {
+              try {
+                if (restoring.type === 'prestataire') {
+                  await restorePrestataire(restoring.id);
+                } else {
+                  await restoreUser(restoring.id);
+                }
+                notify("Membre restauré", "Accès rétabli avec succès", "success");
+              } catch (err) {
+                notify("Erreur", err.message, "error");
+              }
+              setRestoring(null);
+            }}>Confirmer la restauration</Btn>
+            <Btn variant="ghost" onClick={() => setRestoring(null)}>Annuler</Btn>
           </div>
         </Modal>
       )}

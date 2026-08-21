@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { SITE_URL } from "./siteUrl";
 
-const PRESTATAIRE_SELECT = "id, nom, societe, email, telephone, notes, type_projet, type_contrat, user_id, created_by, created_at, updated_at";
+const PRESTATAIRE_SELECT = "id, nom, societe, email, telephone, notes, type_projet, type_contrat, user_id, created_by, created_at, updated_at, deleted_at, deleted_by";
 const LIEN_SELECT = "id, projet_id, prestataire_id, mission, created_by, created_at";
 const TACHE_SELECT = "id, projet_id, prestataire_id, parent_task_id, titre, description, statut, echeance, created_by, created_at, updated_at";
 
@@ -18,6 +18,8 @@ const mapPrestataire = (row) => ({
   userId: row.user_id || null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
+  deletedAt: row.deleted_at,
+  deletedBy: row.deleted_by,
 });
 
 const mapLien = (row) => ({
@@ -85,7 +87,10 @@ export function usePrestataires(entrepriseId, userId) {
   };
 
   const deletePrestataire = async (id) => {
-    const { error } = await supabase.from("prestataires").delete().eq("id", id);
+    const { error } = await supabase.rpc('soft_delete_prestataire', {
+      p_prestataire_id: id,
+      p_deleted_by: userId
+    });
     if (!error) await load();
     return { error };
   };
@@ -183,5 +188,25 @@ export function usePrestataires(entrepriseId, userId) {
     return { error: null, emailError: otpError };
   };
 
-  return { prestataires, liens, taches, loading, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, reload: load };
+  // Soft delete pour prestataire
+  const softDeletePrestataire = async (id) => {
+    const { error } = await supabase.rpc('soft_delete_prestataire', {
+      p_prestataire_id: id,
+      p_deleted_by: userId
+    });
+    if (!error) await load();
+    return { error };
+  };
+
+  // Restaurer un prestataire
+  const restorePrestataire = async (id) => {
+    const { error } = await supabase.rpc('restore_prestataire', {
+      p_prestataire_id: id,
+      p_restored_by: userId
+    });
+    if (!error) await load();
+    return { error };
+  };
+
+  return { prestataires, liens, taches, loading, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, softDeletePrestataire, restorePrestataire, reload: load };
 }
