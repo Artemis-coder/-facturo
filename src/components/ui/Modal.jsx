@@ -4,8 +4,8 @@ import { T } from "../../lib/theme";
 
 export function Modal({ title, onClose, children, wide, extraWide }) {
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#16213A5C", zIndex: 50 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
+    <div onClick={onClose} className="modal-overlay" style={{ position: "fixed", inset: 0, background: "#16213A5C", zIndex: 50 }}>
+      <div onClick={(e) => e.stopPropagation()} className="modal-drawer" style={{
         position: "absolute", top: 0, right: 0, height: "100%",
         width: extraWide ? 1160 : (wide ? 600 : 420), maxWidth: "96vw",
         background: T.paper, borderLeft: `1px solid ${T.line}`,
@@ -14,11 +14,12 @@ export function Modal({ title, onClose, children, wide, extraWide }) {
         boxShadow: "-10px 0 28px rgba(22,33,58,.16)",
         animation: "drawerIn .24s cubic-bezier(.2,.8,.3,1)",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 22px", borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
-          <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16.5 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, padding: 4, display: "flex" }}><X size={18} /></button>
+        <div className="modal-handle" />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "18px 22px", borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
+          <h3 style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16.5, minWidth: 0 }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, padding: 8, display: "flex", borderRadius: 8, flexShrink: 0 }}><X size={18} /></button>
         </div>
-        <div style={{ padding: 22, overflowY: "auto", flex: 1 }}>{children}</div>
+        <div className="modal-body" style={{ padding: 22, overflowY: "auto", flex: 1, WebkitOverflowScrolling: "touch" }}>{children}</div>
       </div>
     </div>
   );

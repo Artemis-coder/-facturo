@@ -27,7 +27,8 @@ export function NotifsBell({ userId, entrepriseId }) {
       {open && (
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={() => setOpen(false)} />
-          <div style={{ position: "absolute", top: 42, right: 0, width: 340, maxWidth: "calc(100vw - 60px)", background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(22,33,58,.16)", zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <div className="notifs-popover" style={{ position: "absolute", top: 42, right: 0, width: 340, maxWidth: "calc(100vw - 60px)", background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(22,33,58,.16)", zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            <div className="notifs-handle" />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderBottom: `1px solid ${T.line}`, background: T.bg }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, fontWeight: 600 }}>Notifications</span>
               <div style={{ display: "flex", gap: 6 }}>
@@ -36,10 +37,10 @@ export function NotifsBell({ userId, entrepriseId }) {
                     <Check size={12} /> Tout lire
                   </button>
                 )}
-                <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex" }}><X size={15} /></button>
+                <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex", padding: 4 }}><X size={15} /></button>
               </div>
             </div>
-            <div style={{ maxHeight: 380, overflowY: "auto" }}>
+            <div className="notifs-list" style={{ maxHeight: 380, overflowY: "auto" }}>
               {notifications.length === 0 && (
                 <div style={{ padding: "26px 14px", textAlign: "center", fontSize: 12.5, color: T.inkSoft }}>Aucune notification pour le moment.</div>
               )}

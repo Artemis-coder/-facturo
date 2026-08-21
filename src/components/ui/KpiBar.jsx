@@ -21,6 +21,7 @@ export function KpiBar({ items = [] }) {
         return (
           <Card
             key={i}
+            className="kpi-card"
             onClick={k.onClick}
             style={{
               padding: "16px 18px",

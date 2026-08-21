@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Plus, Printer, Trash2, CheckCircle2, Receipt, Clock, AlertTriangle, DollarSign, MessageCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Printer, Trash2, CheckCircle2, Receipt, Clock, AlertTriangle, DollarSign, MessageCircle, Eye } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals, montantEncaisseTotal } from "../lib/helpers";
@@ -8,7 +8,7 @@ import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 import { ReminderComposer } from "./ReminderComposer";
 
-export function Factures({ factures, clients, produits, projets, paiements = [], entreprise, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false }) {
+export function Factures({ factures, clients, produits, projets, paiements = [], entreprise, createFacture, enregistrerPaiement, marquerProjetTermine, lierProjet, deleteFacture, notify, onPrint, canManage = true, canDelete = false, createRequest, onCreateHandled }) {
   const [creating, setCreating] = useState(false);
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -16,6 +16,14 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
   const [paying, setPaying] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [reminding, setReminding] = useState(null);
+  const [openedFromCreate, setOpenedFromCreate] = useState(0);
+  useEffect(() => {
+    if (createRequest?.kind === "facture" && canManage && createRequest.ts > openedFromCreate) {
+      setOpenedFromCreate(createRequest.ts);
+      setCreating(true);
+      onCreateHandled?.();
+    }
+  }, [createRequest, canManage]);
   const cli = (id) => clients.find((c) => c.id === id);
   const proj = (id) => projets?.find((p) => p.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyée", "Payée", "Partiellement payée", "En retard", "Annulée"];
@@ -62,6 +70,50 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
     setDeleting(null);
   };
 
+  const renderCard = (f) => (
+    <div onClick={() => setPreviewing(f)} style={{
+      padding: "14px 14px 12px", cursor: "pointer", background: T.paper,
+      borderBottom: `1px solid ${T.line}`, display: "flex", flexDirection: "column", gap: 8,
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13.5, fontWeight: 600, color: T.ink }}>{f.id}</div>
+          <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {cli(f.clientId)?.societe || cli(f.clientId)?.nom || "—"}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <Badge statut={f.statut} />
+          {f.projetTermine && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, color: T.teal }}>
+              <CheckCircle2 size={11} /> Terminé
+            </span>
+          )}
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+        <div style={{ fontSize: 11.5, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>Éch. {f.echeance}</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, fontWeight: 600, color: T.ink }}>{fmt(totals(f.lignes, f.remiseGlobale).ttc)}</div>
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+        <Btn variant="ghost" small icon={Eye} onClick={() => setPreviewing(f)}>Aperçu</Btn>
+        {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
+          <Btn variant="ghost" small onClick={() => setPaying(f)}>Paiement</Btn>
+        )}
+        {canManage && canRemind(f) && (
+          <Btn variant="ghost" small icon={MessageCircle} onClick={() => setReminding(f)}>Relancer</Btn>
+        )}
+        <Btn variant="ghost" small icon={Printer} onClick={() => onPrint(f, "facture", cli(f.clientId))}>PDF</Btn>
+        {canManage && f.statut === "Payée" && !f.projetTermine && (
+          <Btn variant="ghost" small icon={CheckCircle2} onClick={() => marquerTermine(f)}>Terminer</Btn>
+        )}
+        {canDelete && (
+          <Btn variant="danger" small icon={Trash2} onClick={() => setDeleting(f)}>Supprimer</Btn>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <KpiBar items={kpiItems} />
@@ -85,6 +137,8 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
         </button>
       </div>
       <TableShell headers={["N°", "Client", "Projet", "Échéance", "Montant TTC", "Statut", ""]} onSearch={() => {}} searchPlaceholder="Rechercher…"
+        items={list} renderCard={renderCard}
+        mobileEmpty={<EmptyState icon={Receipt} title="Aucune facture" subtitle="Vos factures apparaîtront ici." />}
         action={canManage && <Btn icon={Plus} onClick={() => setCreating(true)}>Nouvelle facture</Btn>}>
         {list.length === 0 && (
           <tr><td colSpan={7}><EmptyState icon={Receipt} title="Aucune facture" subtitle="Vos factures apparaîtront ici." /></td></tr>
@@ -106,21 +160,23 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
                 </span>
               )}
             </td>
-            <td style={{ ...td, textAlign: "right", display: "flex", gap: 6, justifyContent: "flex-end" }}>
-              <Btn variant="ghost" small onClick={() => setPreviewing(f)}>Aperçu</Btn>
-              {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
-                <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
-              )}
-              {canManage && canRemind(f) && (
-                <Btn variant="ghost" small icon={MessageCircle} onClick={() => setReminding(f)}>Relancer</Btn>
-              )}
-              {canManage && f.statut === "Payée" && !f.projetTermine && (
-                <Btn variant="ghost" small icon={CheckCircle2} onClick={() => marquerTermine(f)}>Marquer terminé</Btn>
-              )}
-              <Btn variant="ghost" small icon={Printer} onClick={() => onPrint(f, "facture", cli(f.clientId))}>PDF</Btn>
-              {canDelete && (
-                <Btn variant="danger" small icon={Trash2} onClick={() => setDeleting(f)}>Supprimer</Btn>
-              )}
+            <td style={td}>
+              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                <Btn variant="ghost" small onClick={() => setPreviewing(f)}>Aperçu</Btn>
+                {canManage && f.statut !== "Payée" && f.statut !== "Annulée" && (
+                  <Btn variant="ghost" small onClick={() => setPaying(f)}>Enregistrer paiement</Btn>
+                )}
+                {canManage && canRemind(f) && (
+                  <Btn variant="ghost" small icon={MessageCircle} onClick={() => setReminding(f)}>Relancer</Btn>
+                )}
+                {canManage && f.statut === "Payée" && !f.projetTermine && (
+                  <Btn variant="ghost" small icon={CheckCircle2} onClick={() => marquerTermine(f)}>Marquer terminé</Btn>
+                )}
+                <Btn variant="ghost" small icon={Printer} onClick={() => onPrint(f, "facture", cli(f.clientId))}>PDF</Btn>
+                {canDelete && (
+                  <Btn variant="danger" small icon={Trash2} onClick={() => setDeleting(f)}>Supprimer</Btn>
+                )}
+              </div>
             </td>
           </tr>
         ))}

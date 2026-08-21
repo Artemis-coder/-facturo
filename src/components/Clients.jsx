@@ -1,15 +1,16 @@
-import React, { useState } from "react";
-import { Plus, Pencil, Users as UsersIcon, UserCheck, UserPlus, FolderKanban } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Pencil, Users as UsersIcon, UserCheck, UserPlus, FolderKanban, Mail, Phone } from "lucide-react";
 import { T, fmt, inputStyle } from "../lib/theme";
 import { td } from "../lib/tableStyles";
 import { totals } from "../lib/helpers";
 import { TableShell, Btn, Modal, Field, Badge, Select, EmptyState, KpiBar } from "./ui";
 
-export function Clients({ clients, onSaveClient, devis, factures, projets, notify, canEdit = true }) {
+export function Clients({ clients, onSaveClient, devis, factures, projets, notify, canEdit = true, createRequest, onCreateHandled }) {
   const [q, setQ] = useState("");
   const [filtre, setFiltre] = useState("Tous");
   const [editing, setEditing] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [openedFromCreate, setOpenedFromCreate] = useState(0);
   const projetEnCoursDe = (clientId) => projets?.find((p) => p.clientId === clientId && p.statut === "En cours");
   const list = clients
     .filter((c) => (c.nom + c.societe).toLowerCase().includes(q.toLowerCase()))
@@ -27,10 +28,50 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
     { label: "Avec Projets En Cours", value: `${avecProjetsCount}`, sub: "Dossiers de réalisation actifs", tone: T.slate, icon: FolderKanban },
   ];
 
+  useEffect(() => {
+    if (createRequest?.kind === "client" && canEdit && createRequest.ts > openedFromCreate) {
+      setOpenedFromCreate(createRequest.ts);
+      setEditing({ nom: "", societe: "", email: "", tel: "", ville: "", notes: "", statut: "Prospect" });
+      onCreateHandled?.();
+    }
+  }, [createRequest, canEdit]);
   const save = async (form) => {
     const { error } = await onSaveClient(form);
     notify(error ? "Échec : " + error.message : (form.id ? "Client mis à jour" : "Client ajouté"));
     if (!error) setEditing(null);
+  };
+
+  const renderCard = (c) => {
+    const projet = projetEnCoursDe(c.id);
+    return (
+      <div onClick={() => setDetail(c)} style={{
+        padding: "14px 14px 12px", cursor: "pointer", background: T.paper,
+        borderBottom: `1px solid ${T.line}`, display: "flex", flexDirection: "column", gap: 8,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink, fontFamily: "'Space Grotesk', sans-serif" }}>{c.nom || "—"}</div>
+            <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 2 }}>{c.societe || "—"}</div>
+          </div>
+          <Badge statut={c.statut || "Prospect"} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: T.inkSoft }}>
+          {(c.email || c.tel) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+              {c.email && <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Mail size={12} />{c.email}</span>}
+              {c.tel && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'IBM Plex Mono', monospace" }}><Phone size={12} />{c.tel}</span>}
+            </div>
+          )}
+          {c.ville && <div>{c.ville}</div>}
+          {projet && <div style={{ fontSize: 11, color: T.gold, marginTop: 2 }}>Projet en cours : {projet.nom}</div>}
+        </div>
+        {canEdit && (
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <Btn variant="ghost" small icon={Pencil} onClick={(e) => { e?.stopPropagation?.(); setEditing(c); }}>Modifier</Btn>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -47,6 +88,8 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
       </div>
       <TableShell headers={["Nom", "Société", "Statut", "Email", "Téléphone", "Ville", ""]} onSearch={setQ}
         searchPlaceholder="Rechercher un client…"
+        items={list} renderCard={renderCard}
+        mobileEmpty={<EmptyState icon={UsersIcon} title="Aucun client" subtitle="Ajoutez votre premier client pour commencer à créer des devis." />}
         action={canEdit && <Btn icon={Plus} onClick={() => setEditing({ nom: "", societe: "", email: "", tel: "", ville: "", notes: "", statut: "Prospect" })}>Nouveau client</Btn>}>
         {list.length === 0 && (
           <tr><td colSpan={7}><EmptyState icon={UsersIcon} title="Aucun client" subtitle="Ajoutez votre premier client pour commencer à créer des devis." /></td></tr>

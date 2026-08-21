@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
-  Building2, Settings, X, Menu, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature, Briefcase, ChevronDown, Handshake, PanelLeftClose, PanelLeftOpen,
+  Building2, Settings, X, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature, Briefcase, ChevronDown, Handshake, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { T } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
+import { useIsMobile } from "../lib/useIsMobile";
 import { Modal, Btn } from "./ui";
 import { NotifsBell } from "./NotifsBell";
+import { MobileTabBar } from "./MobileTabBar";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -29,9 +31,47 @@ export const NAV = [
   { key: "parametres", label: "Paramètres", icon: Settings },
 ];
 
+const PRIORITY_KEYS_BY_ROLE = {
+  administrateur: ["clients", "devis", "factures"],
+  super_admin: ["clients", "devis", "factures"],
+  comptable: ["clients", "factures", "finance"],
+  commercial: ["clients", "devis", "projets"],
+  employe: ["devis", "factures"],
+};
+
+const QUICK_ACTIONS_BY_ROLE = {
+  administrateur: ["client", "devis", "facture"],
+  super_admin: ["client", "devis", "facture"],
+  comptable: ["client", "facture"],
+  commercial: ["client", "devis"],
+  employe: [],
+};
+
+const QUICK_ACTION_DEFS = {
+  client: { kind: "client", targetView: "clients", label: "Nouveau client", sub: "Ajouter un contact au répertoire", icon: Users },
+  devis: { kind: "devis", targetView: "devis", label: "Nouveau devis", sub: "Rédiger et chiffrer une proposition", icon: FileText },
+  facture: { kind: "facture", targetView: "factures", label: "Nouvelle facture", sub: "Émettre une facture client", icon: Receipt },
+};
+
+function buildMobileTabs(navItems, role) {
+  const leaves = navItems.flatMap((n) => (n.children ? n.children : [n]));
+  const desired = ["dashboard", ...(PRIORITY_KEYS_BY_ROLE[role] || [])];
+  const byKey = new Map(leaves.map((l) => [l.key, l]));
+  const picked = [];
+  for (const k of desired) {
+    const leaf = byKey.get(k);
+    if (leaf && !picked.some((p) => p.key === leaf.key)) picked.push(leaf);
+  }
+  if (!picked.some((p) => p.key === "dashboard")) {
+    const dash = byKey.get("dashboard");
+    if (dash) picked.unshift(dash);
+  }
+  return picked.slice(0, 4).map((l) => ({ key: l.key, label: l.key === "dashboard" ? "Accueil" : l.label, icon: l.icon }));
+}
+
 const isVisible = (n, role) => !n.roles || role === "super_admin" || n.roles.includes(role);
 
-export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts, userId, profile }) {
+export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts, userId, profile, onQuickCreate }) {
   const items = NAV
     .filter((n) => isVisible(n, role))
     .map((n) => (n.children ? { ...n, children: n.children.filter((c) => isVisible(c, role)) } : n))
@@ -41,16 +81,10 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("mabouate:sidebar:collapsed") === "1"; } catch { return false; }
   });
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 880px)").matches);
+  const isMobile = useIsMobile();
   useEffect(() => {
     try { localStorage.setItem("mabouate:sidebar:collapsed", collapsed ? "1" : "0"); } catch {}
   }, [collapsed]);
-  useEffect(() => {
-    const mql = window.matchMedia("(max-width: 880px)");
-    const onChange = (e) => setIsMobile(e.matches);
-    mql.addEventListener?.("change", onChange);
-    return () => mql.removeEventListener?.("change", onChange);
-  }, []);
   const rail = collapsed && !isMobile;
   const [navOpen, setNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -63,7 +97,18 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const activeInGroup = !!group && group.children.some((c) => c.key === view);
   const groupOpen = groupOverride === null ? activeInGroup : groupOverride;
   useEffect(() => { setGroupOverride(null); }, [view]);
-  const go = (key) => { setView(key); setNavOpen(false); };
+  const toggleNav = () => setNavOpen((prev) => !prev);
+
+  const mobileTabs = isMobile ? buildMobileTabs(items, role) : [];
+  const mobileLeaves = new Set(mobileTabs.map((t) => t.key));
+  const mobileQuickActions = isMobile
+    ? (QUICK_ACTIONS_BY_ROLE[role] || [])
+        .map((kind) => QUICK_ACTION_DEFS[kind])
+        .filter((a) => mobileLeaves.has(a.targetView))
+        .slice(0, 3)
+    : [];
+
+const go = (key) => { setView(key); setNavOpen(false); };
   const initiales = (profile?.nom_complet || "").split(" ").filter(Boolean).map((p) => p[0].toUpperCase()).slice(0, 2).join("") || profile?.email?.[0]?.toUpperCase() || "U";
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -105,7 +150,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             if (n.children) {
               return (
                 <div key={n.key}>
-                  <div onClick={rail ? (() => { setCollapsed(false); setGroupOverride(true); }) : () => setGroupOverride(!groupOpen)} style={{
+                  <div className="nav-item" onClick={rail ? (() => { setCollapsed(false); setGroupOverride(true); }) : () => setGroupOverride(!groupOpen)} style={{
                     display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
                     borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
                     background: activeInGroup ? "#ffffff14" : "transparent", color: activeInGroup ? "#fff" : "#B9BFCF",
@@ -124,7 +169,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
                       const cActive = c.key === view;
                       const CIcon = c.icon;
                       return (
-                        <div key={c.key} onClick={() => go(c.key)} style={{
+                        <div key={c.key} className="nav-item" onClick={() => go(c.key)} style={{
                           display: "flex", alignItems: "center", gap: 10, padding: "9px 12px 9px 36px", marginBottom: 2,
                           borderRadius: 9, cursor: "pointer", fontSize: 13, position: "relative",
                           background: cActive ? "#ffffff14" : "transparent", color: cActive ? "#fff" : "#B9BFCF",
@@ -140,7 +185,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             }
             const active = n.key === view;
             return (
-              <div key={n.key} onClick={() => go(n.key)} style={{
+              <div key={n.key} className="nav-item" onClick={() => go(n.key)} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
                 borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
                 background: active ? "#ffffff14" : "transparent", color: active ? "#fff" : "#B9BFCF",
@@ -233,12 +278,10 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
       </aside>
       <main style={{ flex: 1, minWidth: 0 }}>
         <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
-          <button className="nav-menu-btn" onClick={() => setNavOpen(true)} style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "none", alignItems: "center", justifyContent: "center", cursor: "pointer", color: T.ink, flexShrink: 0 }}>
-            <Menu size={18} />
-          </button>
-          <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1 }}>{current?.label}</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{current?.label}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 10 }}>
             <div
+              className="connection-pill"
               title={online ? "En ligne — données synchronisées" : "Hors ligne — mode déconnecté actif"}
               style={{
                 display: "flex",
@@ -260,7 +303,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
                 boxShadow: `0 0 6px ${online ? T.teal : T.brick}`
               }} />
               {online ? <Wifi size={13} /> : <WifiOff size={13} />}
-              <span>{online ? "En ligne" : "Hors ligne"}</span>
+              <span className="connection-label">{online ? "En ligne" : "Hors ligne"}</span>
             </div>
             <NotifsBell userId={userId} entrepriseId={entreprise?.id} />
             <button onClick={onToggleAmounts} title={amountsHidden ? "Afficher les montants" : "Masquer les montants"}
@@ -279,7 +322,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
               {profileOpen && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={() => setProfileOpen(false)} />
-                  <div style={{ position: "absolute", top: 44, right: 0, width: 260, maxWidth: "calc(100vw - 32px)", background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(22,33,58,.16)", zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  <div className="profile-popover" style={{ position: "absolute", top: 44, right: 0, width: 260, maxWidth: "calc(100vw - 32px)", background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(22,33,58,.16)", zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
                     <div style={{ padding: 14, borderBottom: `1px solid ${T.line}`, background: T.bg, display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 34, height: 34, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {initiales}
@@ -313,6 +356,17 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
         </header>
         <div className="app-content" style={{ padding: 30 }}>{children}</div>
       </main>
+
+      {isMobile && (
+        <MobileTabBar
+          tabs={mobileTabs}
+          quickActions={mobileQuickActions}
+          view={view}
+          setView={go}
+          onOpenMenu={() => setNavOpen(true)}
+          onQuickCreate={onQuickCreate}
+        />
+      )}
 
       {confirmingLogout && (
         <Modal title="Se déconnecter ?" onClose={() => setConfirmingLogout(false)}>

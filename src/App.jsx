@@ -41,16 +41,18 @@ const FONT_LINKS = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@
 
 const GLOBAL_STYLE = `
   * { box-sizing: border-box; }
-  body { margin: 0; }
+  html, body { scroll-behavior: smooth; }
+  body { margin: 0; -webkit-tap-highlight-color: transparent; }
   input, select, textarea { transition: border-color .15s, box-shadow .15s; outline: none; }
   input:focus, select:focus, textarea:focus { border-color: ${T.gold} !important; box-shadow: 0 0 0 3px ${T.goldSoft}; }
   table tbody tr { transition: background .12s; }
   table tbody tr:hover { background: #FAF8F3; }
-  button { font-family: inherit; }
+  button { font-family: inherit; touch-action: manipulation; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb { background: #D9D6CC; border-radius: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   @keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes facturo-spin { to { transform: rotate(360deg); } }
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -59,23 +61,42 @@ const GLOBAL_STYLE = `
   .kpi-card { transition: box-shadow .15s, transform .15s; }
   .kpi-card:hover { box-shadow: 0 4px 14px rgba(22,33,58,.08); transform: translateY(-1px); }
   .nav-overlay { display: none; }
+  .modal-handle, .notifs-handle { display: none; }
+  .table-cards { display: none; }
   @media (max-width: 880px) {
-    .app-sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 60; transform: translateX(-100%); transition: transform .25s ease; }
+    input, select, textarea { font-size: 16px !important; }
+    .app-shell { min-height: 100vh; min-height: 100dvh; padding-top: env(safe-area-inset-top); }
+    .app-sidebar { position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; z-index: 60; transform: translateX(-100%); transition: transform .25s ease; width: min(300px, 86vw) !important; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
     .app-sidebar.open { transform: translateX(0); box-shadow: 12px 0 32px rgba(22,33,58,.25); }
     .nav-close-btn { display: flex !important; }
     .nav-menu-btn { display: flex !important; }
     .nav-collapse-btn { display: none !important; }
+    .nav-item { min-height: 46px; }
     .user-profile-name { display: none !important; }
     .nav-overlay { display: block; position: fixed; inset: 0; background: #16213A66; z-index: 55; animation: fadeIn .2s ease; }
-    .app-header { padding: 14px 16px !important; }
+    .app-header { padding: 12px 14px !important; gap: 10px !important; }
     .app-header-title { font-size: 17px !important; }
-    .app-content { padding: 16px !important; }
-    .grid-kpi { grid-template-columns: repeat(2, 1fr) !important; }
+    .app-content { padding: 14px 14px calc(78px + env(safe-area-inset-bottom)) !important; }
+    .connection-pill { padding: 6px 9px !important; }
+    .connection-label { display: none; }
+    .profile-popover { position: fixed !important; top: 70px !important; right: 12px !important; left: 12px !important; width: auto !important; max-width: none !important; animation: fadeInUp .18s ease; }
+    .notifs-popover { position: fixed !important; top: auto !important; bottom: 10px !important; left: 10px !important; right: 10px !important; width: auto !important; max-width: none !important; display: flex; flex-direction: column; max-height: 70vh; max-height: 70dvh; animation: sheetIn .24s cubic-bezier(.2,.8,.3,1); }
+    .notifs-handle { display: block; width: 40px; height: 4px; border-radius: 2px; background: ${T.line}; margin: 8px auto 0; }
+    .notifs-list { max-height: none !important; flex: 1; }
+    .modal-overlay { z-index: 210 !important; }
+    .modal-drawer { top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: auto !important; max-height: 92vh; max-height: 92dvh; width: 100% !important; max-width: 100% !important; border-left: none !important; border-top: 1px solid ${T.line}; border-radius: 18px 18px 0 0 !important; box-shadow: 0 -12px 32px rgba(22,33,58,.2) !important; animation: sheetIn .24s cubic-bezier(.2,.8,.3,1) !important; padding-bottom: env(safe-area-inset-bottom); }
+    .modal-handle { display: block; width: 40px; height: 4px; border-radius: 2px; background: ${T.line}; margin: 10px auto 0; flex-shrink: 0; }
+    .modal-body { padding: 16px !important; }
+    .grid-kpi { display: grid !important; grid-template-columns: none !important; grid-auto-flow: column !important; grid-auto-columns: 82% !important; overflow-x: auto !important; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; }
+    .grid-kpi::-webkit-scrollbar { display: none; }
+    .grid-kpi > * { scroll-snap-align: start; min-width: 0; }
     .grid-dash { grid-template-columns: 1fr !important; }
     .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .table-cards { display: block; }
+    .table-toolbar { padding: 12px 14px !important; }
+    .app-toast, .offline-banner { bottom: calc(18px + 60px + env(safe-area-inset-bottom)) !important; max-width: calc(100vw - 24px); }
   }
   @media (max-width: 480px) {
-    .grid-kpi { grid-template-columns: 1fr !important; }
     .table-toolbar { flex-direction: column; align-items: stretch !important; }
     .table-toolbar > div:first-child { max-width: none !important; }
     .table-toolbar > button { width: 100%; justify-content: center; }
@@ -106,7 +127,12 @@ export default function App() {
   const online = useOnlineStatus();
   const [pendingCount, setPendingCount] = useState(queueLength());
   const [toast, setToast] = useState("");
+  const [createRequest, setCreateRequest] = useState(null);
   const notify = (msg) => { setToast(msg); setPendingCount(queueLength()); setTimeout(() => setToast(""), 2200); };
+  const requestCreate = (kind) => {
+    setView(kind === "client" ? "clients" : kind === "devis" ? "devis" : "factures");
+    setCreateRequest({ kind, ts: Date.now() });
+  };
 
   const entrepriseId = profile?.entreprise_id;
   const userId = session?.user?.id;
@@ -197,7 +223,8 @@ export default function App() {
     <>
       <GlobalStyles />
       <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
-        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId} profile={profile}>
+        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId} profile={profile}
+        onQuickCreate={requestCreate}>
         {!dataReady ? (
           <LoadingState label="Chargement des données…" />
         ) : (
@@ -227,18 +254,20 @@ export default function App() {
                 onSaveTache={saveTache} onDeleteTache={deleteTache} inviterPrestataire={inviterPrestataire}
                 notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
             )}
-            {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} />}
+            {view === "clients" && <Clients clients={clients} onSaveClient={saveClient} devis={devis} factures={factures} projets={projets} notify={notify} canEdit={canManageClients} createRequest={createRequest} onCreateHandled={() => setCreateRequest(null)} />}
             {view === "produits" && <Produits produits={produits} onSaveProduit={saveProduit} notify={notify} canEdit={canManageProduits} />}
             {view === "devis" && (
               <Devis devis={devis} clients={clients} produits={produits} projets={projets} entreprise={entreprise}
                 createDevis={createDevis} updateDevis={updateDevis} marquerTransforme={marquerTransforme}
-                creerDepuisDevis={creerDepuisDevis} lierProjet={lierProjetDevis} notify={notify} onPrint={requestPrint} canCreate={canCreateDevis} />
+                creerDepuisDevis={creerDepuisDevis} lierProjet={lierProjetDevis} notify={notify} onPrint={requestPrint} canCreate={canCreateDevis}
+                createRequest={createRequest} onCreateHandled={() => setCreateRequest(null)} />
             )}
             {view === "factures" && (
               <Factures factures={factures} clients={clients} produits={produits} projets={projets} paiements={paiements} entreprise={entreprise}
                 createFacture={createFacture} enregistrerPaiement={enregistrerPaiement} marquerProjetTermine={marquerProjetTermine}
                 lierProjet={lierProjetFacture} deleteFacture={deleteFacture}
-                notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin} />
+                notify={notify} onPrint={requestPrint} canManage={canManageFactures} canDelete={isAdmin}
+                createRequest={createRequest} onCreateHandled={() => setCreateRequest(null)} />
             )}
             {view === "contrats" && isAdmin && (
               <Contracts templates={templates} contracts={contracts} clients={clients} factures={factures} devis={devis} projets={projets} prestataires={prestataires} entreprise={entreprise}
@@ -257,7 +286,7 @@ export default function App() {
         )}
       </Shell>
       {!online && (
-        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: T.brick, color: "#fff", padding: "9px 18px", borderRadius: 30, fontSize: 12.5, zIndex: 200, boxShadow: "0 6px 20px rgba(22,33,58,.25)" }}>
+        <div className="offline-banner" style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: T.brick, color: "#fff", padding: "9px 18px", borderRadius: 30, fontSize: 12.5, zIndex: 200, boxShadow: "0 6px 20px rgba(22,33,58,.25)" }}>
           Hors ligne — les modifications seront synchronisées automatiquement ({pendingCount} en attente)
         </div>
       )}

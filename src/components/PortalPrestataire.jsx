@@ -161,7 +161,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
             const active = n.key === tab;
             const Icon = n.icon;
             return (
-              <div key={n.key} onClick={() => go(n.key)} style={{
+              <div key={n.key} className="nav-item" onClick={() => go(n.key)} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", marginBottom: 2,
                 borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
                 background: active ? "#ffffff14" : "transparent", color: active ? "#fff" : "#B9BFCF",

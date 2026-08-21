@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, ArrowRight, Download, FileText, Edit3, Clock, CheckCircle2, DollarSign, MessageCircle } from "lucide-react";
 import { T, fmt } from "../lib/theme";
 import { td } from "../lib/tableStyles";
@@ -8,11 +8,19 @@ import { DocBuilder } from "./DocBuilder";
 import { DocPreview } from "./DocPreview";
 import { ReminderComposer } from "./ReminderComposer";
 
-export function Devis({ devis, clients, produits, projets, entreprise, createDevis, updateDevis, marquerTransforme, creerDepuisDevis, lierProjet, notify, onPrint, canCreate = true }) {
+export function Devis({ devis, clients, produits, projets, entreprise, createDevis, updateDevis, marquerTransforme, creerDepuisDevis, lierProjet, notify, onPrint, canCreate = true, createRequest, onCreateHandled }) {
   const [builder, setBuilder] = useState(null); // null closed, {} new, {...doc} editing
   const [previewing, setPreviewing] = useState(null);
   const [filter, setFilter] = useState("Tous");
   const [reminding, setReminding] = useState(null);
+  const [openedFromCreate, setOpenedFromCreate] = useState(0);
+  useEffect(() => {
+    if (createRequest?.kind === "devis" && canCreate && createRequest.ts > openedFromCreate) {
+      setOpenedFromCreate(createRequest.ts);
+      setBuilder({});
+      onCreateHandled?.();
+    }
+  }, [createRequest, canCreate]);
   const cli = (id) => clients.find((c) => c.id === id);
   const proj = (id) => projets?.find((p) => p.id === id);
   const statuts = ["Tous", "Brouillon", "Envoyé", "Accepté", "Refusé", "Expiré"];
