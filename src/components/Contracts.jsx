@@ -314,7 +314,7 @@ function ContractBuilder({ templates, clients, factures, devis, projets, prestat
 }
 
 function ContractImport({ clients, prestataires, projets, onSave, notify }) {
-  const [form, setForm] = useState({ titre: "", clientId: clients[0]?.id || "", prestataireId: "", projetId: "", contenu: "Contrat importé" });
+  const [form, setForm] = useState({ titre: "", clientId: "", prestataireId: "", projetId: "", contenu: "Contrat importé" });
   const [pdfFile, setPdfFile] = useState(null);
   const set = (key) => (e) => setForm((item) => ({ ...item, [key]: e.target.value }));
   const handleFileChange = (e) => {
@@ -322,19 +322,20 @@ function ContractImport({ clients, prestataires, projets, onSave, notify }) {
     if (file) setPdfFile(file);
   };
   const handleSave = async () => {
-    if (!form.titre.trim() || !form.clientId) {
-      notify("Le titre et le client sont requis.");
+    if (!form.titre.trim()) {
+      notify("Le titre est requis.");
       return;
     }
     const result = await onSave({ ...form, pdfFile });
     if (result?.error) {
       notify(result.error.message || "Échec de l'import.");
     }
+    return result;
   };
   return <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, .75fr) minmax(360px, 1.25fr)", gap: 22 }}>
     <div>
       <Field label="Titre du contrat *"><input style={inputStyle} value={form.titre} onChange={set("titre")} placeholder="Contrat de prestation" /></Field>
-      <Field label="Client *"><Select value={form.clientId} onChange={set("clientId")}>{clients.map((item) => <option key={item.id} value={item.id}>{item.societe || item.nom}</option>)}</Select></Field>
+      <Field label="Client (optionnel)"><Select value={form.clientId} onChange={set("clientId")}><option value="">— Aucun —</option>{clients.map((item) => <option key={item.id} value={item.id}>{item.societe || item.nom}</option>)}</Select></Field>
       <Field label="Prestataire (optionnel)"><Select value={form.prestataireId} onChange={set("prestataireId")}><option value="">— Aucun —</option>{prestataires.map((item) => <option key={item.id} value={item.id}>{item.nom}{item.societe ? ` — ${item.societe}` : ""}</option>)}</Select></Field>
       <Field label="Projet (optionnel)"><Select value={form.projetId} onChange={set("projetId")}><option value="">— Aucun —</option>{projets.map((item) => <option key={item.id} value={item.id}>{item.nom}</option>)}</Select></Field>
       <Field label="Description / Contenu"><textarea style={{ ...inputStyle, height: 120, padding: 10, lineHeight: 1.55, resize: "vertical" }} value={form.contenu} onChange={set("contenu")} /></Field>
@@ -344,7 +345,23 @@ function ContractImport({ clients, prestataires, projets, onSave, notify }) {
       <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 700, textTransform: "uppercase", marginBottom: 7 }}>Import PDF</div>
       <p style={{ margin: "0 0 10px", color: T.inkSoft, fontSize: 12, lineHeight: 1.5 }}>Importez votre contrat PDF existant. Le fichier peut être attaché ultérieurement dans la fiche du contrat.</p>
       <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px dashed ${T.gold}`, color: T.ink, background: "#fff", cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}><Upload size={15} /> {pdfFile ? pdfFile.name : "Choisir un PDF"}<input type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: "none" }} /></label>
-      {pdfFile && <div style={{ fontSize: 11.5, color: T.teal, marginTop: 7 }}>PDF sélectionné : {pdfFile.name}</div>}
+      {pdfFile && <div style={{ fontSize: 11.5, color: T.teal, marginTop: 7 }}>PDF sélectionné : {pdfFile.name} ({(pdfFile.size / 1024 / 1024).toFixed(1)} Mo)</div>}
+      <div style={{ marginTop: 16, padding: 12, border: `1px solid ${T.line}`, borderRadius: 8, background: T.paper }}>
+        <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>Aperçu</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, marginBottom: 4 }}>{form.titre || "Sans titre"}</div>
+        <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 6 }}>
+          Client : {form.clientId ? (clients.find((c) => c.id === form.clientId)?.societe || clients.find((c) => c.id === form.clientId)?.nom || "—") : "—"}
+        </div>
+        <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 6 }}>
+          Prestataire : {form.prestataireId ? (prestataires.find((p) => p.id === form.prestataireId)?.nom || "—") : "—"}
+        </div>
+        <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 6 }}>
+          Projet : {form.projetId ? (projets.find((p) => p.id === form.projetId)?.nom || "—") : "—"}
+        </div>
+        <div style={{ fontSize: 11.5, color: T.inkSoft, lineHeight: 1.5, marginTop: 8, padding: 10, border: `1px solid ${T.line}`, borderRadius: 6, background: T.bg, whiteSpace: "pre-wrap" }}>
+          {form.contenu || "Aucune description"}
+        </div>
+      </div>
     </div>
   </div>;
 }
