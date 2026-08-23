@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "../lib/helpers";
 import { MessageReactions } from "./MessageReactions";
 import { FileAttachment } from "./FileAttachment";
 import { T, alpha } from "../lib/theme";
+import { Reply } from "lucide-react";
 
 export function MessageBubble({
   message,
@@ -13,6 +14,7 @@ export function MessageBubble({
   onDelete,
   onMarkAsRead,
   onFileDownload,
+  onReply,
   showSender,
 }) {
   const timeAgo = useMemo(
@@ -27,6 +29,8 @@ export function MessageBubble({
     : message.senderId === currentUserId
       ? "Vous"
       : message.senderId || "Utilisateur";
+
+  const replyContent = message.metadata?.replyToContent;
 
   return (
     <div
@@ -85,6 +89,21 @@ export function MessageBubble({
             boxShadow: `0 1px 2px ${alpha(T.sidebar, 8)}`,
           }}
         >
+          {replyContent && (
+            <div style={{
+              padding: "8px 10px",
+              marginBottom: 8,
+              borderRadius: 8,
+              background: alpha(T.sidebar, 8),
+              borderLeft: `3px solid ${T.gold}`,
+              fontSize: 11.5,
+              color: T.inkSoft,
+            }}>
+              <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {replyContent}
+              </div>
+            </div>
+          )}
           {message.type === "file" && message.metadata?.filePath && (
             <FileAttachment
               attachment={{
@@ -124,6 +143,21 @@ export function MessageBubble({
             {timeAgo}
             {message.lu && !isOwn && <span style={{ marginLeft: 6, color: T.teal }}>• Lu</span>}
           </span>
+          <button
+            onClick={() => onReply?.(message)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: T.inkSoft,
+              padding: 0,
+              display: "flex",
+              opacity: 0.7,
+            }}
+            title="Répondre"
+          >
+            <Reply size={12} />
+          </button>
           {isOwn && (
             <button
               onClick={() => onDelete(message.id)}
@@ -152,3 +186,4 @@ export function MessageBubble({
     </div>
   );
 }
+
