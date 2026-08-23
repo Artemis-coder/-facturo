@@ -9,7 +9,7 @@ import { T, inputStyle, alpha } from "../lib/theme";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
 import { usePrestatairePortal } from "../lib/usePrestatairePortal";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
-import { downloadContractPdf } from "../lib/contractPdf";
+import { downloadContractPdf, downloadContractDocument } from "../lib/contractPdf";
 import { formatTaille, telechargerFichier } from "../lib/fichierUtils";
 import { FICHIER_CATEGORIES } from "../lib/useFichiersProjets";
 import { IconeFichier, CategorieBadge, FichierApercu } from "./FichierApercu";
@@ -50,6 +50,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   const [signingContract, setSigningContract] = useState(null);
   const [signingBusy, setSigningBusy] = useState(false);
   const [toast, setToast] = useState("");
+  const [contratDocs, setContratDocs] = useState({});
   const [navOpen, setNavOpen] = useState(false);
   const [authUser, setAuthUser] = useState(undefined);
   const [drawerTask, setDrawerTask] = useState(null);
@@ -109,6 +110,27 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
       notify("Contrat signé avec succès.");
       setSigningContract(null);
       setViewingContrat((c) => c && c.id === signingContract.id ? { ...c, statut: "Signé", signeLe: new Date().toISOString().slice(0, 10) } : c);
+    }
+  };
+
+  const loadContratDocs = async (contractId) => {
+    const { data, error } = await getContractDocuments(contractId);
+    if (!error && data) {
+      setContratDocs((prev) => ({ ...prev, [contractId]: data }));
+    }
+  };
+
+  const handleDownloadContrat = async (contract) => {
+    const docs = contratDocs[contract.id] || [];
+    const transmitted = docs.find((d) => d.version === "transmitted");
+    if (transmitted) {
+      try {
+        await downloadContractDocument(transmitted.file_path, `contrat-${contract.titre.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "contrat"}.pdf`);
+      } catch (e) {
+        notify(e.message || "Échec du téléchargement du document.");
+      }
+    } else {
+      downloadContractPdf(contract, null, entreprise);
     }
   };
 
@@ -320,7 +342,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
                     <Badge statut={c.statut} />
                     {c.envoyeLe && <span style={{ fontSize: 11.5, color: T.inkSoft }}>Envoyé le {formatDate(c.envoyeLe)}</span>}
                   </div>
-                  <Btn variant="ghost" small onClick={() => setViewingContrat(c)}>Consulter</Btn>
+                  <Btn variant="ghost" small onClick={async () => { await loadContratDocs(c.id); setViewingContrat(c); }}>Consulter</Btn>
                 </div>
               ))}
             </div>
@@ -424,7 +446,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
       )}
 
       {viewingContrat && (
-        <Modal title={viewingContrat.titre} onClose={() => setViewingContrat(null)} wide>
+        <Modal title={viewingContrat.titre} onClose={() => { setViewingContrat(null); }} wide>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}>
             <Badge statut={viewingContrat.statut} />
             {viewingContrat.envoyeLe && <span style={{ fontSize: 12, color: T.inkSoft }}>Envoyé le {formatDate(viewingContrat.envoyeLe)}</span>}
@@ -432,7 +454,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           </div>
           <div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.7, color: T.ink, border: `1px solid ${T.line}`, borderRadius: 10, padding: 16, maxHeight: 420, overflow: "auto" }}>{viewingContrat.contenu}</div>
           <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}>
-            <Btn icon={Download} onClick={() => downloadContractPdf(viewingContrat, null, entreprise)}>Télécharger le PDF</Btn>
+            <Btn icon={Download} onClick={() => handleDownloadContrat(viewingContrat)}>Télécharger le PDF</Btn>
             {viewingContrat.statut === "Envoyé" && (
               <Btn variant="primary" icon={CheckCircle2} onClick={() => setSigningContract(viewingContrat)}>Signer électroniquement</Btn>
             )}

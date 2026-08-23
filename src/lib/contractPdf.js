@@ -2,6 +2,7 @@ const INK = [22, 33, 58];
 const GOLD = [201, 138, 43];
 const GREY = [91, 100, 122];
 const SIGNATURE_INK = [31, 122, 99];
+import { supabase } from "./supabaseClient";
 
 export async function downloadContractPdf(contract, client, entreprise, options = {}) {
   const { jsPDF } = await import("jspdf");
@@ -62,9 +63,15 @@ export async function downloadContractPdf(contract, client, entreprise, options 
   return { pdf, filename };
 }
 
-export async function uploadContractPdf(contract, client, entreprise, options = {}) {
-  const { pdf, filename } = await downloadContractPdf(contract, client, entreprise, options);
-  const { jsPDF } = await import("jspdf");
-  const blob = new Blob([pdf.output("arraybuffer")], { type: "application/pdf" });
-  return { blob, filename };
+export async function downloadContractDocument(filePath, filename) {
+  const { data, error } = await supabase.storage.from("contract-documents").createSignedUrl(filePath, 60);
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message || "Impossible de générer le lien de téléchargement.");
+  }
+  const a = document.createElement("a");
+  a.href = data.signedUrl;
+  a.download = filename || "contrat.pdf";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
