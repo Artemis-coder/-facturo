@@ -82,7 +82,16 @@ export function useContracts(entrepriseId, userId) {
     };
     const { error } = await supabase.from("contracts").update(row).eq("id", contract.id);
     if (!error) {
-      await supabase.from("contract_history").insert({ contract_id: contract.id, action: "Modification", detail: "Contrat modifié avant envoi", created_by: userId });
+      await supabase.from("contract_history").insert({ contract_id: contract.id, action: "Modification", detail: `Contrat modifié (statut: ${contract.statut})`, created_by: userId });
+      await load();
+    }
+    return { error };
+  };
+
+  const deleteContract = async (contract) => {
+    if (!contract?.id) return { error: new Error("Contrat introuvable.") };
+    const { error } = await supabase.from("contracts").delete().eq("id", contract.id);
+    if (!error) {
       await load();
     }
     return { error };
@@ -186,5 +195,5 @@ export function useContracts(entrepriseId, userId) {
     return { data: data || [], error };
   };
 
-  return { templates, contracts, loading, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, signContract, uploadContractDocument, getContractDocuments, reload: load };
+  return { templates, contracts, loading, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, deleteContract, signContract, uploadContractDocument, getContractDocuments, reload: load };
 }

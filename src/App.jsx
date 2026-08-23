@@ -276,7 +276,7 @@ export default function App() {
               <Contracts templates={templates} contracts={contracts} clients={clients} factures={factures} devis={devis} projets={projets} prestataires={prestataires} entreprise={entreprise}
                 saveTemplate={saveTemplate} uploadTemplateSource={uploadTemplateSource} suggestTemplateFromSource={suggestTemplateFromSource}
                 suggestContractFields={suggestContractFields} saveContract={saveContract} updateContract={updateContract} updateStatus={updateContractStatus}
-                uploadContractDocument={uploadContractDocument} getContractDocuments={getContractDocuments} notify={notify} />
+                deleteContract={deleteContract} uploadContractDocument={uploadContractDocument} getContractDocuments={getContractDocuments} notify={notify} />
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} entreprise={entreprise} notify={notify} />}
             {view === "utilisateurs" && isAdmin && (
