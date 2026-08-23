@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Download, FileText, Image, Paperclip } from "lucide-react";
 import { T } from "../lib/theme";
 import { downloadContractDocument } from "../lib/contractPdf";
+import { telechargerChatAttachment } from "../lib/fichierUtils";
 
 export function FileAttachment({ attachment, onDownload }) {
   const [downloading, setDownloading] = useState(false);
@@ -20,8 +21,10 @@ export function FileAttachment({ attachment, onDownload }) {
     setDownloading(true);
     try {
       if (attachment.filePath) {
+        await telechargerChatAttachment(attachment.filePath, attachment.fileName);
+      } else if (attachment.contractId) {
         await downloadContractDocument(
-          attachment.contractId || attachment.messageId,
+          attachment.contractId,
           "transmitted",
           attachment.fileName || "fichier.pdf"
         );

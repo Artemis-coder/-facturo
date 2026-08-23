@@ -65,13 +65,17 @@ export function useMessages(entrepriseId, userId, userRole) {
         query = query.eq("projet_id", filters.projetId);
       }
       if (filters.recipientId) {
-        query = query.eq("recipient_id", filters.recipientId);
+        // Conversation bidirectionnelle : moi -> contact ET contact -> moi.
+        query = query.or(
+          `and(sender_id.eq.${userId},recipient_id.eq.${filters.recipientId}),and(sender_id.eq.${filters.recipientId},recipient_id.eq.${userId})`
+        );
       }
 
       const { data: messagesData, error: messagesError } = await query;
 
       if (!messagesError && messagesData) {
-        setMessages(messagesData.map(mapMessage));
+        // Stockés en ordre chronologique (les plus récents en bas du fil).
+        setMessages(messagesData.slice().reverse().map(mapMessage));
         const unread = messagesData.filter((m) => !m.lu && m.recipient_id === userId).length;
         setUnreadCount(unread);
       }
@@ -144,19 +148,27 @@ export function useMessages(entrepriseId, userId, userRole) {
 
     if (!error && data) {
       const mapped = mapMessage(data);
-      setMessages((prev) => [mapped, ...prev]);
+      // Ordre chronologique : le nouveau message part en bas du fil.
+      setMessages((prev) => [...prev, mapped]);
 
       if (form.file) {
-        const filePath = `${entrepriseId}/${data.id}/${form.file.name}`;
+        const safeName = form.file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = `${entrepriseId}/${data.id}/${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from("chat-attachments")
           .upload(filePath, form.file, { contentType: form.file.type, upsert: false });
 
         if (!uploadError) {
+          const fullMetadata = { ...metadata, filePath };
           await supabase
             .from("messages")
-            .update({ metadata: { ...metadata, filePath } })
+            .update({ metadata: fullMetadata })
             .eq("id", data.id);
+          // Sans le realtime (ou avant son arrivée), on injecte le filePath
+          // dans l'état local pour que le bouton Télécharger soit actif.
+          setMessages((prev) =>
+            prev.map((m) => (m.id === data.id ? { ...m, metadata: fullMetadata } : m))
+          );
         }
       }
     }
@@ -228,9 +240,10 @@ export function useMessages(entrepriseId, userId, userRole) {
         async (payload) => {
           const newMessage = mapMessage(payload.new);
           setMessages((prev) => {
-            const exists = prev.some((m) => m.id === newMessage.id);
-            if (exists) return prev;
-            return [newMessage, ...prev];
+            if (prev.some((m) => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage].sort(
+              (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+            );
           });
 
           if (newMessage.recipientId === userId && newMessage.senderId !== userId) {
@@ -249,7 +262,13 @@ export function useMessages(entrepriseId, userId, userRole) {
         },
         (payload) => {
           const updated = mapMessage(payload.new);
-          setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === updated.id);
+            const next = exists
+              ? prev.map((m) => (m.id === updated.id ? updated : m))
+              : [...prev, updated];
+            return next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          });
         }
       )
       .on(
@@ -314,30 +333,48 @@ export function useMessages(entrepriseId, userId, userRole) {
       if (error || !data) return [];
 
       const conversationMap = new Map();
+      const userIds = new Set();
 
       data.forEach((message) => {
         const otherId = message.sender_id === userId ? message.recipient_id : message.sender_id;
-        if (!otherId) return;
+        if (!otherId || otherId === userId) return;
 
-        const key = otherId;
-        const existing = conversationMap.get(key);
+        const key = [userId, otherId].sort().join("-");
+        if (conversationMap.has(key)) return;
 
-        if (!existing || new Date(message.created_at) > new Date(existing.created_at)) {
-          const otherUserData = message.sender_id === userId ? { id: message.recipient_id } : { id: message.sender_id };
-          conversationMap.set(key, {
-            id: otherId,
-            name: otherUserData.id === userId ? "Vous" : `Utilisateur ${otherUserData.id.slice(0, 8)}`,
-            lastMessage: message.contenu || (message.type === "file" ? "📎 Fichier" : ""),
-            lastMessageTime: message.created_at,
-            unreadCount: existing ? existing.unreadCount + (message.lu ? 0 : 1) : (message.lu ? 0 : 1),
-            prestataireId: message.prestataire_id,
-          });
-        } else {
-          conversationMap.get(key).unreadCount += message.lu ? 0 : 1;
-        }
+        const lastMessage = message.contenu || (message.type === "file" ? "📎 Fichier" : "");
+        conversationMap.set(key, {
+          id: otherId,
+          name: `Utilisateur ${otherId.slice(0, 8)}`,
+          lastMessage,
+          lastMessageTime: message.created_at,
+          unreadCount: message.lu ? 0 : 1,
+          prestataireId: message.prestataire_id,
+        });
+        userIds.add(otherId);
       });
 
-      return Array.from(conversationMap.values()).sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+      const conversations = Array.from(conversationMap.values()).sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+      if (userIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, nom_complet, email, role")
+          .in("id", Array.from(userIds));
+
+        if (profiles?.length) {
+          const profileMap = new Map(profiles.map((p) => [p.id, p]));
+          conversations.forEach((conv) => {
+            const profile = profileMap.get(conv.id);
+            if (profile) {
+              conv.name = profile.nom_complet || profile.email || conv.name;
+              conv.role = profile.role;
+            }
+          });
+        }
+      }
+
+      return conversations;
     } catch (error) {
       console.error("Erreur lors du chargement des conversations:", error);
       return [];
@@ -381,6 +418,7 @@ export function useMessages(entrepriseId, userId, userRole) {
     loading,
     unreadCount,
     toast,
+    showToast,
     loadMessages,
     sendMessage,
     toggleReaction,

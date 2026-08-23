@@ -47,3 +47,20 @@ export async function telechargerFichier(fichier) {
     return { error: e };
   }
 }
+
+export async function telechargerChatAttachment(filePath, fileName) {
+  if (!filePath) return { error: new Error("Chemin de fichier introuvable.") };
+  const { data, error } = await supabase.storage
+    .from("chat-attachments")
+    .createSignedUrl(filePath, 300, { download: fileName });
+  if (error || !data?.signedUrl) return { error: error || new Error("Impossible de générer le lien de téléchargement.") };
+  try {
+    const res = await fetch(data.signedUrl);
+    if (!res.ok) throw new Error("impossible de récupérer le fichier.");
+    const blob = await res.blob();
+    triggerDownload(blob, fileName || "fichier.pdf");
+    return { error: null };
+  } catch (e) {
+    return { error: e };
+  }
+}

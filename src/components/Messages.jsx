@@ -4,6 +4,8 @@ import { T, alpha } from "../lib/theme";
 import { MessageBubble } from "./MessageBubble";
 import { ConversationList } from "./ConversationList";
 import { useMessages } from "../lib/useMessages";
+import { telechargerChatAttachment } from "../lib/fichierUtils";
+import { Toast } from "./ui";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😊", "🎉", "👀", "✅", "🔥", "👏"];
 
@@ -24,7 +26,7 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
 
   const recipientId = prestataire?.userId || contract?.clientId || prestataire?.id;
 
-  const { messages, reactions, loading, unreadCount, toast, sendMessage, toggleReaction, markAsRead, deleteMessage, getMessageReactions, loadMessages, loadConversations, loadParticipants } = useMessages(
+  const { messages, reactions, loading, unreadCount, toast, showToast, sendMessage, toggleReaction, markAsRead, deleteMessage, getMessageReactions, loadMessages, loadConversations, loadParticipants } = useMessages(
     entreprise?.id,
     currentUserId,
     userRole
@@ -44,11 +46,23 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
     }
   }, [selectedConversation, loadMessages]);
 
+  const dernierMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+
   useEffect(() => {
-    if (messages.length > 0) {
+    // À l'ouverture d'une conversation, on scrolle directement en bas du fil.
+    if (!selectedConversation) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    // Si l'utilisateur a remonté le fil pour relire, on ne le force pas à redescendre.
+    const container = messagesContainerRef.current;
+    if (!container || !dernierMessageId) return;
+    const procheDuBas = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+    if (procheDuBas) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages.length]);
+  }, [dernierMessageId]);
 
   const handleSend = async () => {
     if (!text.trim() && !file) return;
@@ -76,14 +90,25 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
 
   const handleDownload = async (attachment) => {
     try {
-      const { downloadContractDocument } = await import("../lib/contractPdf");
-      await downloadContractDocument(
-        attachment.contractId || attachment.messageId,
-        "transmitted",
-        attachment.fileName || "fichier.pdf"
-      );
+      if (attachment.filePath) {
+        const { error } = await telechargerChatAttachment(attachment.filePath, attachment.fileName);
+        if (error) {
+          showToast(`Échec du téléchargement : ${error.message}`);
+        } else {
+          showToast("Téléchargement démarré");
+        }
+      } else if (attachment.contractId) {
+        const { downloadContractDocument } = await import("../lib/contractPdf");
+        await downloadContractDocument(
+          attachment.contractId,
+          "transmitted",
+          attachment.fileName || "fichier.pdf"
+        );
+        showToast("Téléchargement démarré");
+      }
     } catch (error) {
       console.error("Erreur téléchargement:", error);
+      showToast(`Échec du téléchargement : ${error.message}`);
     }
   };
 
@@ -536,6 +561,7 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
           </div>
         )}
       </div>
+      <Toast message={toast} />
     </div>
   );
 }
