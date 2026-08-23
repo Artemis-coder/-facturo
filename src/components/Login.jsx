@@ -3,7 +3,7 @@ import {
   Mail, Lock, ArrowRight, Building2, User, CheckCircle2, Download,
   Eye, EyeOff, ShieldCheck, Zap, Smartphone, Sparkles, Check
 } from "lucide-react";
-import { T, inputStyle } from "../lib/theme";
+import { T, inputStyle, alpha } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { Card, Field, Btn } from "./ui";
 import { ThemeToggle } from "./ThemeToggle";

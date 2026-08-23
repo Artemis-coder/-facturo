@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, Menu } from "lucide-react";
-import { T } from "../lib/theme";
+import { T, alpha } from "../lib/theme";
 import { BottomSheet } from "./ui";
 
 function TabItem({ tab, active, onSelect }) {
