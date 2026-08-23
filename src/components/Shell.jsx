@@ -119,6 +119,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
       ]
     : [];
 
+  const unreadMessages = useUnreadMessages();
   const unreadCount = unreadMessages.unreadCount;
   const initiales = (profile?.nom_complet || "").split(" ").filter(Boolean).map((p) => p[0].toUpperCase()).slice(0, 2).join("") || profile?.email?.[0]?.toUpperCase() || "U";
   return (
