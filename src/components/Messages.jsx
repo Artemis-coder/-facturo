@@ -1,7 +1,8 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
-import { Paperclip, Send, Smile, Search, X, Reply, ArrowDown, Phone, Video, MoreVertical } from "lucide-react";
+import { Paperclip, Send, Smile, Search, X, Reply, ArrowDown } from "lucide-react";
 import { T, alpha } from "../lib/theme";
 import { MessageBubble } from "./MessageBubble";
+import { ConversationList } from "./ConversationList";
 import { useMessages } from "../lib/useMessages";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😊", "🎉", "👀", "✅", "🔥", "👏"];
@@ -12,55 +13,48 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
   const [searchQuery, setSearchQuery] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [loadingConversations, setLoadingConversations] = useState(true);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const recipientId = prestataire?.userId || contract?.clientId || prestataire?.id;
-  const filters = {
-    prestataireId: prestataire?.id,
-    contractId: contract?.id,
-    projetId: projet?.id,
-    recipientId: userRole === "prestataire" ? undefined : recipientId,
-  };
 
-  const { messages, reactions, loading, unreadCount, toast, sendMessage, toggleReaction, markAsRead, deleteMessage, getMessageReactions, loadMessages } = useMessages(
+  const { messages, reactions, loading, unreadCount, toast, sendMessage, toggleReaction, markAsRead, deleteMessage, getMessageReactions, loadMessages, loadConversations, loadParticipants } = useMessages(
     entreprise?.id,
     currentUserId,
     userRole
   );
 
   useEffect(() => {
-    loadMessages(filters);
-  }, [loadMessages, filters]);
+    loadConversations().then((convs) => {
+      setConversations(convs);
+      setLoadingConversations(false);
+    });
+    loadParticipants().then(setParticipants);
+  }, [loadConversations, loadParticipants]);
 
   useEffect(() => {
-    if (messages.length > 0 && !searchQuery) {
+    if (selectedConversation) {
+      loadMessages({ recipientId: selectedConversation });
+    }
+  }, [selectedConversation, loadMessages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages.length, searchQuery]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchQuery((q) => !q && searchInputRef.current ? searchInputRef.current.focus() : q);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [messages.length]);
 
   const handleSend = async () => {
     if (!text.trim() && !file) return;
     const form = {
       contenu: text.trim(),
-      recipientId: userRole === "prestataire" ? undefined : recipientId,
-      prestataireId: prestataire?.id,
-      contractId: contract?.id,
-      projetId: projet?.id,
+      recipientId: selectedConversation,
       file,
       metadata: replyingTo ? { replyToId: replyingTo.id, replyToContent: replyingTo.contenu || (replyingTo.metadata?.fileName ? "📎 Fichier joint" : "Message") } : {},
     };
@@ -70,6 +64,8 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
       setFile(null);
       setReplyingTo(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      const updated = await loadConversations();
+      setConversations(updated);
     }
   };
 
@@ -100,28 +96,14 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
     textareaRef.current?.focus();
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const getSenderName = useCallback((senderId) => {
+    if (senderId === currentUserId) return "Vous";
+    return senderId || "Utilisateur";
+  }, [currentUserId]);
 
   const conversationMessages = useMemo(() => {
-    let filtered = messages.filter((m) => {
-      if (userRole === "prestataire") {
-        return m.prestataireId === prestataire?.id || m.senderId === currentUserId || m.recipientId === currentUserId;
-      }
-      if (filters.prestataireId) return m.prestataireId === filters.prestataireId;
-      if (filters.contractId) return m.contractId === filters.contractId;
-      if (filters.projetId) return m.projetId === filters.projetId;
-      return true;
-    });
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((m) => m.contenu.toLowerCase().includes(query));
-    }
-
-    return filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  }, [messages, filters, userRole, prestataire?.id, currentUserId, searchQuery]);
+    return messages.filter((m) => m.recipientId === selectedConversation || m.senderId === selectedConversation);
+  }, [messages, selectedConversation]);
 
   const groupedMessages = useMemo(() => {
     const groups = [];
@@ -153,495 +135,406 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
     return groups;
   }, [conversationMessages]);
 
-  const getSenderName = useCallback((senderId) => {
-    if (senderId === currentUserId) return "Vous";
-    return senderId || "Utilisateur";
-  }, [currentUserId]);
+  const filteredConversations = useMemo(() => {
+    if (userRole !== "prestataire") return conversations;
+    const allowedIds = new Set(participants.map((p) => p.id));
+    return conversations.filter((c) => allowedIds.has(c.id));
+  }, [conversations, participants, userRole]);
 
-  const chatPartnerName = userRole === "prestataire" 
-    ? (entreprise?.nom || "Ma Bouate")
-    : (prestataire?.nom || "Prestataire");
+  const selectedContact = selectedConversation
+    ? participants.find((p) => p.id === selectedConversation) || conversations.find((c) => c.id === selectedConversation)
+    : null;
+
+  const chatPartnerName = selectedContact?.name || "Sélectionner un contact";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 500, background: T.bg, borderRadius: 16, border: `1px solid ${T.line}`, overflow: "hidden" }}>
-      {/* Header moderne style WhatsApp/Telegram */}
-      <div style={{
-        padding: "14px 20px",
-        background: T.paper,
-        borderBottom: `1px solid ${T.line}`,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        boxShadow: `0 1px 3px ${alpha(T.sidebar, 4)}`
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          background: `linear-gradient(135deg, ${T.gold}, ${T.teal})`,
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 16,
-          fontWeight: 700,
-          flexShrink: 0,
-          boxShadow: `0 2px 8px ${alpha(T.gold, 25)}`
-        }}>
-          {chatPartnerName.charAt(0).toUpperCase()}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, lineHeight: 1.3 }}>
-            {chatPartnerName}
-          </div>
-          <div style={{ fontSize: 11.5, color: T.teal, fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: T.teal,
-              display: "inline-block"
-            }} />
-            En ligne
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 4 }}>
-          <button
-            onClick={() => searchInputRef.current?.focus()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: T.inkSoft,
-            }}
-            title="Rechercher (Ctrl+K)"
-          >
-            <Search size={18} />
-          </button>
-        </div>
-      </div>
+    <div style={{ display: "flex", height: "100%", minHeight: 500, background: T.bg, borderRadius: 16, border: `1px solid ${T.line}`, overflow: "hidden" }}>
+      {/* Sidebar des conversations */}
+      <ConversationList
+        conversations={filteredConversations}
+        participants={participants}
+        loading={loadingConversations}
+        selectedId={selectedConversation}
+        onSelect={setSelectedConversation}
+        currentUserId={currentUserId}
+        userRole={userRole}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
-      {/* Barre de recherche */}
-      {searchQuery && (
-        <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.line}`, display: "flex", alignItems: "center", gap: 10, background: T.paper }}>
-          <Search size={16} style={{ color: T.inkSoft, flexShrink: 0 }} />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher dans les messages..."
-            autoFocus
-            style={{
-              flex: 1,
-              border: "none",
-              background: "transparent",
-              fontSize: 13.5,
-              color: T.ink,
-              outline: "none",
-              padding: "6px 0",
-            }}
-          />
-          <button
-            onClick={() => { setSearchQuery(""); searchInputRef.current?.blur(); }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: T.inkSoft,
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Zone des messages */}
-      <div ref={messagesContainerRef} style={{ flex: 1, overflowY: "auto", padding: 20, background: T.bg }}>
-        {loading ? (
-          <div style={{ textAlign: "center", color: T.inkSoft, padding: 60 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
-            <div style={{ fontSize: 14, fontWeight: 500 }}>Chargement des messages...</div>
-          </div>
-        ) : conversationMessages.length === 0 ? (
-          <div style={{ textAlign: "center", color: T.inkSoft, padding: 60 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
-              {searchQuery ? "Aucun résultat" : "Démarrez la conversation"}
-            </div>
-            <div style={{ fontSize: 13, maxWidth: 280, margin: "0 auto", lineHeight: 1.5 }}>
-              {searchQuery ? "Essayez un autre terme de recherche" : "Envoyez un message à " + chatPartnerName}
-            </div>
-          </div>
-        ) : (
+      {/* Zone de chat */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg }}>
+        {selectedConversation ? (
           <>
-            {groupedMessages.map((group) => (
-              <div key={group.date} style={{ marginBottom: 28 }}>
-                {/* Séparateur de date élégant */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  marginBottom: 20,
-                }}>
-                  <div style={{ flex: 1, height: 1, background: T.line }} />
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: T.inkSoft,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                    background: T.bg,
-                    padding: "4px 12px",
-                    borderRadius: 12,
-                    border: `1px solid ${T.line}`,
-                  }}>
-                    {group.date}
-                  </span>
-                  <div style={{ flex: 1, height: 1, background: T.line }} />
-                </div>
-
-                {/* Messages du groupe */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {group.messages.map((message) => {
-                    const isOwn = message.senderId === currentUserId;
-                    const showSender = !isOwn && group.messages.some((m) => m.senderId !== currentUserId && m.senderId !== message.senderId);
-                    const messageReactions = getMessageReactions(message.id);
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        currentUserId={currentUserId}
-                        isOwn={isOwn}
-                        reactions={messageReactions}
-                        onToggleReaction={toggleReaction}
-                        onDelete={handleDelete}
-                        onMarkAsRead={markAsRead}
-                        onFileDownload={handleDownload}
-                        onReply={handleReply}
-                        showSender={showSender}
-                      />
-                    );
-                  })}
+            {/* Header */}
+            <div style={{
+              padding: "14px 20px",
+              background: T.paper,
+              borderBottom: `1px solid ${T.line}`,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: `linear-gradient(135deg, ${T.gold}, ${T.teal})`,
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 16,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}>
+                {chatPartnerName.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.ink }}>{chatPartnerName}</div>
+                <div style={{ fontSize: 11.5, color: T.teal, fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.teal, display: "inline-block" }} />
+                  En ligne
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Réponse en cours */}
-      {replyingTo && (
-        <div style={{
-          padding: "12px 16px",
-          borderTop: `1px solid ${T.line}`,
-          background: T.paper,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          boxShadow: `0 -2px 8px ${alpha(T.sidebar, 4)}`
-        }}>
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: T.goldSoft,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}>
-            <Reply size={16} style={{ color: T.gold }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>
-              En réponse à {getSenderName(replyingTo.senderId)}
             </div>
-            <div style={{
-              fontSize: 12,
-              color: T.inkSoft,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              marginTop: 2,
-            }}>
-              {replyingTo.contenu || (replyingTo.metadata?.fileName ? "📎 Fichier joint" : "Message")}
+
+            {/* Messages */}
+            <div ref={messagesContainerRef} style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+              {loading ? (
+                <div style={{ textAlign: "center", color: T.inkSoft, padding: 60 }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>Chargement des messages...</div>
+                </div>
+              ) : conversationMessages.length === 0 ? (
+                <div style={{ textAlign: "center", color: T.inkSoft, padding: 60 }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 8 }}>Démarrez la conversation</div>
+                  <div style={{ fontSize: 13, maxWidth: 280, margin: "0 auto", lineHeight: 1.5 }}>
+                    Envoyez un message à {chatPartnerName}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {groupedMessages.map((group) => (
+                    <div key={group.date} style={{ marginBottom: 28 }}>
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        marginBottom: 20,
+                      }}>
+                        <div style={{ flex: 1, height: 1, background: T.line }} />
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: T.inkSoft,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
+                          background: T.bg,
+                          padding: "4px 12px",
+                          borderRadius: 12,
+                          border: `1px solid ${T.line}`,
+                        }}>
+                          {group.date}
+                        </span>
+                        <div style={{ flex: 1, height: 1, background: T.line }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {group.messages.map((message) => {
+                          const isOwn = message.senderId === currentUserId;
+                          const showSender = !isOwn && group.messages.some((m) => m.senderId !== currentUserId && m.senderId !== message.senderId);
+                          const messageReactions = getMessageReactions(message.id);
+                          return (
+                            <MessageBubble
+                              key={message.id}
+                              message={message}
+                              currentUserId={currentUserId}
+                              isOwn={isOwn}
+                              reactions={messageReactions}
+                              onToggleReaction={toggleReaction}
+                              onDelete={handleDelete}
+                              onMarkAsRead={markAsRead}
+                              onFileDownload={handleDownload}
+                              onReply={handleReply}
+                              showSender={showSender}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
             </div>
-          </div>
-          <button
-            onClick={() => setReplyingTo(null)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: T.inkSoft,
-              flexShrink: 0,
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
 
-      {/* Fichier sélectionné */}
-      {file && (
-        <div style={{
-          padding: "10px 16px",
-          borderTop: `1px solid ${T.line}`,
-          background: T.paper,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}>
-          <Paperclip size={16} style={{ color: T.inkSoft, flexShrink: 0 }} />
-          <span style={{ flex: 1, fontSize: 13, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {file.name}
-          </span>
-          <span style={{ fontSize: 11, color: T.inkSoft, flexShrink: 0 }}>
-            {(file.size / 1024).toFixed(1)} Ko
-          </span>
-          <button
-            onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: T.brick,
-              flexShrink: 0,
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div style={{
-          padding: "10px 16px",
-          background: `linear-gradient(135deg, ${T.goldSoft}, ${alpha(T.gold, 15)})`,
-          borderTop: `1px solid ${T.gold}`,
-          color: T.ink,
-          fontSize: 12.5,
-          fontWeight: 500,
-          textAlign: "center",
-          boxShadow: `0 -2px 8px ${alpha(T.gold, 10)}`
-        }}>
-          {toast}
-        </div>
-      )}
-
-      {/* Barre de saisie moderne */}
-      <div style={{
-        padding: "12px 16px",
-        background: T.paper,
-        borderTop: `1px solid ${T.line}`,
-        display: "flex",
-        gap: 10,
-        alignItems: "flex-end",
-        boxShadow: `0 -2px 8px ${alpha(T.sidebar, 4)}`
-      }}>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          style={{ display: "none" }}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
-            color: T.inkSoft,
-            flexShrink: 0,
-            transition: "all 0.2s",
-          }}
-          title="Joindre un fichier"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = T.bg;
-            e.currentTarget.style.color = T.ink;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = T.inkSoft;
-          }}
-        >
-          <Paperclip size={20} />
-        </button>
-
-        <div style={{ flex: 1, position: "relative" }}>
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={replyingTo ? `Répondre à ${getSenderName(replyingTo.senderId)}...` : "Écrivez votre message..."}
-            rows={1}
-            style={{
-              width: "100%",
-              resize: "none",
-              border: `1px solid ${T.line}`,
-              borderRadius: 24,
-              padding: "10px 44px 10px 16px",
-              fontSize: 14,
-              lineHeight: 1.5,
-              background: T.bg,
-              color: T.ink,
-              outline: "none",
-              fontFamily: "inherit",
-              minHeight: 40,
-              maxHeight: 120,
-              transition: "border-color 0.2s",
-            }}
-            onFocus={(e) => { e.target.style.borderColor = T.gold; }}
-            onBlur={(e) => { e.target.style.borderColor = T.line; }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-          <button
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            style={{
-              position: "absolute",
-              right: 8,
-              bottom: 8,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: T.inkSoft,
-              padding: 0,
-              transition: "all 0.2s",
-            }}
-            title="Emojis"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = T.bg;
-              e.currentTarget.style.color = T.ink;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = T.inkSoft;
-            }}
-          >
-            <Smile size={18} />
-          </button>
-          {showEmojiPicker && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 44,
-                right: 0,
-                display: "flex",
-                gap: 6,
-                padding: 10,
-                borderRadius: 16,
-                border: `1px solid ${T.line}`,
+            {/* Réponse en cours */}
+            {replyingTo && (
+              <div style={{
+                padding: "12px 16px",
+                borderTop: `1px solid ${T.line}`,
                 background: T.paper,
-                boxShadow: `0 4px 20px ${alpha(T.sidebar, 20)}`,
-                zIndex: 20,
-              }}
-            >
-              {QUICK_EMOJIS.map((emoji) => (
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: T.goldSoft,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <Reply size={16} style={{ color: T.gold }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>
+                    En réponse à {getSenderName(replyingTo.senderId)}
+                  </div>
+                  <div style={{
+                    fontSize: 12,
+                    color: T.inkSoft,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    marginTop: 2,
+                  }}>
+                    {replyingTo.contenu || (replyingTo.metadata?.fileName ? "📎 Fichier joint" : "Message")}
+                  </div>
+                </div>
                 <button
-                  key={emoji}
-                  onClick={() => {
-                    setText((t) => t + emoji);
-                    setShowEmojiPicker(false);
-                    textareaRef.current?.focus();
-                  }}
+                  onClick={() => setReplyingTo(null)}
                   style={{
-                    display: "inline-flex",
+                    display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: 36,
-                    height: 36,
+                    width: 28,
+                    height: 28,
                     borderRadius: "50%",
                     border: "none",
                     background: "transparent",
                     cursor: "pointer",
-                    fontSize: 20,
-                    padding: 0,
-                    transition: "all 0.2s",
+                    color: T.inkSoft,
+                    flexShrink: 0,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = T.bg; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                 >
-                  {emoji}
+                  <X size={16} />
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
 
-        <button
-          onClick={handleSend}
-          disabled={!text.trim() && !file}
-          style={{
+            {/* Fichier sélectionné */}
+            {file && (
+              <div style={{
+                padding: "10px 16px",
+                borderTop: `1px solid ${T.line}`,
+                background: T.paper,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}>
+                <Paperclip size={16} style={{ color: T.inkSoft, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 13, color: T.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {file.name}
+                </span>
+                <span style={{ fontSize: 11, color: T.inkSoft, flexShrink: 0 }}>
+                  {(file.size / 1024).toFixed(1)} Ko
+                </span>
+                <button
+                  onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    color: T.brick,
+                    flexShrink: 0,
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {/* Barre de saisie */}
+            <div style={{
+              padding: "12px 16px",
+              background: T.paper,
+              borderTop: `1px solid ${T.line}`,
+              display: "flex",
+              gap: 10,
+              alignItems: "flex-end",
+            }}>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  color: T.inkSoft,
+                  flexShrink: 0,
+                }}
+                title="Joindre un fichier"
+              >
+                <Paperclip size={20} />
+              </button>
+              <div style={{ flex: 1, position: "relative" }}>
+                <textarea
+                  ref={textareaRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={replyingTo ? `Répondre à ${getSenderName(replyingTo.senderId)}...` : "Écrivez votre message..."}
+                  rows={1}
+                  style={{
+                    width: "100%",
+                    resize: "none",
+                    border: `1px solid ${T.line}`,
+                    borderRadius: 24,
+                    padding: "10px 44px 10px 16px",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    background: T.bg,
+                    color: T.ink,
+                    outline: "none",
+                    fontFamily: "inherit",
+                    minHeight: 40,
+                    maxHeight: 120,
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  style={{
+                    position: "absolute",
+                    right: 8,
+                    bottom: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    color: T.inkSoft,
+                    padding: 0,
+                  }}
+                  title="Emojis"
+                >
+                  <Smile size={18} />
+                </button>
+                {showEmojiPicker && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 44,
+                      right: 0,
+                      display: "flex",
+                      gap: 6,
+                      padding: 10,
+                      borderRadius: 16,
+                      border: `1px solid ${T.line}`,
+                      background: T.paper,
+                      boxShadow: `0 4px 20px ${alpha(T.sidebar, 20)}`,
+                      zIndex: 20,
+                    }}
+                  >
+                    {QUICK_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          setText((t) => t + emoji);
+                          setShowEmojiPicker(false);
+                          textareaRef.current?.focus();
+                        }}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 36,
+                          height: 36,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontSize: 20,
+                          padding: 0,
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSend}
+                disabled={!text.trim() && !file}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  border: "none",
+                  background: (!text.trim() && !file) ? T.line : `linear-gradient(135deg, ${T.gold}, ${T.teal})`,
+                  color: (!text.trim() && !file) ? T.inkSoft : "#fff",
+                  cursor: (!text.trim() && !file) ? "not-allowed" : "pointer",
+                  flexShrink: 0,
+                }}
+                title="Envoyer"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{
+            flex: 1,
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            border: "none",
-            background: (!text.trim() && !file) ? T.line : `linear-gradient(135deg, ${T.gold}, ${T.teal})`,
-            color: (!text.trim() && !file) ? T.inkSoft : "#fff",
-            cursor: (!text.trim() && !file) ? "not-allowed" : "pointer",
-            flexShrink: 0,
-            boxShadow: (!text.trim() && !file) ? "none" : `0 2px 8px ${alpha(T.gold, 30)}`,
-            transition: "all 0.2s",
-          }}
-          title="Envoyer"
-          onMouseEnter={(e) => {
-            if (text.trim() || file) {
-              e.currentTarget.style.transform = "scale(1.05)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-          }}
-        >
-          <Send size={18} />
-        </button>
+            color: T.inkSoft,
+            padding: 60,
+          }}>
+            <div style={{ fontSize: 64, marginBottom: 16 }}>💬</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+              Sélectionnez une conversation
+            </div>
+            <div style={{ fontSize: 14, maxWidth: 300, textAlign: "center", lineHeight: 1.5 }}>
+              Choisissez un contact dans la liste pour commencer à discuter
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

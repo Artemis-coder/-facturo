@@ -101,6 +101,19 @@ export function useMessages(entrepriseId, userId, userRole) {
   const sendMessage = useCallback(async (form) => {
     if (!entrepriseId || !userId) return { error: new Error("Session invalide.") };
 
+    if (userRole === "prestataire" && form.recipientId) {
+      const ADMIN_ROLES = ["administrateur", "super_admin", "comptable", "commercial"];
+      const { data: recipientProfile, error: recipientError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", form.recipientId)
+        .single();
+
+      if (recipientError || !recipientProfile || !ADMIN_ROLES.includes(recipientProfile.role)) {
+        return { error: new Error("En tant que prestataire, vous ne pouvez envoyer des messages qu'aux administrateurs.") };
+      }
+    }
+
     const metadata = {
       ...(form.metadata || {}),
     };
@@ -149,7 +162,7 @@ export function useMessages(entrepriseId, userId, userRole) {
     }
 
     return { error, message: data };
-  }, [entrepriseId, userId]);
+  }, [entrepriseId, userId, userRole]);
 
   const toggleReaction = useCallback(async (messageId, emoji) => {
     if (!userId) return;
@@ -287,6 +300,81 @@ export function useMessages(entrepriseId, userId, userRole) {
     return { error };
   }, [userId]);
 
+  const loadConversations = useCallback(async () => {
+    if (!entrepriseId || !userId) return [];
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, sender_id, recipient_id, prestataire_id, contenu, type, created_at, lu")
+        .eq("entreprise_id", entrepriseId)
+        .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (error || !data) return [];
+
+      const conversationMap = new Map();
+
+      data.forEach((message) => {
+        const otherId = message.sender_id === userId ? message.recipient_id : message.sender_id;
+        if (!otherId) return;
+
+        const key = otherId;
+        const existing = conversationMap.get(key);
+
+        if (!existing || new Date(message.created_at) > new Date(existing.created_at)) {
+          const otherUserData = message.sender_id === userId ? { id: message.recipient_id } : { id: message.sender_id };
+          conversationMap.set(key, {
+            id: otherId,
+            name: otherUserData.id === userId ? "Vous" : `Utilisateur ${otherUserData.id.slice(0, 8)}`,
+            lastMessage: message.contenu || (message.type === "file" ? "📎 Fichier" : ""),
+            lastMessageTime: message.created_at,
+            unreadCount: existing ? existing.unreadCount + (message.lu ? 0 : 1) : (message.lu ? 0 : 1),
+            prestataireId: message.prestataire_id,
+          });
+        } else {
+          conversationMap.get(key).unreadCount += message.lu ? 0 : 1;
+        }
+      });
+
+      return Array.from(conversationMap.values()).sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+    } catch (error) {
+      console.error("Erreur lors du chargement des conversations:", error);
+      return [];
+    }
+  }, [entrepriseId, userId]);
+
+  const loadParticipants = useCallback(async () => {
+    if (!entrepriseId) return [];
+    try {
+      const ADMIN_ROLES = ["administrateur", "super_admin", "comptable", "commercial"];
+      let query = supabase
+        .from("profiles")
+        .select("id, email, nom_complet, role")
+        .eq("entreprise_id", entrepriseId)
+        .neq("id", userId)
+        .order("nom_complet", { ascending: true });
+
+      if (userRole === "prestataire") {
+        query = query.in("role", ADMIN_ROLES);
+      }
+
+      const { data, error } = await query;
+
+      if (error || !data) return [];
+
+      return data.map((profile) => ({
+        id: profile.id,
+        name: profile.nom_complet || profile.email || `Utilisateur ${profile.id.slice(0, 8)}`,
+        role: profile.role || "employe",
+        email: profile.email,
+      }));
+    } catch (error) {
+      console.error("Erreur lors du chargement des participants:", error);
+      return [];
+    }
+  }, [entrepriseId, userId, userRole]);
+
   return {
     messages,
     reactions,
@@ -299,5 +387,7 @@ export function useMessages(entrepriseId, userId, userRole) {
     markAsRead,
     deleteMessage,
     getMessageReactions,
+    loadConversations,
+    loadParticipants,
   };
 }

@@ -58,6 +58,15 @@ create policy "messages: participants only" on public.messages
       public.current_role() in ('administrateur', 'comptable', 'commercial', 'super_admin')
       or sender_id = public.current_user_id()
     )
+    and (
+      public.current_role() <> 'prestataire'
+      or exists (
+        select 1 from public.profiles p
+        where p.id = recipient_id
+          and p.entreprise_id = public.current_entreprise_id()
+          and p.role in ('administrateur', 'super_admin', 'comptable', 'commercial')
+      )
+    )
   );
 
 drop policy if exists "message reactions: participants only" on public.message_reactions;
