@@ -2,6 +2,14 @@
 -- Tables : messages, message_reactions
 -- Bucket : chat-attachments pour les fichiers joints
 
+create or replace function public.current_user_id()
+returns uuid
+language sql
+stable
+as $$
+  select auth.uid();
+$$;
+
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
   entreprise_id uuid not null references public.entreprises(id) on delete cascade,
