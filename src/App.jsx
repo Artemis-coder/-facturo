@@ -33,6 +33,7 @@ import { Finance } from "./components/Finance";
 import { Contracts } from "./components/Contracts";
 import { Prestataires } from "./components/Prestataires";
 import { PortalPrestataire } from "./components/PortalPrestataire";
+import { Messages } from "./components/Messages";
 import { genererDocumentPDF } from "./lib/documentPdf";
 import { Toast, LoadingState } from "./components/ui";
 import { Analytics } from "@vercel/analytics/react";
@@ -279,6 +280,9 @@ export default function App() {
                 deleteContract={deleteContract} uploadContractDocument={uploadContractDocument} getContractDocuments={getContractDocuments} notify={notify} />
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} entreprise={entreprise} notify={notify} />}
+            {view === "messages" && (
+              <Messages entreprise={entreprise} currentUserId={userId} userRole={role} prestataires={prestataires} />
+            )}
             {view === "utilisateurs" && isAdmin && (
               <Users profiles={profiles} prestataires={prestatairesFromUsers} invitations={invitations} invitationsAcceptees={invitationsAcceptees} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}
                 cancelInvitation={cancelInvitation} notify={notify} currentUserId={userId} entreprise={entreprise}

@@ -3,7 +3,7 @@ import {
   FolderKanban, FileSignature, ListTodo, LogOut, X, Plus,
   Download, MessageCircle, CalendarClock, AlertTriangle, Handshake, Wifi, WifiOff,
   KeyRound, ChevronRight, ChevronDown, Clock, History, GitBranch, Trash2, Pencil,
-  CheckCircle2, Lock, FileX, FolderOpen, Paperclip, Eye, Search,
+  CheckCircle2, Lock, FileX, FolderOpen, Paperclip, Eye, Search, MessageSquare,
 } from "lucide-react";
 import { T, inputStyle, alpha } from "../lib/theme";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
@@ -14,6 +14,7 @@ import { formatTaille, telechargerFichier } from "../lib/fichierUtils";
 import { FICHIER_CATEGORIES } from "../lib/useFichiersProjets";
 import { IconeFichier, CategorieBadge, FichierApercu } from "./FichierApercu";
 import { Btn, Modal, Field, Select, Badge, Card, EmptyState, Toast, LoadingState, KpiBar } from "./ui";
+import { Messages } from "./Messages";
 import { supabase } from "../lib/supabaseClient";
 import { NotifsBell } from "./NotifsBell";
 import { MobileTabBar } from "./MobileTabBar";
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { key: "contrats", label: "Mes contrats", icon: FileSignature },
   { key: "taches", label: "Mes tâches", icon: ListTodo },
   { key: "fichiers", label: "Mes fichiers", icon: FolderOpen },
+  { key: "messages", label: "Messages", icon: MessageSquare },
 ];
 
 const STATUTS_TACHE = ["À faire", "En cours", "Terminée", "Bloquée"];
@@ -435,6 +437,10 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
                   onApercu={setFichierEnPreview} onTelecharger={telechargerFichierHandler} />
               )}
             </div>
+          )}
+
+          {tab === "messages" && (
+            <Messages entreprise={entreprise} currentUserId={userId} userRole="prestataire" prestataire={prestataire} />
           )}
         </div>
       </main>
