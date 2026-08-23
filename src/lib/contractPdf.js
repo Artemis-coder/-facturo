@@ -4,6 +4,11 @@ const GREY = [91, 100, 122];
 const SIGNATURE_INK = [31, 122, 99];
 import { supabase } from "./supabaseClient";
 
+const getFunctionUrl = () => {
+  const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || "").trim().replace(/\/$/, "");
+  return `${supabaseUrl}/functions/v1/contract-document`;
+};
+
 export async function downloadContractPdf(contract, client, entreprise, options = {}) {
   const { jsPDF } = await import("jspdf");
   const { signed = false, signatureDate = null, signerName = null } = options;
@@ -63,15 +68,34 @@ export async function downloadContractPdf(contract, client, entreprise, options 
   return { pdf, filename };
 }
 
-export async function downloadContractDocument(filePath, filename) {
-  const { data, error } = await supabase.storage.from("contract-documents").createSignedUrl(filePath, 60);
-  if (error || !data?.signedUrl) {
-    throw new Error(error?.message || "Impossible de générer le lien de téléchargement.");
+export async function downloadContractDocument(contractId, version = "transmitted", filename) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error("Session expirée. Veuillez vous reconnecter.");
   }
-  const a = document.createElement("a");
-  a.href = data.signedUrl;
-  a.download = filename || "contrat.pdf";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+
+  const functionUrl = getFunctionUrl();
+  const url = `${functionUrl}?contract_id=${encodeURIComponent(contractId)}&version=${encodeURIComponent(version)}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Erreur HTTP ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const blobFilename = filename || `contrat-${contractId}.pdf`;
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = blobFilename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 }

@@ -125,7 +125,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
     const transmitted = docs.find((d) => d.version === "transmitted");
     if (transmitted) {
       try {
-        await downloadContractDocument(transmitted.file_path, `contrat-${contract.titre.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "contrat"}.pdf`);
+        await downloadContractDocument(contract.id, "transmitted", `contrat-${contract.titre.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "contrat"}.pdf`);
       } catch (e) {
         notify(e.message || "Échec du téléchargement du document.");
       }
