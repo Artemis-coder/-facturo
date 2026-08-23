@@ -3,7 +3,7 @@ import { formatDistanceToNow } from "../lib/helpers";
 import { MessageReactions } from "./MessageReactions";
 import { FileAttachment } from "./FileAttachment";
 import { T, alpha } from "../lib/theme";
-import { Reply } from "lucide-react";
+import { Reply, Trash2 } from "lucide-react";
 
 export function MessageBubble({
   message,
@@ -24,12 +24,6 @@ export function MessageBubble({
 
   const messageReactions = reactions.filter((r) => r.messageId === message.id);
 
-  const senderLabel = isOwn
-    ? "Vous"
-    : message.senderId === currentUserId
-      ? "Vous"
-      : message.senderId || "Utilisateur";
-
   const replyContent = message.metadata?.replyToContent;
 
   return (
@@ -37,122 +31,135 @@ export function MessageBubble({
       style={{
         display: "flex",
         flexDirection: isOwn ? "row-reverse" : "row",
-        gap: 10,
-        marginBottom: 16,
-        alignItems: "flex-start",
+        gap: 8,
+        marginBottom: 8,
+        alignItems: "flex-end",
       }}
       onMouseEnter={() => !isOwn && message.recipientId === currentUserId && onMarkAsRead(message.id)}
     >
-      {showSender && (
+      <div style={{
+        maxWidth: "75%",
+        minWidth: 120,
+        position: "relative",
+      }}>
+        {/* Bulle de message style WhatsApp/Telegram */}
         <div
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: isOwn ? T.gold : T.teal,
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 12,
-            fontWeight: 700,
-            flexShrink: 0,
-            marginTop: 4,
+            padding: "10px 14px",
+            borderRadius: 18,
+            borderTopLeftRadius: showSender && !isOwn ? 4 : 18,
+            borderTopRightRadius: showSender && isOwn ? 4 : 18,
+            background: isOwn
+              ? `linear-gradient(135deg, ${T.gold}, ${alpha(T.gold, 85)})`
+              : T.paper,
+            color: isOwn ? "#fff" : T.ink,
+            boxShadow: isOwn
+              ? `0 2px 8px ${alpha(T.gold, 20)}`
+              : `0 1px 3px ${alpha(T.sidebar, 8)}`,
+            border: isOwn ? "none" : `1px solid ${T.line}`,
+            position: "relative",
           }}
         >
-          {senderLabel.charAt(0).toUpperCase()}
-        </div>
-      )}
-      <div style={{ maxWidth: "75%", minWidth: 180 }}>
-        {showSender && (
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: T.inkSoft,
-              marginBottom: 4,
-              textAlign: isOwn ? "right" : "left",
-            }}
-          >
-            {senderLabel}
-          </div>
-        )}
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRadius: 14,
-            borderTopLeftRadius: showSender && !isOwn ? 4 : 14,
-            borderTopRightRadius: showSender && isOwn ? 4 : 14,
-            background: isOwn ? T.invert : T.paper,
-            color: isOwn ? T.invertFg : T.ink,
-            border: `1px solid ${isOwn ? T.invert : T.line}`,
-            boxShadow: `0 1px 2px ${alpha(T.sidebar, 8)}`,
-          }}
-        >
+          {/* Citation de réponse */}
           {replyContent && (
             <div style={{
               padding: "8px 10px",
               marginBottom: 8,
-              borderRadius: 8,
-              background: alpha(T.sidebar, 8),
-              borderLeft: `3px solid ${T.gold}`,
-              fontSize: 11.5,
-              color: T.inkSoft,
+              borderRadius: 10,
+              background: isOwn ? alpha("#fff", 15) : alpha(T.sidebar, 6),
+              borderLeft: isOwn ? "3px solid rgba(255,255,255,0.5)" : `3px solid ${T.gold}`,
+              fontSize: 12,
+              color: isOwn ? alpha("#fff", 90) : T.inkSoft,
             }}>
-              <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                fontSize: 11.5,
+              }}>
                 {replyContent}
               </div>
             </div>
           )}
+
+          {/* Fichier joint */}
           {message.type === "file" && message.metadata?.filePath && (
-            <FileAttachment
-              attachment={{
-                fileName: message.metadata.fileName,
-                fileSize: message.metadata.fileSize,
-                mimeType: message.metadata.mimeType,
-                filePath: message.metadata.filePath,
-                messageId: message.id,
-                contractId: message.contractId,
-              }}
-              onDownload={onFileDownload}
-            />
+            <div style={{ marginBottom: message.contenu ? 8 : 0 }}>
+              <FileAttachment
+                attachment={{
+                  fileName: message.metadata.fileName,
+                  fileSize: message.metadata.fileSize,
+                  mimeType: message.metadata.mimeType,
+                  filePath: message.metadata.filePath,
+                  messageId: message.id,
+                  contractId: message.contractId,
+                }}
+                onDownload={onFileDownload}
+              />
+            </div>
           )}
+
+          {/* Texte du message */}
           {message.contenu && (
-            <div
-              style={{
-                fontSize: 13.5,
-                lineHeight: 1.6,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
+            <div style={{
+              fontSize: 14,
+              lineHeight: 1.5,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}>
               {message.contenu}
             </div>
           )}
-        </div>
-        <div
-          style={{
+
+          {/* Horodatage et statut */}
+          <div style={{
             display: "flex",
-            gap: 8,
             alignItems: "center",
-            marginTop: 5,
-            flexDirection: isOwn ? "row-reverse" : "row",
-          }}
-        >
-          <span style={{ fontSize: 10.5, color: T.inkSoft }}>
+            justifyContent: "flex-end",
+            gap: 4,
+            marginTop: 4,
+            fontSize: 10.5,
+            color: isOwn ? alpha("#fff", 75) : T.inkSoft,
+          }}>
             {timeAgo}
-            {message.lu && !isOwn && <span style={{ marginLeft: 6, color: T.teal }}>• Lu</span>}
-          </span>
+            {message.lu && !isOwn && (
+              <span style={{ color: T.teal, fontWeight: 600 }}>• Lu</span>
+            )}
+            {isOwn && message.statut === "Envoyé" && (
+              <span style={{ color: alpha("#fff", 60) }}>✓</span>
+            )}
+            {isOwn && message.statut === "Signé" && (
+              <span style={{ color: T.teal, fontWeight: 600 }}>✓✓</span>
+            )}
+          </div>
+        </div>
+
+        {/* Actions rapides au survol */}
+        <div style={{
+          display: "flex",
+          gap: 4,
+          marginTop: 4,
+          opacity: 0,
+          transition: "opacity 0.2s",
+          flexDirection: isOwn ? "row-reverse" : "row",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = 0; }}
+        >
           <button
             onClick={() => onReply?.(message)}
             style={{
-              background: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
               border: "none",
+              background: T.paper,
               cursor: "pointer",
               color: T.inkSoft,
-              padding: 0,
-              display: "flex",
-              opacity: 0.7,
+              boxShadow: `0 1px 3px ${alpha(T.sidebar, 8)}`,
             }}
             title="Répondre"
           >
@@ -162,13 +169,17 @@ export function MessageBubble({
             <button
               onClick={() => onDelete(message.id)}
               style={{
-                background: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
                 border: "none",
+                background: T.paper,
                 cursor: "pointer",
                 color: T.brick,
-                padding: 0,
-                display: "flex",
-                opacity: 0.6,
+                boxShadow: `0 1px 3px ${alpha(T.sidebar, 8)}`,
               }}
               title="Supprimer"
             >
@@ -176,14 +187,25 @@ export function MessageBubble({
             </button>
           )}
         </div>
-        <MessageReactions
-          messageId={message.id}
-          reactions={messageReactions}
-          currentUserId={currentUserId}
-          onToggle={onToggleReaction}
-        />
+
+        {/* Réactions */}
+        {messageReactions.length > 0 && (
+          <div style={{
+            display: "flex",
+            gap: 4,
+            flexWrap: "wrap",
+            marginTop: 4,
+            flexDirection: isOwn ? "row-reverse" : "row",
+          }}>
+            <MessageReactions
+              messageId={message.id}
+              reactions={messageReactions}
+              currentUserId={currentUserId}
+              onToggle={onToggleReaction}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
