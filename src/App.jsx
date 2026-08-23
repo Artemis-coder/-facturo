@@ -170,7 +170,7 @@ export default function App() {
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
-  const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus } = useContracts(entrepriseId, userId);
+  const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus, signContract, uploadContractDocument, getContractDocuments } = useContracts(entrepriseId, userId);
   const { prestataires, liens: liensPrestataires, taches, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, renvoyerInvitationPrestataire } = usePrestataires(entrepriseId, userId);
   const { fichiers: fichiersProjets, loading: loadingFichiers, uploadFichier, supprimerFichier } = useFichiersProjets(entrepriseId, userId);
 
@@ -275,7 +275,8 @@ export default function App() {
             {view === "contrats" && isAdmin && (
               <Contracts templates={templates} contracts={contracts} clients={clients} factures={factures} devis={devis} projets={projets} prestataires={prestataires} entreprise={entreprise}
                 saveTemplate={saveTemplate} uploadTemplateSource={uploadTemplateSource} suggestTemplateFromSource={suggestTemplateFromSource}
-                suggestContractFields={suggestContractFields} saveContract={saveContract} updateContract={updateContract} updateStatus={updateContractStatus} notify={notify} />
+                suggestContractFields={suggestContractFields} saveContract={saveContract} updateContract={updateContract} updateStatus={updateContractStatus}
+                uploadContractDocument={uploadContractDocument} getContractDocuments={getContractDocuments} notify={notify} />
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} entreprise={entreprise} notify={notify} />}
             {view === "utilisateurs" && isAdmin && (

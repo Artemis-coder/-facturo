@@ -40,13 +40,15 @@ function AlerteBadge({ alr }) {
 }
 
 export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }) {
-  const { prestataire, liens, projets, contrats, taches, fichiers, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache } = usePrestatairePortal(entrepriseId, userId);
+  const { prestataire, liens, projets, contrats, taches, fichiers, loading, saveTache, changerStatutTache, changerStatutSousTache, addSousTache, deleteSousTache, signContract, uploadContractDocument, getContractDocuments } = usePrestatairePortal(entrepriseId, userId);
   const [tab, setTab] = useState("projets");
   const [editingTache, setEditingTache] = useState(null);
   const [viewingContrat, setViewingContrat] = useState(null);
   const [fichierEnPreview, setFichierEnPreview] = useState(null);
   const [alertesOpen, setAlertesOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [signingContract, setSigningContract] = useState(null);
+  const [signingBusy, setSigningBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [navOpen, setNavOpen] = useState(false);
   const [authUser, setAuthUser] = useState(undefined);
@@ -94,6 +96,20 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   const telechargerFichierHandler = async (fichier) => {
     const { error } = await telechargerFichier(fichier);
     notify(error ? "Échec du téléchargement : " + error.message : "Téléchargement démarré");
+  };
+
+  const handleSignContract = async () => {
+    if (!signingContract) return;
+    setSigningBusy(true);
+    const { error } = await signContract(signingContract);
+    setSigningBusy(false);
+    if (error) {
+      notify(error.message || "Échec de la signature.");
+    } else {
+      notify("Contrat signé avec succès.");
+      setSigningContract(null);
+      setViewingContrat((c) => c && c.id === signingContract.id ? { ...c, statut: "Signé", signeLe: new Date().toISOString().slice(0, 10) } : c);
+    }
   };
 
   const fichiersParProjet = fichiers.reduce((acc, f) => {
@@ -417,6 +433,9 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           <div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.7, color: T.ink, border: `1px solid ${T.line}`, borderRadius: 10, padding: 16, maxHeight: 420, overflow: "auto" }}>{viewingContrat.contenu}</div>
           <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}>
             <Btn icon={Download} onClick={() => downloadContractPdf(viewingContrat, null, entreprise)}>Télécharger le PDF</Btn>
+            {viewingContrat.statut === "Envoyé" && (
+              <Btn variant="primary" icon={CheckCircle2} onClick={() => setSigningContract(viewingContrat)}>Signer électroniquement</Btn>
+            )}
             <Btn variant="ghost" icon={MessageCircle} onClick={() => ouvrirWhatsApp(viewingContrat)}>Ouvrir WhatsApp</Btn>
           </div>
         </Modal>
@@ -434,6 +453,29 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Btn variant="danger" onClick={() => { setConfirmingLogout(false); onLogout(); }}>Oui, me déconnecter</Btn>
             <Btn variant="ghost" onClick={() => setConfirmingLogout(false)}>Annuler</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {signingContract && (
+        <Modal title="Signature électronique" onClose={() => setSigningContract(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ padding: 14, border: `1px solid ${T.teal}`, background: T.tealSoft, borderRadius: 10 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: T.ink, marginBottom: 6 }}>Vous êtes sur le point de signer</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{signingContract.titre}</div>
+              <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 4 }}>
+                Cette action est irréversible. En signant, vous acceptez les termes du contrat.
+              </div>
+            </div>
+            <p style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.6 }}>
+              La signature électronique a la même valeur juridique qu'une signature manuscrite. Vous recevrez une copie du contrat signé.
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <Btn variant="ghost" onClick={() => setSigningContract(null)}>Annuler</Btn>
+              <Btn variant="primary" icon={CheckCircle2} onClick={handleSignContract} disabled={signingBusy}>
+                {signingBusy ? "Signature en cours…" : "Je signe électroniquement"}
+              </Btn>
+            </div>
           </div>
         </Modal>
       )}

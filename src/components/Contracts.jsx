@@ -30,12 +30,14 @@ Fait le {{date_contrat}}, en deux exemplaires.`;
 const tokensOf = (content) => [...new Set([...content.matchAll(/{{\s*([\w.-]+)\s*}}/g)].map((match) => match[1]))];
 const frenchDate = (value) => value ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T12:00:00`)) : "";
 
-export function Contracts({ templates, contracts, clients, factures, devis, projets, prestataires = [], entreprise, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, notify }) {
+export function Contracts({ templates, contracts, clients, factures, devis, projets, prestataires = [], entreprise, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, notify, uploadContractDocument, getContractDocuments }) {
   const [section, setSection] = useState("contracts");
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [building, setBuilding] = useState(null);
   const [editingContract, setEditingContract] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [contractDocs, setContractDocs] = useState({});
+  const [uploadingDoc, setUploadingDoc] = useState(null);
   const client = (id) => clients.find((item) => item.id === id);
   const facture = (id) => factures.find((item) => item.uuid === id);
   const devisItem = (id) => devis.find((item) => item.uuid === id);
@@ -89,8 +91,27 @@ export function Contracts({ templates, contracts, clients, factures, devis, proj
   };
   const sendContract = (contract) => {
     const recipient = client(contract.clientId)?.societe || client(contract.clientId)?.nom || "votre client";
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Bonjour,\n\nVeuillez trouver ci-joint le contrat « ${contract.titre} ».\n\nCordialement,\n${entreprise?.nom || "Ma Bouate"}`)}`, "_blank", "noopener,noreferrer");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Bonjour,\n\nVeuillez trouver ci-joint le contrat « ${contract.titre } ».\n\nCordialement,\n${entreprise?.nom || "Ma Bouate"}`)}`, "_blank", "noopener,noreferrer");
     notify(`WhatsApp est ouvert pour ${recipient}. Joignez le PDF téléchargé.`);
+  };
+
+  const loadContractDocs = async (contractId) => {
+    const { data, error } = await getContractDocuments(contractId);
+    if (!error && data) {
+      setContractDocs((prev) => ({ ...prev, [contractId]: data }));
+    }
+  };
+
+  const handleUploadDocument = async (contractId, version, file) => {
+    setUploadingDoc(contractId);
+    const { error, path } = await uploadContractDocument(contractId, version, file);
+    setUploadingDoc(null);
+    if (error) {
+      notify(error.message || "Échec de l'upload du document.");
+    } else {
+      notify("Document enregistré.");
+      await loadContractDocs(contractId);
+    }
   };
 
   return (
@@ -160,9 +181,11 @@ export function Contracts({ templates, contracts, clients, factures, devis, proj
           </Modal>
         )
       )}
-      {viewing && <Modal title={viewing.titre} onClose={() => setViewing(null)} wide>
-        <ContractPreview contract={viewing} client={client(viewing.clientId)} entreprise={entreprise} onDownload={() => downloadContractPdf(viewing, client(viewing.clientId), entreprise)} onWhatsApp={() => sendContract(viewing)} onEdit={() => editContract(viewing)} onStatus={async (statut) => { const { error } = await updateStatus(viewing, statut); notify(error ? `Mise à jour impossible : ${error.message}` : `Contrat marqué comme ${statut.toLowerCase()}`); if (!error) setViewing((item) => ({ ...item, statut })); }} facture={facture(viewing.factureId)} devis={devisItem(viewing.devisId)} projet={projet(viewing.projetId)} prestataire={prestataire(viewing.prestataireId)} />
-      </Modal>}
+      {viewing && (
+        <Modal title={viewing.titre} onClose={() => { setViewing(null); }} wide>
+          <ContractPreview contract={viewing} client={client(viewing.clientId)} entreprise={entreprise} documents={contractDocs[viewing.id] || []} onDownload={() => downloadContractPdf(viewing, client(viewing.clientId), entreprise)} onDownloadSigned={() => downloadContractPdf(viewing, client(viewing.clientId), entreprise, { signed: true, signatureDate: viewing.signeLe, signerName: prestataire(viewing.prestataireId)?.nom })} onWhatsApp={() => sendContract(viewing)} onEdit={() => editContract(viewing)} onStatus={async (statut) => { const { error } = await updateStatus(viewing, statut); notify(error ? `Mise à jour impossible : ${error.message}` : `Contrat marqué comme ${statut.toLowerCase()}`); if (!error) setViewing((item) => ({ ...item, statut })); }} onUploadDocument={(version, file) => handleUploadDocument(viewing.id, version, file)} uploadingDoc={uploadingDoc === viewing.id} onLoadDocuments={() => loadContractDocs(viewing.id)} facture={facture(viewing.factureId)} devis={devisItem(viewing.devisId)} projet={projet(viewing.projetId)} prestataire={prestataire(viewing.prestataireId)} />
+        </Modal>
+      )}
     </div>
   );
 }
@@ -223,8 +246,10 @@ function ContractBuilder({ templates, clients, factures, devis, projets, prestat
   </div>;
 }
 
-function ContractPreview({ contract, client, entreprise, onDownload, onWhatsApp, onStatus, onEdit, facture, devis, projet, prestataire }) {
-  return <div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}><Badge statut={contract.statut} />{facture && <span style={{ fontSize: 12, color: T.inkSoft }}>Facture : {facture.id}</span>}{devis && <span style={{ fontSize: 12, color: T.inkSoft }}>Devis : {devis.id}</span>}{projet && <span style={{ fontSize: 12, color: T.inkSoft }}>Projet : {projet.nom}</span>}{prestataire && <span style={{ fontSize: 12, color: T.inkSoft }}>Prestataire : {prestataire.nom}</span>}</div><div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.7, color: T.ink, border: `1px solid ${T.line}`, borderRadius: 10, padding: 16, maxHeight: 420, overflow: "auto" }}>{contract.contenu}</div><div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}><Btn icon={Download} onClick={onDownload}>Télécharger le PDF</Btn>{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Pencil} onClick={onEdit}>Modifier le brouillon</Btn>}{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Send} onClick={() => onStatus("Envoyé")}>Marquer envoyé</Btn>}{contract.statut !== "Signé" && contract.statut !== "Résilié" && <Btn variant="ghost" icon={CheckCircle2} onClick={() => onStatus("Signé")}>Marquer signé</Btn>}{(contract.statut === "Signé" || contract.statut === "Envoyé") && <Btn variant="ghost" icon={FileX} onClick={() => onStatus("Résilié")}>Résilier</Btn>}<Btn variant="ghost" icon={MessageCircle} onClick={onWhatsApp}>Ouvrir WhatsApp</Btn></div><p style={{ color: T.inkSoft, fontSize: 11.5, lineHeight: 1.5, marginTop: 12 }}>Téléchargez le PDF avant d’ouvrir WhatsApp, puis joignez-le au message. La validation juridique et la signature restent sous votre responsabilité.</p></div>;
+function ContractPreview({ contract, client, entreprise, documents, onDownload, onDownloadSigned, onWhatsApp, onStatus, onEdit, onUploadDocument, uploadingDoc, onLoadDocuments, facture, devis, projet, prestataire }) {
+  const transmitted = documents.find((d) => d.version === "transmitted");
+  const signed = documents.find((d) => d.version === "signed");
+  return <div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}><Badge statut={contract.statut} />{facture && <span style={{ fontSize: 12, color: T.inkSoft }}>Facture : {facture.id}</span>}{devis && <span style={{ fontSize: 12, color: T.inkSoft }}>Devis : {devis.id}</span>}{projet && <span style={{ fontSize: 12, color: T.inkSoft }}>Projet : {projet.nom}</span>}{prestataire && <span style={{ fontSize: 12, color: T.inkSoft }}>Prestataire : {prestataire.nom}</span>}</div><div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.7, color: T.ink, border: `1px solid ${T.line}`, borderRadius: 10, padding: 16, maxHeight: 420, overflow: "auto" }}>{contract.contenu}</div><div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}><Btn icon={Download} onClick={onDownload}>Télécharger le PDF</Btn>{contract.statut === "Signé" && <Btn variant="ghost" icon={Download} onClick={onDownloadSigned}>Télécharger le PDF signé</Btn>}{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Pencil} onClick={onEdit}>Modifier le brouillon</Btn>}{contract.statut === "Brouillon" && <Btn variant="ghost" icon={Send} onClick={() => onStatus("Envoyé")}>Marquer envoyé</Btn>}{contract.statut !== "Signé" && contract.statut !== "Résilié" && <Btn variant="ghost" icon={CheckCircle2} onClick={() => onStatus("Signé")}>Marquer signé</Btn>}{(contract.statut === "Signé" || contract.statut === "Envoyé") && <Btn variant="ghost" icon={FileX} onClick={() => onStatus("Résilié")}>Résilier</Btn>}<Btn variant="ghost" icon={MessageCircle} onClick={onWhatsApp}>Ouvrir WhatsApp</Btn></div><div style={{ marginTop: 18, padding: 14, border: `1px solid ${T.line}`, borderRadius: 10, background: T.bg }}><div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>Documents</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>{transmitted && <span style={{ fontSize: 12, color: T.teal }}>Document transmis : {new Date(transmitted.created_at).toLocaleDateString("fr-FR")}</span>}{signed && <span style={{ fontSize: 12, color: T.teal }}>Document signé : {new Date(signed.created_at).toLocaleDateString("fr-FR")}</span>}{!transmitted && !signed && <span style={{ fontSize: 12, color: T.inkSoft }}>Aucun document enregistré</span>}</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>{contract.statut === "Envoyé" && <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px dashed ${T.gold}`, color: T.ink, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Upload size={13} /> {transmitted ? "Remplacer le document transmis" : "Enregistrer le document transmis"}<input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadDocument("transmitted", f); }} style={{ display: "none" }} disabled={uploadingDoc} /></label>}{contract.statut === "Signé" && <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px dashed ${T.teal}`, color: T.ink, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Upload size={13} /> {signed ? "Remplacer le document signé" : "Enregistrer le document signé"}<input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadDocument("signed", f); }} style={{ display: "none" }} disabled={uploadingDoc} /></label>}</div></div><p style={{ color: T.inkSoft, fontSize: 11.5, lineHeight: 1.5, marginTop: 12 }}>Téléchargez le PDF avant d’ouvrir WhatsApp, puis joignez-le au message. La validation juridique et la signature restent sous votre responsabilité.</p></div>;
 }
 
 function ContractFallbackEditor({ contract, clients, factures, devis, projets, prestataires = [], onSave }) {

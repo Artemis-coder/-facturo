@@ -127,5 +127,64 @@ export function useContracts(entrepriseId, userId) {
     return { error };
   };
 
-  return { templates, contracts, loading, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, reload: load };
+  const signContract = async (contract) => {
+    if (contract.statut !== "Envoyé") {
+      return { error: new Error("Seul un contrat envoyé peut être signé.") };
+    }
+    const patch = { statut: "Signé", signe_le: todayISO(), updated_at: new Date().toISOString() };
+    const { error } = await supabase.from("contracts").update(patch).eq("id", contract.id);
+    if (!error) {
+      await supabase.from("contract_history").insert({ contract_id: contract.id, action: "Signature", detail: "Contrat signé électroniquement par le prestataire", created_by: userId });
+      const message = `Le contrat « ${contract.titre} » a été signé électroniquement.`;
+      const { data: adminIds } = await supabase.rpc("get_admin_user_ids", { p_entreprise_id: entrepriseId });
+      for (const adminId of (adminIds || [])) {
+        await supabase.rpc("notify_evenement", {
+          p_destinataire_user_id: adminId,
+          p_entreprise_id: entrepriseId,
+          p_type: "contrat_change",
+          p_titre: "Contrat signé",
+          p_message: message,
+        });
+      }
+      await load();
+    }
+    return { error };
+  };
+
+  const uploadContractDocument = async (contractId, version, file) => {
+    if (!file || file.type !== "application/pdf") {
+      return { error: new Error("Seuls les fichiers PDF sont acceptés.") };
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      return { error: new Error("Le fichier ne peut pas dépasser 15 Mo.") };
+    }
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${entrepriseId}/${contractId}/${version}-${Date.now()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage.from("contract-documents").upload(path, file, { contentType: "application/pdf", upsert: false });
+    if (uploadError) return { error: uploadError };
+    const { error: dbError } = await supabase.from("contract_documents").insert({
+      contract_id: contractId,
+      version,
+      file_path: path,
+      file_size: file.size,
+      mime_type: "application/pdf",
+      created_by: userId,
+    });
+    if (dbError) {
+      await supabase.storage.from("contract-documents").remove([path]);
+      return { error: dbError };
+    }
+    return { error: null, path };
+  };
+
+  const getContractDocuments = async (contractId) => {
+    const { data, error } = await supabase
+      .from("contract_documents")
+      .select("*")
+      .eq("contract_id", contractId)
+      .order("created_at", { ascending: false });
+    return { data: data || [], error };
+  };
+
+  return { templates, contracts, loading, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus, signContract, uploadContractDocument, getContractDocuments, reload: load };
 }

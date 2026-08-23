@@ -1,9 +1,11 @@
 const INK = [22, 33, 58];
 const GOLD = [201, 138, 43];
 const GREY = [91, 100, 122];
+const SIGNATURE_INK = [31, 122, 99];
 
-export async function downloadContractPdf(contract, client, entreprise) {
+export async function downloadContractPdf(contract, client, entreprise, options = {}) {
   const { jsPDF } = await import("jspdf");
+  const { signed = false, signatureDate = null, signerName = null } = options;
   const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const width = pdf.internal.pageSize.getWidth();
   const height = pdf.internal.pageSize.getHeight();
@@ -19,7 +21,15 @@ export async function downloadContractPdf(contract, client, entreprise) {
   pdf.text([entreprise?.email, entreprise?.tel || entreprise?.telephone, entreprise?.adresse].filter(Boolean).join("  ·  ") || "", margin, 55);
   pdf.setTextColor(...GOLD); pdf.setFont("helvetica", "bold"); pdf.setFontSize(15); pdf.text("CONTRAT", width - margin, 39, { align: "right" });
   pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(220, 226, 237); pdf.text(`Émis le ${new Date().toLocaleDateString("fr-FR")}`, width - margin, 55, { align: "right" });
-  y = 125;
+  if (signed) {
+    pdf.setTextColor(...SIGNATURE_INK); pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
+    pdf.text("SIGNÉ ÉLECTRONIQUEMENT", width - margin, 70, { align: "right" });
+    if (signatureDate) {
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(220, 226, 237);
+      pdf.text(`Signé le ${new Date(signatureDate).toLocaleDateString("fr-FR")}`, width - margin, 82, { align: "right" });
+    }
+  }
+  y = signed ? 145 : 125;
   pdf.setFont("helvetica", "bold"); pdf.setFontSize(19); pdf.setTextColor(...INK); pdf.text(contract.titre, margin, y);
   y += 22; pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(...GREY);
   pdf.text([client?.societe || client?.nom, contract.typeService].filter(Boolean).join("  ·  "), margin, y);
@@ -31,9 +41,30 @@ export async function downloadContractPdf(contract, client, entreprise) {
     ensure(lines.length * 15 + 16); pdf.text(lines, margin, y); y += lines.length * 15 + 16;
   });
   ensure(110); pdf.setDrawColor(...GOLD); pdf.line(margin, y, width - margin, y); y += 22;
-  pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(...INK); pdf.text("Pour l'entreprise", margin, y); pdf.text("Pour le client", width - margin - 150, y);
-  y += 55; pdf.setDrawColor(180, 184, 193); pdf.line(margin, y, margin + 190, y); pdf.line(width - margin - 190, y, width - margin, y);
+  if (signed) {
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(...SIGNATURE_INK);
+    pdf.text("Signature électronique", margin, y);
+    pdf.text("Signature électronique", width - margin - 150, y);
+    y += 55; pdf.setDrawColor(180, 184, 193); pdf.line(margin, y, margin + 190, y); pdf.line(width - margin - 190, y, width - margin, y);
+    y += 14; pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(...GREY);
+    pdf.text(signerName ? `Signé par ${signerName}` : "Signé électroniquement", margin, y);
+    pdf.text(signerName ? `Signé par ${signerName}` : "Signé électroniquement", width - margin - 150, y);
+    y += 12; pdf.setTextColor(150, 150, 150);
+    pdf.text(`Certificat : ${contract.id}`, margin, y); pdf.text(`Certificat : ${contract.id}`, width - margin - 150, y);
+  } else {
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(...INK); pdf.text("Pour l'entreprise", margin, y); pdf.text("Pour le client", width - margin - 150, y);
+    y += 55; pdf.setDrawColor(180, 184, 193); pdf.line(margin, y, margin + 190, y); pdf.line(width - margin - 190, y, width - margin, y);
+  }
   const pages = pdf.getNumberOfPages();
   for (let p = 1; p <= pages; p += 1) { pdf.setPage(p); pdf.setFontSize(7.5); pdf.setTextColor(...GREY); pdf.text(`Ma Bouate · Contrat · Page ${p}/${pages}`, width / 2, height - 24, { align: "center" }); }
-  pdf.save(`${contract.titre.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "contrat"}.pdf`);
+  const filename = `${contract.titre.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "contrat"}${signed ? "-signe" : ""}.pdf`;
+  pdf.save(filename);
+  return { pdf, filename };
+}
+
+export async function uploadContractPdf(contract, client, entreprise, options = {}) {
+  const { pdf, filename } = await downloadContractPdf(contract, client, entreprise, options);
+  const { jsPDF } = await import("jspdf");
+  const blob = new Blob([pdf.output("arraybuffer")], { type: "application/pdf" });
+  return { blob, filename };
 }
