@@ -1,27 +1,37 @@
 import React, { useEffect, useRef } from "react";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Clock } from "lucide-react";
 import { T } from "../lib/theme";
 import { useTheme } from "../lib/useTheme";
 
-// Bouton compact (aligné sur les autres actions du header, 36x36).
-// Croisement fluide soleil/lune : rotation + fondu. Accessible (aria-label, title).
 export function ThemeToggle({ size = 17 }) {
-  const { isDark, toggle } = useTheme();
+  const { pref, resolved, toggle } = useTheme();
   const btnRef = useRef(null);
 
   useEffect(() => {
     const el = btnRef.current;
     if (!el) return;
-    el.setAttribute("aria-pressed", String(isDark));
-  }, [isDark]);
+    el.setAttribute("aria-pressed", String(resolved === "dark"));
+  }, [resolved]);
+
+  const isAuto = pref === "auto";
+  const nextLabel = isAuto
+    ? "Forcer le mode clair"
+    : resolved === "dark"
+      ? "Forcer le mode clair"
+      : "Forcer le mode sombre";
+  const titleText = isAuto
+    ? `Automatique (${resolved === "dark" ? "sombre" : "clair"})`
+    : resolved === "dark"
+      ? "Mode sombre (manuel)"
+      : "Mode clair (manuel)";
 
   return (
     <button
       ref={btnRef}
       onClick={toggle}
       type="button"
-      aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
-      title={isDark ? "Mode clair" : "Mode sombre"}
+      aria-label={nextLabel}
+      title={titleText}
       style={{
         background: "none",
         border: `1px solid ${T.line}`,
@@ -32,19 +42,18 @@ export function ThemeToggle({ size = 17 }) {
         alignItems: "center",
         justifyContent: "center",
         cursor: "pointer",
-        color: isDark ? T.gold : T.inkSoft,
+        color: resolved === "dark" ? T.gold : T.inkSoft,
         flexShrink: 0,
         position: "relative",
         overflow: "hidden",
       }}
     >
-      <IconSwap isDark={isDark} size={size} />
+      <IconSwap isDark={resolved === "dark"} isAuto={isAuto} size={size} />
     </button>
   );
 }
 
-// Un conteneur unique qui superpose les deux icônes et les fait pivoter/fondre.
-function IconSwap({ isDark, size }) {
+function IconSwap({ isDark, isAuto, size }) {
   const common = {
     style: {
       gridArea: "1 / 1",
@@ -52,13 +61,30 @@ function IconSwap({ isDark, size }) {
     },
   };
   return (
-    <span style={{ display: "grid", placeItems: "center", width: size + 4, height: size + 4 }}>
-      <span {...common} style={{ ...common.style, transform: isDark ? "rotate(0deg) scale(1)" : "rotate(-90deg) scale(.4)", opacity: isDark ? 1 : 0 }}>
-        <Moon size={size} />
-      </span>
-      <span {...common} style={{ ...common.style, transform: isDark ? "rotate(90deg) scale(.4)" : "rotate(0deg) scale(1)", opacity: isDark ? 0 : 1 }}>
-        <Sun size={size} />
-      </span>
+    <span style={{ display: "grid", placeItems: "center", width: size + 4, height: size + 4, position: "relative" }}>
+      {isAuto && (
+        <span {...common} style={{ ...common.style, transform: isDark ? "rotate(0deg) scale(1)" : "rotate(-90deg) scale(.4)", opacity: isDark ? 1 : 0, position: "absolute" }}>
+          <Moon size={size} />
+        </span>
+      )}
+      {isAuto && (
+        <span {...common} style={{ ...common.style, transform: isDark ? "rotate(90deg) scale(.4)" : "rotate(0deg) scale(1)", opacity: isDark ? 0 : 1, position: "absolute" }}>
+          <Sun size={size} />
+        </span>
+      )}
+      {isAuto && (
+        <Clock size={10} style={{ position: "absolute", bottom: 2, right: 2, opacity: 0.8 }} />
+      )}
+      {!isAuto && (
+        <>
+          <span {...common} style={{ ...common.style, transform: isDark ? "rotate(0deg) scale(1)" : "rotate(-90deg) scale(.4)", opacity: isDark ? 1 : 0, position: "absolute" }}>
+            <Moon size={size} />
+          </span>
+          <span {...common} style={{ ...common.style, transform: isDark ? "rotate(90deg) scale(.4)" : "rotate(0deg) scale(1)", opacity: isDark ? 0 : 1, position: "absolute" }}>
+            <Sun size={size} />
+          </span>
+        </>
+      )}
     </span>
   );
 }

@@ -1,12 +1,21 @@
-import { useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore, useCallback, useEffect, useRef } from "react";
 
 const KEY = "facturo:theme";
 
-const systemTheme = () =>
-  typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+const DAY_START = 7;  // 07:00
+const NIGHT_START = 19; // 19:00
 
-export const resolveTheme = (pref) =>
-  pref === "dark" ? "dark" : pref === "light" ? "light" : systemTheme();
+const isDayHours = () => {
+  if (typeof window === "undefined") return true;
+  const h = new Date().getHours();
+  return h >= DAY_START && h < NIGHT_START;
+};
+
+export const resolveTheme = (pref) => {
+  if (pref === "dark") return "dark";
+  if (pref === "light") return "light";
+  return isDayHours() ? "light" : "dark";
+};
 
 function readStored() {
   try {
@@ -22,7 +31,6 @@ function apply(pref) {
   document.documentElement.dataset.theme = resolveTheme(pref);
 }
 
-// Store partagé : toutes les instances de useTheme restent synchronisées.
 const listeners = new Set();
 let pref = readStored();
 apply(pref);
@@ -33,17 +41,33 @@ const getSnapshot = () => pref;
 const getServerSnapshot = () => "auto";
 
 function setTheme(next) {
-  const clean = next === "dark" || next === "light" ? next : "auto";
+  const clean = next === "dark" || next === "light" || next === "auto" ? next : "auto";
   pref = clean;
   try { localStorage.setItem(KEY, clean); } catch {}
   apply(clean);
   notify();
 }
 
-if (typeof window !== "undefined" && window.matchMedia) {
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+let dayTimer = null;
+function scheduleDayNightCheck() {
+  if (dayTimer) clearTimeout(dayTimer);
+  if (typeof window === "undefined") return;
+  const now = new Date();
+  const h = now.getHours();
+  const msUntilNextHour = (60 - now.getMinutes()) * 60 * 1000 - now.getSeconds() * 1000;
+  dayTimer = setTimeout(() => {
     if (pref === "auto") { apply("auto"); notify(); }
-  });
+    scheduleDayNightCheck();
+  }, Math.max(msUntilNextHour, 60_000));
+}
+
+if (typeof window !== "undefined") {
+  scheduleDayNightCheck();
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if (pref === "auto") { apply("auto"); notify(); }
+    });
+  }
 }
 
 export function useTheme() {
@@ -51,7 +75,15 @@ export function useTheme() {
   const resolved = resolveTheme(pref);
 
   const toggle = useCallback(
-    () => setTheme(resolveTheme(pref) === "dark" ? "light" : "dark"),
+    () => {
+      if (pref === "auto") {
+        setTheme(resolveTheme("auto") === "dark" ? "light" : "dark");
+      } else if (pref === "light") {
+        setTheme("dark");
+      } else {
+        setTheme("auto");
+      }
+    },
     [pref]
   );
 
