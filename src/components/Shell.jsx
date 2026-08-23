@@ -309,7 +309,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
           </div>
         )}
       </aside>
-      <main style={{ flex: 1, minWidth: 0 }}>
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
         <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
           <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{current?.label}</h1>
           <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 10 }}>
@@ -388,7 +388,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             </div>
           </div>
         </header>
-        <div className="app-content" style={{ padding: 30 }}>{children}</div>
+        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>{children}</div>
       </main>
 
       {isMobile && (

@@ -235,8 +235,8 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
         </div>
       </aside>
 
-      <main style={{ flex: 1, minWidth: 0 }}>
-        <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
           <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {NAV_ITEMS.find((n) => n.key === tab)?.label}
           </h1>
@@ -279,7 +279,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           </div>
         </header>
 
-        <div className="app-content" style={{ padding: 30 }}>
+        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           {alertes.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, background: enRetard.length > 0 ? T.brickSoft : T.goldSoft, border: `1px solid ${alpha(enRetard.length > 0 ? T.brick : T.gold, 20)}`, marginBottom: 18, flexWrap: "wrap" }}>
               <AlertTriangle size={16} color={enRetard.length > 0 ? T.brick : T.gold} />
