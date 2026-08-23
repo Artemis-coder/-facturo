@@ -201,7 +201,7 @@ export function Contracts({ templates, contracts, clients, factures, devis, proj
         <Modal title="Importer un contrat (PDF)" onClose={() => setBuilding(null)} extraWide>
           <ContractImport clients={clients} prestataires={prestataires} projets={projets} onSave={async (form) => {
             const { pdfFile, ...contractForm } = form;
-            const { error, contractId } = await saveContract({ ...contractForm, contenu: contractForm.contenu || "Contrat importé", templateId: null });
+            const { error, contractId } = await saveContract({ ...contractForm, contenu: contractForm.contenu || "Contrat importé", templateId: null, statut: "Envoyé" });
             if (error) {
               notify(error.message || "Échec de l'import du contrat.");
               return { error };
@@ -214,7 +214,7 @@ export function Contracts({ templates, contracts, clients, factures, devis, proj
                 notify("Contrat importé avec succès.");
               }
             } else {
-              notify("Contrat importé en brouillon.");
+              notify("Contrat importé avec succès.");
             }
             setBuilding(null);
             return { error: null };

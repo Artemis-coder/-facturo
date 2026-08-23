@@ -61,7 +61,7 @@ export function useContracts(entrepriseId, userId) {
       entreprise_id: entrepriseId, template_id: form.templateId || null, client_id: form.clientId || null,
       facture_id: form.factureId || null, devis_id: form.devisId || null, projet_id: form.projetId || null,
       prestataire_id: form.prestataireId || null,
-      titre: form.titre.trim(), type_service: form.typeService.trim(), contenu_final: form.contenu,
+      titre: form.titre.trim(), type_service: (form.typeService || "").trim(), contenu_final: form.contenu,
       variables: form.variables, statut: form.statut || "Brouillon", updated_at: new Date().toISOString(),
     };
     const { data, error } = await supabase.from("contracts").insert({ ...row, created_by: userId }).select("id").single();
