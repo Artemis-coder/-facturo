@@ -173,7 +173,7 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
   const chatPartnerName = selectedContact?.name || "Sélectionner un contact";
 
   return (
-    <div style={{ display: "flex", height: "100%", minHeight: 500, background: T.bg, borderRadius: 16, border: `1px solid ${T.line}`, overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100%", minHeight: 0, background: T.bg, borderRadius: 16, border: `1px solid ${T.line}`, overflow: "hidden" }}>
       {/* Sidebar des conversations */}
       <ConversationList
         conversations={filteredConversations}
@@ -188,7 +188,7 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
       />
 
       {/* Zone de chat */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg, minHeight: 0 }}>
         {selectedConversation ? (
           <>
             {/* Header */}

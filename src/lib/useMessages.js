@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
+import { useUnreadMessages } from "./unreadMessagesContext.jsx";
 
 const MESSAGES_SELECT = `
   id, entreprise_id, sender_id, recipient_id, prestataire_id, contract_id, projet_id,
@@ -38,6 +39,7 @@ export function useMessages(entrepriseId, userId, userRole) {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toast, setToast] = useState(null);
+  const { incrementUnreadCount, decrementUnreadCount, setUnreadCount: setGlobalUnreadCount } = useUnreadMessages();
 
   const showToast = useCallback((message) => {
     setToast(message);
@@ -74,10 +76,10 @@ export function useMessages(entrepriseId, userId, userRole) {
       const { data: messagesData, error: messagesError } = await query;
 
       if (!messagesError && messagesData) {
-        // Stockés en ordre chronologique (les plus récents en bas du fil).
         setMessages(messagesData.slice().reverse().map(mapMessage));
         const unread = messagesData.filter((m) => !m.lu && m.recipient_id === userId).length;
         setUnreadCount(unread);
+        setGlobalUnreadCount(unread);
       }
 
       if (messagesData?.length > 0) {
@@ -219,10 +221,11 @@ export function useMessages(entrepriseId, userId, userRole) {
     if (!error) {
       setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, lu: true, luAt: new Date().toISOString() } : m)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
+      decrementUnreadCount();
     }
 
     return { error };
-  }, [userId]);
+  }, [userId, decrementUnreadCount]);
 
   useEffect(() => {
     if (!entrepriseId) return;
@@ -248,6 +251,7 @@ export function useMessages(entrepriseId, userId, userRole) {
 
           if (newMessage.recipientId === userId && newMessage.senderId !== userId) {
             setUnreadCount((prev) => prev + 1);
+            incrementUnreadCount();
             showToast(`Nouveau message de ${newMessage.senderId === userId ? "vous" : "un utilisateur"}`);
           }
         }

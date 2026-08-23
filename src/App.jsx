@@ -17,6 +17,7 @@ import { useAmountVisibility } from "./lib/useAmountVisibility";
 import { useOnlineStatus } from "./lib/useOnlineStatus";
 import { flushQueue, queueLength } from "./lib/offline";
 import { T, alpha } from "./lib/theme";
+import { UnreadMessagesProvider } from "./lib/unreadMessagesContext.jsx";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { Dashboard } from "./components/Dashboard";
@@ -226,30 +227,31 @@ export default function App() {
   return (
     <>
       <GlobalStyles />
-      <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
-        amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId} profile={profile}
-        onQuickCreate={requestCreate}>
-        {!dataReady ? (
-          <LoadingState label="Chargement des données…" />
-        ) : (
-          <>
-            {view === "dashboard" && <Dashboard role={role} factures={factures} devis={devis} clients={clients} projets={projets} setView={setView} />}
-            {view === "finance" && canManageFinance && (
-              <Finance paiements={paiements} depenses={depenses} clients={clients}
-                saveDepense={saveDepense} deleteDepense={deleteDepense} userId={userId}
-                notify={notify} canManage={canManageFinance} canDelete={isAdmin} />
-            )}
-            {view === "projets" && (
-              <Projets projets={projets} clients={clients} devis={devis} factures={factures}
-                prestataires={prestataires} liensPrestataires={liensPrestataires} taches={taches}
-                fichiersProjets={fichiersProjets}
-                affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
-                saveTache={saveTache} deleteTache={deleteTache}
-                saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}
-                lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
-                uploadFichier={uploadFichier} supprimerFichier={supprimerFichier}
-                notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
-            )}
+      <UnreadMessagesProvider>
+        <Shell view={view} setView={setView} onLogout={signOut} entreprise={entreprise} role={role}
+          amountsHidden={amountsHidden} onToggleAmounts={toggleAmounts} userId={userId} profile={profile}
+          onQuickCreate={requestCreate}>
+          {!dataReady ? (
+            <LoadingState label="Chargement des données…" />
+          ) : (
+            <>
+              {view === "dashboard" && <Dashboard role={role} factures={factures} devis={devis} clients={clients} projets={projets} setView={setView} />}
+              {view === "finance" && canManageFinance && (
+                <Finance paiements={paiements} depenses={depenses} clients={clients}
+                  saveDepense={saveDepense} deleteDepense={deleteDepense} userId={userId}
+                  notify={notify} canManage={canManageFinance} canDelete={isAdmin} />
+              )}
+              {view === "projets" && (
+                <Projets projets={projets} clients={clients} devis={devis} factures={factures}
+                  prestataires={prestataires} liensPrestataires={liensPrestataires} taches={taches}
+                  fichiersProjets={fichiersProjets}
+                  affecterPrestataire={affecterPrestataire} detacherPrestataire={detacherPrestataire}
+                  saveTache={saveTache} deleteTache={deleteTache}
+                  saveProjet={saveProjet} changerStatut={changerStatut} deleteProjet={deleteProjet}
+                  lierDevis={lierProjetDevis} lierFacture={lierProjetFacture}
+                  uploadFichier={uploadFichier} supprimerFichier={supprimerFichier}
+                  notify={notify} canManage={canManageProjets} canDelete={isAdmin} />
+              )}
              {view === "prestataires" && (
                <Prestataires projets={projets} prestataires={prestataires} liens={liensPrestataires}
                  taches={taches} contrats={contracts}
@@ -293,6 +295,7 @@ export default function App() {
           </>
         )}
       </Shell>
+      </UnreadMessagesProvider>
       {!online && (
         <div className="offline-banner" style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: T.brickSolid, color: "#fff", padding: "9px 18px", borderRadius: 30, fontSize: 12.5, zIndex: 200, boxShadow: `0 6px 20px ${alpha(T.sidebar, 25)}` }}>
           Hors ligne — les modifications seront synchronisées automatiquement ({pendingCount} en attente)

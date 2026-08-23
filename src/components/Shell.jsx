@@ -11,6 +11,7 @@ import { Modal, Btn } from "./ui";
 import { NotifsBell } from "./NotifsBell";
 import { MobileTabBar } from "./MobileTabBar";
 import { ThemeToggle } from "./ThemeToggle";
+import { useUnreadMessages } from "../lib/unreadMessagesContext.jsx";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -26,7 +27,7 @@ export const NAV = [
   },
   { key: "projets", label: "Projets", icon: FolderKanban, roles: ["administrateur", "comptable", "commercial"] },
   { key: "prestataires", label: "Prestataires", icon: Handshake, roles: ["administrateur", "comptable", "commercial"] },
-  { key: "messages", label: "Messages", icon: MessageSquare, roles: ["administrateur", "comptable", "commercial"] },
+  { key: "messages", label: "Messages", icon: MessageSquare, roles: ["administrateur", "comptable", "commercial"], showUnreadCount: true },
   { key: "rapports", label: "Rapports", icon: BarChart3, roles: ["administrateur", "comptable"] },
   { key: "utilisateurs", label: "Utilisateurs", icon: UserCog, roles: ["administrateur"] },
   { key: "entreprise", label: "Entreprise", icon: Building2 },
@@ -118,11 +119,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
       ]
     : [];
 
-const go = (key) => {
-  if (key === "__logout__") { setNavOpen(false); setConfirmingLogout(true); return; }
-  setView(key);
-  setNavOpen(false);
-};
+  const unreadCount = unreadMessages.unreadCount;
   const initiales = (profile?.nom_complet || "").split(" ").filter(Boolean).map((p) => p[0].toUpperCase()).slice(0, 2).join("") || profile?.email?.[0]?.toUpperCase() || "U";
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
@@ -198,17 +195,38 @@ const go = (key) => {
               );
             }
             const active = n.key === view;
-            return (
-              <div key={n.key} className="nav-item" onClick={() => go(n.key)} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
-                borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
-                background: active ? "#ffffff14" : "transparent", color: active ? "#fff" : "#B9BFCF",
-                borderLeft: active ? `3px solid ${T.gold}` : "3px solid transparent",
-                justifyContent: rail ? "center" : "flex-start",
-              }} title={n.label}>
-                <Icon size={16} />{!rail && n.label}
-              </div>
-            );
+              return (
+                <div key={n.key} className="nav-item" onClick={() => go(n.key)} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
+                  borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
+                  background: active ? "#ffffff14" : "transparent", color: active ? "#fff" : "#B9BFCF",
+                  borderLeft: active ? `3px solid ${T.gold}` : "3px solid transparent",
+                  justifyContent: rail ? "center" : "flex-start",
+                }} title={n.label}>
+                  <Icon size={16} />{!rail && n.label}
+                  {n.showUnreadCount && unreadCount > 0 && (
+                    <span style={{
+                      position: "absolute",
+                      top: rail ? -2 : -4,
+                      right: rail ? -2 : -4,
+                      minWidth: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      background: T.gold,
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0 5px",
+                      boxShadow: `0 0 0 2px ${T.sidebar}`,
+                    }}>
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </div>
+              );
           })}
         </nav>
         {!installed && !rail && (
