@@ -83,7 +83,7 @@ export function FichierApercu({ fichier, onClose, notify }) {
 
       {erreur && (
         <div style={{ textAlign: "center", padding: 40, background: T.bg, borderRadius: 10 }}>
-          <FileImage size={22} color={T.inkSoft} style={{ marginBottom: 10 }} />
+          <FileImage size={22} style={{ color: T.inkSoft, marginBottom: 10 }} />
           <div style={{ fontSize: 13, color: T.brick, marginBottom: 14 }}>{erreur}</div>
           <Btn icon={Download} onClick={telecharger}>Télécharger le fichier</Btn>
         </div>

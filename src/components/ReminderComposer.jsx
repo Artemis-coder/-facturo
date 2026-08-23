@@ -65,7 +65,7 @@ export function ReminderComposer({ doc, client, entreprise, type, notify }) {
       </p>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {[{ id: "email", label: "E-mail", icon: Mail }, { id: "whatsapp", label: "WhatsApp", icon: MessageCircle }].map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setChannel(id)} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", borderRadius: 8, padding: "8px 11px", fontSize: 12.5, fontWeight: 600, border: `1px solid ${channel === id ? T.ink : T.line}`, color: channel === id ? "#fff" : T.inkSoft, background: channel === id ? T.ink : "#fff" }}>
+          <button key={id} onClick={() => setChannel(id)} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", borderRadius: 8, padding: "8px 11px", fontSize: 12.5, fontWeight: 600, border: `1px solid ${channel === id ? T.ink : T.line}`, color: channel === id ? T.invertFg : T.inkSoft, background: channel === id ? T.invert : T.paper }}>
             <Icon size={14} /> {label}
           </button>
         ))}

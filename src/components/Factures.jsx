@@ -122,15 +122,15 @@ export function Factures({ factures, clients, produits, projets, paiements = [],
           {statuts.map((s) => (
             <button key={s} onClick={() => setFilter(s)} style={{
               padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
-              border: `1px solid ${filter === s ? T.ink : T.line}`, background: filter === s ? T.ink : "#fff",
-              color: filter === s ? "#fff" : T.inkSoft,
+              border: `1px solid ${filter === s ? T.ink : T.line}`, background: filter === s ? T.invert : T.paper,
+              color: filter === s ? T.invertFg : T.inkSoft,
             }}>{s}</button>
           ))}
         </div>
         <button onClick={() => setProjetsTerminesUniquement(!projetsTerminesUniquement)} style={{
           display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
           border: `1px solid ${projetsTerminesUniquement ? T.teal : T.line}`,
-          background: projetsTerminesUniquement ? T.tealSoft : "#fff",
+          background: projetsTerminesUniquement ? T.tealSoft : T.paper,
           color: projetsTerminesUniquement ? T.teal : T.inkSoft,
         }}>
           <CheckCircle2 size={13} /> Projets terminés uniquement

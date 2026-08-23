@@ -5,7 +5,7 @@ import {
   KeyRound, ChevronRight, ChevronDown, Clock, History, GitBranch, Trash2, Pencil,
   CheckCircle2, Lock, FileX, FolderOpen, Paperclip, Eye, Search,
 } from "lucide-react";
-import { T, inputStyle } from "../lib/theme";
+import { T, inputStyle, alpha } from "../lib/theme";
 import { alerteTache, SEUIL_ALERTE_JOURS } from "../lib/helpers";
 import { usePrestatairePortal } from "../lib/usePrestatairePortal";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
@@ -18,6 +18,7 @@ import { supabase } from "../lib/supabaseClient";
 import { NotifsBell } from "./NotifsBell";
 import { MobileTabBar } from "./MobileTabBar";
 import { useIsMobile } from "../lib/useIsMobile";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV_ITEMS = [
   { key: "projets", label: "Mes projets", icon: FolderKanban },
@@ -33,9 +34,9 @@ const formatDate = (iso) => (iso ? new Date(`${iso}T12:00:00`).toLocaleDateStrin
 function AlerteBadge({ alr }) {
   if (!alr) return null;
   if (alr.level === "retard") {
-    return <span style={{ background: T.brickSoft, color: T.brick, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, border: `1px solid ${T.brick}33`, whiteSpace: "nowrap", fontWeight: 600 }}>En retard de {alr.jours} j</span>;
+    return <span style={{ background: T.brickSoft, color: T.brick, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, border: `1px solid ${alpha(T.brick, 20)}`, whiteSpace: "nowrap", fontWeight: 600 }}>En retard de {alr.jours} j</span>;
   }
-  return <span style={{ background: T.goldSoft, color: T.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, border: `1px solid ${T.gold}33`, whiteSpace: "nowrap", fontWeight: 600 }}>{alr.jours === 0 ? "Aujourd'hui" : `J-${alr.jours}`}</span>;
+  return <span style={{ background: T.goldSoft, color: T.gold, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase", padding: "3px 8px", borderRadius: 20, border: `1px solid ${alpha(T.gold, 20)}`, whiteSpace: "nowrap", fontWeight: 600 }}>{alr.jours === 0 ? "Aujourd'hui" : `J-${alr.jours}`}</span>;
 }
 
 export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }) {
@@ -129,9 +130,9 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
   if (!prestataire) {
     return (
-      <div style={{ minHeight: "100vh", background: T.ink, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", padding: 24 }}>
+      <div style={{ minHeight: "100vh", background: T.sidebar, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", padding: 24 }}>
         <div style={{ maxWidth: 420, textAlign: "center" }}>
-          <Handshake size={36} color={T.gold} style={{ marginBottom: 14 }} />
+          <Handshake size={36} style={{ color: T.gold, marginBottom: 14 }} />
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 19, marginBottom: 10 }}>Espace prestataire indisponible</div>
           <p style={{ color: "#B9BFCF", fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
             Votre compte n'est relié à aucune fiche prestataire. Contactez l'entreprise qui vous a invité
@@ -146,7 +147,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
       {navOpen && <div className="nav-overlay" onClick={() => setNavOpen(false)} />}
-      <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: 232, background: T.ink, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: 232, background: T.sidebar, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "22px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600 }}>Ma Bouate</span>
@@ -180,7 +181,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: T.goldFg, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {prestataire.nom?.[0]?.toUpperCase() || "P"}
             </div>
             <div style={{ minWidth: 0 }}>
@@ -201,12 +202,13 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
             <div title={online ? "En ligne — données synchronisées" : "Hors ligne — mode déconnecté actif"}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500, background: online ? T.tealSoft : T.brickSoft, color: online ? T.teal : T.brick, border: `1px solid ${online ? T.teal + "33" : T.brick + "33"}` }}>
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500, background: online ? T.tealSoft : T.brickSoft, color: online ? T.teal : T.brick, border: `1px solid ${alpha(online ? T.teal : T.brick, 20)}` }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: online ? T.teal : T.brick, boxShadow: `0 0 6px ${online ? T.teal : T.brick}` }} />
               {online ? <Wifi size={13} /> : <WifiOff size={13} />}
               <span>{online ? "En ligne" : "Hors ligne"}</span>
             </div>
             <NotifsBell userId={userId} entrepriseId={entrepriseId} />
+            <ThemeToggle />
             <button onClick={() => setAlertesOpen(!alertesOpen)} title="Alertes d'échéance"
               style={{ position: "relative", background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: alertes.length > 0 ? T.brick : T.inkSoft, flexShrink: 0 }}>
               <CalendarClock size={17} />
@@ -215,7 +217,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
               )}
             </button>
             {alertesOpen && (
-              <div style={{ position: "absolute", top: 44, right: 0, width: 320, background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 10px 30px rgba(22,33,58,.16)", zIndex: 40, overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 44, right: 0, width: 320, background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: `0 10px 30px ${alpha(T.sidebar, 16)}`, zIndex: 40, overflow: "hidden" }}>
                 <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 12.5, fontWeight: 700 }}>Échéances à surveiller</span>
                   <button onClick={() => setAlertesOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex" }}><X size={14} /></button>
@@ -239,7 +241,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
         <div className="app-content" style={{ padding: 30 }}>
           {alertes.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, background: enRetard.length > 0 ? T.brickSoft : T.goldSoft, border: `1px solid ${enRetard.length > 0 ? T.brick : T.gold}33`, marginBottom: 18, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, background: enRetard.length > 0 ? T.brickSoft : T.goldSoft, border: `1px solid ${alpha(enRetard.length > 0 ? T.brick : T.gold, 20)}`, marginBottom: 18, flexWrap: "wrap" }}>
               <AlertTriangle size={16} color={enRetard.length > 0 ? T.brick : T.gold} />
               <span style={{ fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
                 {enRetard.length > 0 && `${enRetard.length} tâche${enRetard.length > 1 ? "s" : ""} en retard`}
@@ -297,7 +299,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
               {contrats.map((c) => (
                 <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", background: T.paper, border: `1px solid ${T.line}`, borderRadius: 10, padding: "12px 16px", marginBottom: 8 }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, flexWrap: "wrap" }}>
-                    <FileSignature size={15} color={T.inkSoft} />
+                    <FileSignature size={15} style={{ color: T.inkSoft }} />
                     <span style={{ fontWeight: 600 }}>{c.titre}</span>
                     <Badge statut={c.statut} />
                     {c.envoyeLe && <span style={{ fontSize: 11.5, color: T.inkSoft }}>Envoyé le {formatDate(c.envoyeLe)}</span>}
@@ -348,7 +350,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
                           const sousTaches = taches.filter((st) => st.parentTaskId === t.id);
                           const sousTachesFaites = sousTaches.filter((st) => st.statut === "Terminée").length;
                           return (
-                            <div key={t.id} onClick={() => openDrawer(t)} style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 10, padding: "12px 14px", marginBottom: 10, cursor: "pointer", transition: "box-shadow .15s, transform .1s" }} onMouseOver={(e) => { e.currentTarget.style.boxShadow = "0 4px 14px rgba(22,33,58,.08)"; e.currentTarget.style.transform = "translateY(-1px)"; }} onMouseOut={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}>
+                            <div key={t.id} onClick={() => openDrawer(t)} style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 10, padding: "12px 14px", marginBottom: 10, cursor: "pointer", transition: "box-shadow .15s, transform .1s" }} onMouseOver={(e) => { e.currentTarget.style.boxShadow = `0 4px 14px ${alpha(T.sidebar, 8)}`; e.currentTarget.style.transform = "translateY(-1px)"; }} onMouseOut={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
                                 <span style={{ fontSize: 12.5, color: T.inkSoft, fontWeight: 500 }}>{projet?.nom || "Projet inconnu"}</span>
                                 <Badge statut={t.statut} />
@@ -437,7 +439,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
       )}
 
       {drawerOpen && drawerTask && (
-        <div style={{ position: "fixed", top: 0, right: 0, width: 420, maxWidth: "100%", height: "100vh", background: "#fff", borderLeft: `1px solid ${T.line}`, boxShadow: "-10px 0 30px rgba(22,33,58,.12)", zIndex: 100, display: "flex", flexDirection: "column", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+        <div style={{ position: "fixed", top: 0, right: 0, width: 420, maxWidth: "100%", height: "100vh", background: T.paper, borderLeft: `1px solid ${T.line}`, boxShadow: `-10px 0 30px ${alpha(T.sidebar, 12)}`, zIndex: 100, display: "flex", flexDirection: "column", fontFamily: "'IBM Plex Sans', sans-serif" }}>
           <div style={{ padding: "18px 20px", borderBottom: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600 }}>Détail de la tâche</div>
             <button onClick={() => { setDrawerOpen(false); setDrawerTask(null); setHistorique([]); }} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex" }}><X size={18} /></button>
@@ -481,7 +483,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
 
             <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                <History size={14} color={T.inkSoft} />
+                <History size={14} style={{ color: T.inkSoft }} />
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>Historique</div>
               </div>
               {loadingHistorique ? (
@@ -549,7 +551,7 @@ function FichierPortailList({ fichiers, fichiersParProjet, projetsAvecFichiers, 
     <div>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 18, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.paper, border: `1px solid ${T.line}`, borderRadius: 10, padding: "0 12px", flex: "1 1 220px", minWidth: 180 }}>
-          <Search size={14} color={T.inkSoft} />
+          <Search size={14} style={{ color: T.inkSoft }} />
           <input placeholder="Rechercher un fichier…" value={q} onChange={(e) => setQ(e.target.value)}
             style={{ border: "none", outline: "none", height: 38, fontSize: 13, flex: 1, background: "transparent", fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }} />
         </div>
@@ -570,7 +572,7 @@ function FichierPortailList({ fichiers, fichiersParProjet, projetsAvecFichiers, 
       {groupes.map(({ projet, liste }) => (
         <div key={projet.id} style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <FolderKanban size={14} color={T.gold} />
+            <FolderKanban size={14} style={{ color: T.gold }} />
             <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, fontWeight: 600 }}>{projet.nom}</span>
             <Badge statut={projet.statut} />
             <span style={{ fontSize: 11, color: T.inkSoft, fontFamily: "'IBM Plex Mono', monospace" }}>{liste.length} fichier{liste.length > 1 ? "s" : ""}</span>
@@ -672,13 +674,13 @@ function SetPasswordGate({ email, onDone, onLogout }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", padding: 20 }}>
+    <div style={{ minHeight: "100vh", background: T.sidebar, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", padding: 20 }}>
       <div style={{ width: 440, maxWidth: "100%" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 24, justifyContent: "center" }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Ma Bouate</span>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.gold, display: "inline-block", boxShadow: `0 0 12px ${T.gold}` }} />
         </div>
-        <Card style={{ padding: 30, background: "#FFFFFF", borderRadius: 16, boxShadow: "0 20px 40px rgba(0,0,0,0.35)" }}>
+        <Card style={{ padding: 30, background: T.paper, borderRadius: 16, boxShadow: `0 20px 40px ${alpha(T.sidebar, 35)}` }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.goldSoft, color: T.gold, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <KeyRound size={28} />
           </div>

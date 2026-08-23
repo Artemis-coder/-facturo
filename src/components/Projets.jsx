@@ -479,7 +479,7 @@ function FichierUploadForm({ projet, onUpload, onDone }) {
     <div>
       <input ref={ref} type="file" multiple hidden onChange={(e) => setChoisis(Array.from(e.target.files || []))} />
       <button type="button" onClick={() => ref.current?.click()} style={{ width: "100%", border: `1px dashed ${T.line}`, borderRadius: 8, background: "#fff", padding: "18px 12px", cursor: "pointer", fontSize: 12.5, color: T.inkSoft, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 10 }}>
-        <Upload size={17} color={T.gold} />
+        <Upload size={17} style={{ color: T.gold }} />
         <span>Cliquez pour choisir un ou plusieurs fichiers (50 Mo max. chacun)</span>
       </button>
       {choisis.length > 0 && (

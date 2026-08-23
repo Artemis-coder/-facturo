@@ -11,7 +11,7 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
   const projetActuel = projets?.find((p) => p.id === doc.projetId);
 
   return (
-    <div>
+    <div className="theme-light">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: T.inkSoft }}>{doc.id}</div>
@@ -23,7 +23,7 @@ export function DocPreview({ doc, client, onDownload, onEdit, lockedNote, editNo
 
       {projets && onLinkProjet && (
         <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: "10px 12px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <FolderKanban size={15} color={T.inkSoft} style={{ flexShrink: 0 }} />
+          <FolderKanban size={15} style={{ color: T.inkSoft, flexShrink: 0 }} />
           {!linking ? (
             <>
               <span style={{ fontSize: 12.5, color: T.inkSoft, flex: 1 }}>

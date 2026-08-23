@@ -6,6 +6,7 @@ import {
 import { T, inputStyle } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { Card, Field, Btn } from "./ui";
+import { ThemeToggle } from "./ThemeToggle";
 import { supabase } from "../lib/supabaseClient";
 import { SITE_URL } from "../lib/siteUrl";
 
@@ -83,7 +84,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
     return (
       <div style={{
         minHeight: "100vh",
-        background: `radial-gradient(circle at 50% 30%, #1E2942 0%, ${T.ink} 100%)`,
+        background: `radial-gradient(circle at 50% 30%, ${HERO.bgGlow} 0%, ${HERO.bg} 100%)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -150,6 +151,9 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
       position: "relative",
       overflow: "hidden"
     }}>
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <ThemeToggle />
+      </div>
       {/* Background ambient glow effect */}
       <div style={{
         position: "absolute",
@@ -158,7 +162,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
         width: "50vw",
         height: "50vw",
         borderRadius: "50%",
-        background: `radial-gradient(circle, ${T.gold}1A 0%, transparent 70%)`,
+        background: `radial-gradient(circle, ${alpha(T.gold, 10)} 0%, transparent 70%)`,
         pointerEvents: "none",
         filter: "blur(60px)"
       }} />
@@ -169,7 +173,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
         width: "50vw",
         height: "50vw",
         borderRadius: "50%",
-        background: `radial-gradient(circle, ${T.teal}1A 0%, transparent 70%)`,
+        background: `radial-gradient(circle, ${alpha(T.teal, 10)} 0%, transparent 70%)`,
         pointerEvents: "none",
         filter: "blur(60px)"
       }} />
@@ -200,7 +204,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
               width: 40, height: 40, borderRadius: 10,
               background: `linear-gradient(135deg, ${T.gold} 0%, #D49D43 100%)`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 4px 14px ${T.gold}44`, fontWeight: 700, fontSize: 20, color: "#fff"
+               boxShadow: `0 4px 14px ${alpha(T.gold, 27)}`, fontWeight: 700, fontSize: 20, color: "#fff"
             }}>
               M
             </div>
@@ -297,7 +301,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, color: "#fff", fontWeight: 700 }}>Ma Bouate</span>
             </div>
 
-            <Card style={{
+            <Card className="theme-light" style={{
               padding: 32,
               borderRadius: 16,
               background: "#FFFFFF",
@@ -454,7 +458,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
                     padding: "10px 14px",
                     marginBottom: 16,
                     lineHeight: 1.5,
-                    border: `1px solid ${T.brick}33`
+                     border: `1px solid ${alpha(T.brick, 20)}`
                   }}>
                     {error}
                   </div>
@@ -469,7 +473,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
                     padding: "10px 14px",
                     marginBottom: 16,
                     lineHeight: 1.5,
-                    border: `1px solid ${T.teal}33`
+                     border: `1px solid ${alpha(T.teal, 20)}`
                   }}>
                     {successMsg}
                   </div>
@@ -529,7 +533,7 @@ export function Login({ onSignIn, onSignUp, onSignInWithOtp }) {
                   background: "rgba(201, 138, 43, 0.1)",
                   padding: "10px 16px",
                   borderRadius: 10,
-                  border: `1px solid ${T.gold}33`,
+                   border: `1px solid ${alpha(T.gold, 20)}`,
                   transition: "all 0.2s ease"
                 }}
               >

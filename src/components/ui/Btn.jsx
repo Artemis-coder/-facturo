@@ -1,12 +1,12 @@
 import React from "react";
-import { T } from "../../lib/theme";
+import { T, alpha } from "../../lib/theme";
 
 export function Btn({ children, variant = "primary", onClick, icon: Icon, type = "button", small, fullWidth, disabled }) {
   const styles = {
-    primary: { bg: T.ink, fg: "#fff", border: T.ink },
-    gold: { bg: T.gold, fg: "#fff", border: T.gold },
+    primary: { bg: T.invert, fg: T.invertFg, border: T.invert },
+    gold: { bg: T.gold, fg: T.goldFg, border: T.gold },
     ghost: { bg: "transparent", fg: T.ink, border: T.line },
-    danger: { bg: "transparent", fg: T.brick, border: T.brickSoft },
+    danger: { bg: "transparent", fg: T.brick, border: alpha(T.brick, 20) },
   }[variant];
   return (
     <button type={type} onClick={onClick} disabled={disabled} style={{

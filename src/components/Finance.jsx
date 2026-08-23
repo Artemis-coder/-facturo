@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet, ChevronLeft, ChevronRight, Smartphone } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
-import { T, fmt, inputStyle } from "../lib/theme";
+import { T, fmt, inputStyle, PALETTES } from "../lib/theme";
+import { useTheme } from "../lib/useTheme";
 import { td } from "../lib/tableStyles";
 import { Card, Btn, Modal, Field, Select, TableShell, EmptyState, KpiBar } from "./ui";
 
@@ -34,6 +35,8 @@ function fluxParMois(paiements, depenses) {
 }
 
 export function Finance({ paiements, depenses, clients, saveDepense, deleteDepense, userId, notify, canManage = true, canDelete = false }) {
+  const { isDark } = useTheme();
+  const P = isDark ? PALETTES.dark : PALETTES.light;
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [filtre, setFiltre] = useState("Tout");
@@ -133,13 +136,13 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Entrées &amp; sorties (6 derniers mois)</div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={historique}>
-              <CartesianGrid stroke={T.line} vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 12, fill: T.inkSoft }} axisLine={{ stroke: T.line }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: T.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
-              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${T.line}` }} />
+              <CartesianGrid stroke={P.line} vertical={false} />
+              <XAxis dataKey="mois" tick={{ fontSize: 12, fill: P.inkSoft }} axisLine={{ stroke: P.line }} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
+              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${P.line}`, background: P.paper, color: P.ink }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line name="Entrées" type="monotone" dataKey="entrees" stroke={T.teal} strokeWidth={2.5} dot={{ r: 3, fill: T.teal }} />
-              <Line name="Sorties" type="monotone" dataKey="sorties" stroke={T.brick} strokeWidth={2.5} dot={{ r: 3, fill: T.brick }} />
+              <Line name="Entrées" type="monotone" dataKey="entrees" stroke={P.teal} strokeWidth={2.5} dot={{ r: 3, fill: P.teal }} />
+              <Line name="Sorties" type="monotone" dataKey="sorties" stroke={P.brick} strokeWidth={2.5} dot={{ r: 3, fill: P.brick }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -185,8 +188,8 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
         {["Tout", "Entrée", "Sortie"].map((f) => (
           <button key={f} onClick={() => setFiltre(f)} style={{
             padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
-            border: `1px solid ${filtre === f ? T.ink : T.line}`, background: filtre === f ? T.ink : "#fff",
-            color: filtre === f ? "#fff" : T.inkSoft,
+            border: `1px solid ${filtre === f ? T.ink : T.line}`, background: filtre === f ? T.invert : T.paper,
+            color: filtre === f ? T.invertFg : T.inkSoft,
           }}>{f === "Tout" ? "Tout" : f + "s"}</button>
         ))}
       </div>

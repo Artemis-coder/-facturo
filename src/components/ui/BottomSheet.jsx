@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { T } from "../../lib/theme";
+import { T, alpha } from "../../lib/theme";
 
 export function BottomSheet({ open, onClose, title, children, maxHeight = "92dvh", zIndex = 210 }) {
   const panelRef = useRef(null);
@@ -12,12 +12,12 @@ export function BottomSheet({ open, onClose, title, children, maxHeight = "92dvh
   }, [open, maxHeight]);
   if (!open) return null;
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "#16213A66", zIndex, animation: "fadeIn .2s ease" }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.overlay, zIndex, animation: "fadeIn .2s ease" }}>
       <div ref={panelRef} onClick={(e) => e.stopPropagation()} style={{
         position: "absolute", left: 0, right: 0, bottom: 0,
         background: T.paper, borderRadius: "18px 18px 0 0",
         border: `1px solid ${T.line}`, borderBottom: "none",
-        boxShadow: "0 -12px 32px rgba(22,33,58,.2)",
+        boxShadow: `0 -12px 32px ${alpha(T.sidebar, 20)}`,
         animation: "sheetIn .24s cubic-bezier(.2,.8,.3,1)",
         paddingBottom: "env(safe-area-inset-bottom)",
         fontFamily: "'IBM Plex Sans', sans-serif",

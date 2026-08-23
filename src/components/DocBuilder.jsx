@@ -81,14 +81,14 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
             background: "rgba(255,255,255,0.08)", padding: "6px 12px", borderRadius: 20,
             fontSize: 12, border: "1px solid rgba(255,255,255,0.12)"
           }}>
-            <Sparkles size={13} color={T.gold} /> Modèle dynamique
+            <Sparkles size={13} style={{ color: T.gold }} /> Modèle dynamique
           </div>
         </div>
 
         {/* Company & Client Selector Card */}
-        <div style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, padding: 18 }}>
+        <div style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, padding: 18 }}>
           <div style={{ fontSize: 12, textTransform: "uppercase", fontWeight: 700, color: T.inkSoft, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-            <Building2 size={14} color={T.gold} /> Informations Client
+            <Building2 size={14} style={{ color: T.gold }} /> Informations Client
           </div>
 
           <Field label="Client Destinataire*">
@@ -137,12 +137,12 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
 
         {/* Date & Devise */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, padding: 14 }}>
+          <div style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, padding: 14 }}>
             <Field label="Date d'émission">
               <input type="date" style={inputStyle} value={dateDoc} onChange={(e) => setDateDoc(e.target.value)} />
             </Field>
           </div>
-          <div style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, padding: 14 }}>
+          <div style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, padding: 14 }}>
             <Field label="Devise">
               <Select value={devise} onChange={(e) => setDevise(e.target.value)}>
                 <option value="FCFA">FCFA (XOF / XAF)</option>
@@ -154,10 +154,10 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
         </div>
 
         {/* Line Items Section */}
-        <div style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, padding: 18 }}>
+        <div style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, padding: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, display: "flex", alignItems: "center", gap: 6 }}>
-              <FileText size={15} color={T.gold} /> Services & Prestations ({lignes.length})
+              <FileText size={15} style={{ color: T.gold }} /> Services & Prestations ({lignes.length})
             </div>
             <span style={{ fontSize: 11.5, color: T.inkSoft }}>Calcul automatique</span>
           </div>
@@ -270,7 +270,7 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
         </div>
 
         {/* Global Discounts & Notes */}
-        <div style={{ background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, padding: 18 }}>
+        <div style={{ background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <input
               type="checkbox"
@@ -311,7 +311,7 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
         {/* Footer Actions */}
         <div style={{
           display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "flex-end",
-          background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, padding: 16
+          background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, padding: 16
         }}>
           {onClose && <Btn variant="ghost" onClick={onClose}>Annuler</Btn>}
           <Btn variant="gold" onClick={() => handleSave("Brouillon")}>
@@ -324,7 +324,7 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
       </div>
 
       {/* RIGHT COLUMN: Real-Time Live Preview Canvas */}
-      <div style={{
+      <div className="theme-light" style={{
         flex: "1 1 480px", minWidth: 320, background: "#F4F6F9",
         border: `1px solid ${T.line}`, borderRadius: 14, padding: 20,
         position: "sticky", top: 10
@@ -332,7 +332,7 @@ export function DocBuilder({ clients, produits, projets = [], entreprise, onSave
         {/* Preview Toolbar Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, display: "flex", alignItems: "center", gap: 6 }}>
-            <Sparkles size={14} color={T.gold} /> Aperçu en temps réel
+            <Sparkles size={14} style={{ color: T.gold }} /> Aperçu en temps réel
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             <button

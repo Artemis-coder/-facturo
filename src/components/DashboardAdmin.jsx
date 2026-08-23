@@ -1,7 +1,8 @@
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { DollarSign, PieChart, Receipt, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
-import { T, fmt } from "../lib/theme";
+import { T, fmt, PALETTES } from "../lib/theme";
+import { useTheme } from "../lib/useTheme";
 import { montantEncaisseTotal, montantPaiementsPartiels } from "../lib/helpers";
 import { Card, Badge, KpiBar } from "./ui";
 
@@ -24,6 +25,8 @@ function caParMois(factures) {
 }
 
 export function DashboardAdmin({ factures, devis, clients, setView }) {
+  const { isDark } = useTheme();
+  const P = isDark ? PALETTES.dark : PALETTES.light;
   const cli = (id) => clients.find((c) => c.id === id);
   const montantEncaisse = montantEncaisseTotal(factures);
   const paiementsPartiels = montantPaiementsPartiels(factures);
@@ -53,11 +56,11 @@ export function DashboardAdmin({ factures, devis, clients, setView }) {
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={historique}>
-              <CartesianGrid stroke={T.line} vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 12, fill: T.inkSoft }} axisLine={{ stroke: T.line }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: T.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
-              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${T.line}` }} />
-              <Line type="monotone" dataKey="ca" stroke={T.gold} strokeWidth={2.5} dot={{ r: 3, fill: T.gold }} />
+              <CartesianGrid stroke={P.line} vertical={false} />
+              <XAxis dataKey="mois" tick={{ fontSize: 12, fill: P.inkSoft }} axisLine={{ stroke: P.line }} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
+              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${P.line}`, background: P.paper, color: P.ink }} />
+              <Line type="monotone" dataKey="ca" stroke={P.gold} strokeWidth={2.5} dot={{ r: 3, fill: P.gold }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

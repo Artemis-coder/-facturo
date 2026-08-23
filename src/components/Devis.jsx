@@ -67,8 +67,8 @@ export function Devis({ devis, clients, produits, projets, entreprise, createDev
         {statuts.map((s) => (
           <button key={s} onClick={() => setFilter(s)} style={{
             padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
-            border: `1px solid ${filter === s ? T.ink : T.line}`, background: filter === s ? T.ink : "#fff",
-            color: filter === s ? "#fff" : T.inkSoft,
+            border: `1px solid ${filter === s ? T.ink : T.line}`, background: filter === s ? T.invert : T.paper,
+            color: filter === s ? T.invertFg : T.inkSoft,
           }}>{s}</button>
         ))}
       </div>

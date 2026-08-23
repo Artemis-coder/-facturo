@@ -1,0 +1,103 @@
+/* Tokens de thème Ma Bouate — source de vérité pour les variables CSS.
+   ⚠️ Garder en synchronisation avec PALETTES dans src/lib/theme.js
+   (les graphiques recharts et quelques usages SVG consomment les hex bruts). */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --t-bg: #EDEFE9;
+  --t-paper: #FFFFFF;
+  --t-ink: #16213A;
+  --t-inkSoft: #5B647A;
+  --t-line: #D9D6CC;
+  --t-gold: #C98A2B;
+  --t-goldSoft: #F3E3C6;
+  --t-teal: #1F7A63;
+  --t-tealSoft: #DCEDE6;
+  --t-brick: #AE3B45;
+  --t-brickSoft: #F3DCDE;
+  --t-slate: #5C6B8A;
+  --t-slateSoft: #E4E7F0;
+  --t-hover: #FAF8F3;
+  --t-tabbar: rgba(255, 255, 255, 0.96);
+  --t-overlay: rgba(22, 33, 58, 0.36);
+  --t-sidebar: #16213A;
+  --t-invert: #16213A;
+  --t-invertFg: #FFFFFF;
+  --t-goldFg: #FFFFFF;
+  --t-brickSolid: #AE3B45;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --t-bg: #0E1420;
+  --t-paper: #161D2C;
+  --t-ink: #EDF0F6;
+  --t-inkSoft: #9AA3B8;
+  --t-line: #2B3346;
+  --t-gold: #E0A63F;
+  --t-goldSoft: #3B3017;
+  --t-teal: #4CBE97;
+  --t-tealSoft: #143229;
+  --t-brick: #E06A72;
+  --t-brickSoft: #3A2024;
+  --t-slate: #A7B2CB;
+  --t-slateSoft: #242D42;
+  --t-hover: #1C2437;
+  --t-tabbar: rgba(22, 29, 44, 0.96);
+  --t-overlay: rgba(2, 6, 14, 0.62);
+  --t-sidebar: #101726;
+  --t-invert: #EDF0F6;
+  --t-invertFg: #101623;
+  --t-goldFg: #221605;
+  --t-brickSolid: #B23A45;
+}
+
+/* Zones "papier" (aperçu / impression de documents) : toujours en clair. */
+.theme-light,
+[data-theme="dark"] .theme-light {
+  color-scheme: light;
+  --t-bg: #EDEFE9;
+  --t-paper: #FFFFFF;
+  --t-ink: #16213A;
+  --t-inkSoft: #5B647A;
+  --t-line: #D9D6CC;
+  --t-gold: #C98A2B;
+  --t-goldSoft: #F3E3C6;
+  --t-teal: #1F7A63;
+  --t-tealSoft: #DCEDE6;
+  --t-brick: #AE3B45;
+  --t-brickSoft: #F3DCDE;
+  --t-slate: #5C6B8A;
+  --t-slateSoft: #E4E7F0;
+  --t-hover: #FAF8F3;
+  --t-tabbar: rgba(255, 255, 255, 0.96);
+  --t-overlay: rgba(22, 33, 58, 0.36);
+  --t-sidebar: #16213A;
+  --t-invert: #16213A;
+  --t-invertFg: #FFFFFF;
+  --t-goldFg: #FFFFFF;
+  --t-brickSolid: #AE3B45;
+}
+
+html,
+body {
+  background: var(--t-bg);
+}
+
+body {
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Transition douce lors du changement de thème */
+body,
+.app-shell,
+.app-header,
+.app-sidebar,
+.base-transition,
+input,
+select,
+textarea {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}

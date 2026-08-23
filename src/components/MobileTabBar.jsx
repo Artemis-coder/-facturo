@@ -33,7 +33,7 @@ export function MobileTabBar({ tabs = [], quickActions = [], menuItems = [], vie
     <>
       <nav className="mobile-tabbar" style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 90,
-        background: `rgba(255,255,255,.96)`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+        background: T.tabbar, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
         borderTop: `1px solid ${T.line}`,
         paddingBottom: "env(safe-area-inset-bottom)",
       }}>
@@ -43,7 +43,7 @@ export function MobileTabBar({ tabs = [], quickActions = [], menuItems = [], vie
             <div style={{ width: 72, position: "relative", flexShrink: 0 }}>
               <button onClick={() => setSheetOpen(true)} title="Créer" style={{
                 position: "absolute", left: "50%", bottom: 14, transform: "translateX(-50%)",
-                width: 52, height: 52, borderRadius: "50%", border: "4px solid #fff",
+                width: 52, height: 52, borderRadius: "50%", border: `4px solid ${T.paper}`,
                 background: `linear-gradient(135deg, ${T.gold} 0%, #D49D43 100%)`, color: "#fff",
                 boxShadow: "0 6px 16px rgba(201,138,43,.45)", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
@@ -93,14 +93,14 @@ export function MobileTabBar({ tabs = [], quickActions = [], menuItems = [], vie
               <button key={item.key} onClick={() => { setView(item.key); setMenuOpen(false); }} style={{
                 display: "flex", alignItems: "center", gap: 14, minHeight: 56, width: "100%",
                 background: active ? T.goldSoft : T.paper,
-                border: `1px solid ${active ? T.gold + "33" : T.line}`,
+                border: `1px solid ${active ? alpha(T.gold, 20) : T.line}`,
                 borderRadius: 14,
                 padding: "12px 14px", cursor: "pointer", textAlign: "left",
                 fontFamily: "'IBM Plex Sans', sans-serif",
               }}>
                 <span style={{
                   width: 40, height: 40, borderRadius: 12,
-                  background: active ? T.gold + "22" : T.bg,
+                  background: active ? alpha(T.gold, 13) : T.bg,
                   color: active ? T.gold : T.inkSoft,
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>

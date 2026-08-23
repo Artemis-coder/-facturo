@@ -1,11 +1,11 @@
 import React from "react";
-import { T } from "../../lib/theme";
+import { T, alpha } from "../../lib/theme";
 
 export function Spinner({ size = 22, color = T.gold }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
-      border: `2.5px solid ${color}33`, borderTopColor: color,
+      border: `2.5px solid ${alpha(color, 20)}`, borderTopColor: color,
       animation: "facturo-spin .7s linear infinite",
     }} />
   );

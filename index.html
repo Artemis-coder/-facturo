@@ -15,6 +15,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Ma Bouate" />
+
+    <!-- Applique le thème avant le premier rendu (anti-flash / FOUC) -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("facturo:theme");
+          if (t !== "dark" && t !== "light") t = "auto";
+          var dark = t === "dark" || (t === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

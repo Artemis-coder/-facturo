@@ -81,8 +81,8 @@ export function Clients({ clients, onSaveClient, devis, factures, projets, notif
         {["Tous", "Prospect", "Client"].map((f) => (
           <button key={f} onClick={() => setFiltre(f)} style={{
             padding: "6px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
-            border: `1px solid ${filtre === f ? T.ink : T.line}`, background: filtre === f ? T.ink : "#fff",
-            color: filtre === f ? "#fff" : T.inkSoft,
+            border: `1px solid ${filtre === f ? T.ink : T.line}`, background: filtre === f ? T.invert : T.paper,
+            color: filtre === f ? T.invertFg : T.inkSoft,
           }}>{f === "Tous" ? "Tous" : f === "Prospect" ? "Prospects" : "Clients validés"}</button>
         ))}
       </div>

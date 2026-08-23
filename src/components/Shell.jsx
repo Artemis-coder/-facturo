@@ -3,13 +3,14 @@ import {
   LayoutDashboard, FileText, Receipt, Users, Package, BarChart3,
   Building2, Settings, X, LogOut, UserCog, Download, FolderKanban, Wallet, Eye, EyeOff, Wifi, WifiOff, FileSignature, Briefcase, ChevronDown, Handshake, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
-import { T } from "../lib/theme";
+import { T, alpha } from "../lib/theme";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
 import { useOnlineStatus } from "../lib/useOnlineStatus";
 import { useIsMobile } from "../lib/useIsMobile";
 import { Modal, Btn } from "./ui";
 import { NotifsBell } from "./NotifsBell";
 import { MobileTabBar } from "./MobileTabBar";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -125,7 +126,7 @@ const go = (key) => {
   return (
     <div className="app-shell" style={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: "'IBM Plex Sans', sans-serif", color: T.ink }}>
       {navOpen && <div className="nav-overlay" onClick={() => setNavOpen(false)} />}
-      <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: rail ? 64 : 232, transition: "width .2s ease", background: T.ink, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      <aside className={"app-sidebar" + (navOpen ? " open" : "")} style={{ width: rail ? 64 : 232, transition: "width .2s ease", background: T.sidebar, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <div style={{ padding: "22px 20px", display: "flex", alignItems: "center", justifyContent: rail ? "center" : "space-between" }}>
             <div style={{ display: rail ? "flex" : "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
               {rail
@@ -272,7 +273,7 @@ const go = (key) => {
         {!rail && (
           <div style={{ padding: "16px 20px", borderTop: "1px solid #ffffff1f" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: T.goldFg, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                 {entreprise?.logoUrl
                   ? <img src={entreprise.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : entreprise?.nom?.[0]?.toUpperCase() || "F"}
@@ -305,7 +306,7 @@ const go = (key) => {
                 fontWeight: 500,
                 background: online ? T.tealSoft : T.brickSoft,
                 color: online ? T.teal : T.brick,
-                border: `1px solid ${online ? T.teal + "33" : T.brick + "33"}`,
+                border: `1px solid ${alpha(online ? T.teal : T.brick, 20)}`,
                 transition: "all 0.3s ease",
               }}
             >
@@ -318,6 +319,7 @@ const go = (key) => {
               <span className="connection-label">{online ? "En ligne" : "Hors ligne"}</span>
             </div>
             <NotifsBell userId={userId} entrepriseId={entreprise?.id} />
+            <ThemeToggle />
             <button onClick={onToggleAmounts} title={amountsHidden ? "Afficher les montants" : "Masquer les montants"}
               style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: amountsHidden ? T.gold : T.inkSoft, flexShrink: 0 }}>
               {amountsHidden ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -325,7 +327,7 @@ const go = (key) => {
             <div style={{ position: "relative" }}>
               <button onClick={() => setProfileOpen((o) => !o)} title="Mon profil"
                 style={{ background: "none", border: "none", borderRadius: 8, padding: "4px 6px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: T.goldFg, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {initiales}
                 </span>
                 <span className="user-profile-name" style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, maxWidth: 140, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{profile?.nom_complet}</span>
@@ -334,9 +336,9 @@ const go = (key) => {
               {profileOpen && (
                 <>
                   <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={() => setProfileOpen(false)} />
-                  <div className="profile-popover" style={{ position: "absolute", top: 44, right: 0, width: 260, maxWidth: "calc(100vw - 32px)", background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: "0 12px 32px rgba(22,33,58,.16)", zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  <div className="profile-popover" style={{ position: "absolute", top: 44, right: 0, width: 260, maxWidth: "calc(100vw - 32px)", background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: `0 12px 32px ${alpha(T.sidebar, 16)}`, zIndex: 201, overflow: "hidden", fontFamily: "'IBM Plex Sans', sans-serif" }}>
                     <div style={{ padding: 14, borderBottom: `1px solid ${T.line}`, background: T.bg, display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 8, background: T.gold, color: "#fff", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 8, background: T.gold, color: T.goldFg, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {initiales}
                       </div>
                       <div style={{ minWidth: 0 }}>
@@ -402,7 +404,7 @@ const go = (key) => {
 
           <div style={{ background: T.bg, padding: 14, borderRadius: 10, marginBottom: 20 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <Download size={15} color={T.gold} /> Selon votre navigateur et votre appareil :
+              <Download size={15} style={{ color: T.gold }} /> Selon votre navigateur et votre appareil :
             </div>
 
             <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 10 }}>

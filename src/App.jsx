@@ -16,7 +16,7 @@ import { useFichiersProjets } from "./lib/useFichiersProjets";
 import { useAmountVisibility } from "./lib/useAmountVisibility";
 import { useOnlineStatus } from "./lib/useOnlineStatus";
 import { flushQueue, queueLength } from "./lib/offline";
-import { T } from "./lib/theme";
+import { T, alpha } from "./lib/theme";
 import { Login } from "./components/Login";
 import { Shell } from "./components/Shell";
 import { Dashboard } from "./components/Dashboard";
@@ -42,15 +42,16 @@ const FONT_LINKS = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@
 const GLOBAL_STYLE = `
   * { box-sizing: border-box; }
   html, body { scroll-behavior: smooth; }
-  body { margin: 0; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; -webkit-tap-highlight-color: transparent; background: ${T.bg}; }
   input, select, textarea { transition: border-color .15s, box-shadow .15s; outline: none; }
-  input:focus, select:focus, textarea:focus { border-color: ${T.gold} !important; box-shadow: 0 0 0 3px ${T.goldSoft}; }
+  input:focus, select:focus, textarea:focus { border-color: ${T.gold} !important; box-shadow: 0 0 0 3px ${alpha(T.gold, 18)}; }
   table tbody tr { transition: background .12s; }
-  table tbody tr:hover { background: #FAF8F3; }
+  table tbody tr:hover { background: ${T.hover}; }
   button { font-family: inherit; touch-action: manipulation; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #D9D6CC; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: ${T.line}; border-radius: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
+  option { background: var(--t-paper); color: var(--t-ink); }
   @keyframes drawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
   @keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -59,7 +60,7 @@ const GLOBAL_STYLE = `
   button, a { transition: opacity .15s, transform .1s, box-shadow .15s; }
   button:active { transform: scale(.97); }
   .kpi-card { transition: box-shadow .15s, transform .15s; }
-  .kpi-card:hover { box-shadow: 0 4px 14px rgba(22,33,58,.08); transform: translateY(-1px); }
+  .kpi-card:hover { box-shadow: 0 4px 14px ${alpha(T.ink, 8)}; transform: translateY(-1px); }
   .nav-overlay { display: none; }
   .mobile-tabbar { display: none; }
   .modal-handle, .notifs-handle { display: none; }
@@ -69,13 +70,13 @@ const GLOBAL_STYLE = `
     input, select, textarea { font-size: 16px !important; }
     .app-shell { min-height: 100vh; min-height: 100dvh; padding-top: env(safe-area-inset-top); }
     .app-sidebar { position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; z-index: 60; transform: translateX(-100%); transition: transform .25s ease; width: min(300px, 86vw) !important; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-    .app-sidebar.open { transform: translateX(0); box-shadow: 12px 0 32px rgba(22,33,58,.25); }
+    .app-sidebar.open { transform: translateX(0); box-shadow: 12px 0 32px ${alpha(T.sidebar, 25)}; }
     .nav-close-btn { display: flex !important; }
     .nav-menu-btn { display: flex !important; }
     .nav-collapse-btn { display: none !important; }
     .nav-item { min-height: 46px; }
     .user-profile-name { display: none !important; }
-    .nav-overlay { display: block; position: fixed; inset: 0; background: #16213A66; z-index: 55; animation: fadeIn .2s ease; }
+    .nav-overlay { display: block; position: fixed; inset: 0; background: ${T.overlay}; z-index: 55; animation: fadeIn .2s ease; }
     .app-header { padding: 12px 14px !important; gap: 10px !important; }
     .app-header-title { font-size: 17px !important; }
     .app-content { padding: 14px 14px calc(78px + env(safe-area-inset-bottom)) !important; }
@@ -86,7 +87,7 @@ const GLOBAL_STYLE = `
     .notifs-handle { display: block; width: 40px; height: 4px; border-radius: 2px; background: ${T.line}; margin: 8px auto 0; }
     .notifs-list { max-height: none !important; flex: 1; }
     .modal-overlay { z-index: 210 !important; }
-    .modal-drawer { top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: auto !important; max-height: 92vh; max-height: 92dvh; width: 100% !important; max-width: 100% !important; border-left: none !important; border-top: 1px solid ${T.line}; border-radius: 18px 18px 0 0 !important; box-shadow: 0 -12px 32px rgba(22,33,58,.2) !important; animation: sheetIn .24s cubic-bezier(.2,.8,.3,1) !important; padding-bottom: env(safe-area-inset-bottom); }
+    .modal-drawer { top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; height: auto !important; max-height: 92vh; max-height: 92dvh; width: 100% !important; max-width: 100% !important; border-left: none !important; border-top: 1px solid ${T.line}; border-radius: 18px 18px 0 0 !important; box-shadow: 0 -12px 32px ${alpha(T.overlay, 40)} !important; animation: sheetIn .24s cubic-bezier(.2,.8,.3,1) !important; padding-bottom: env(safe-area-inset-bottom); }
     .modal-handle { display: block; width: 40px; height: 4px; border-radius: 2px; background: ${T.line}; margin: 10px auto 0; flex-shrink: 0; }
     .modal-body { padding: 16px !important; }
     .grid-kpi { display: grid !important; grid-template-columns: none !important; grid-auto-flow: column !important; grid-auto-columns: 82% !important; overflow-x: auto !important; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; }
@@ -116,7 +117,7 @@ function GlobalStyles() {
 
 function FullscreenMessage({ children }) {
   return (
-    <div style={{ minHeight: "100vh", background: T.ink, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14 }}>
+    <div style={{ minHeight: "100vh", background: T.sidebar, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14 }}>
       {children}
     </div>
   );
@@ -288,7 +289,7 @@ export default function App() {
         )}
       </Shell>
       {!online && (
-        <div className="offline-banner" style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: T.brick, color: "#fff", padding: "9px 18px", borderRadius: 30, fontSize: 12.5, zIndex: 200, boxShadow: "0 6px 20px rgba(22,33,58,.25)" }}>
+        <div className="offline-banner" style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: T.brickSolid, color: "#fff", padding: "9px 18px", borderRadius: 30, fontSize: 12.5, zIndex: 200, boxShadow: `0 6px 20px ${alpha(T.sidebar, 25)}` }}>
           Hors ligne — les modifications seront synchronisées automatiquement ({pendingCount} en attente)
         </div>
       )}

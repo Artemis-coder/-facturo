@@ -1,17 +1,17 @@
 import React from "react";
 import { X } from "lucide-react";
-import { T } from "../../lib/theme";
+import { T, alpha } from "../../lib/theme";
 
 export function Modal({ title, onClose, children, wide, extraWide }) {
   return (
-    <div onClick={onClose} className="modal-overlay" style={{ position: "fixed", inset: 0, background: "#16213A5C", zIndex: 50 }}>
+    <div onClick={onClose} className="modal-overlay" style={{ position: "fixed", inset: 0, background: T.overlay, zIndex: 50 }}>
       <div onClick={(e) => e.stopPropagation()} className="modal-drawer" style={{
         position: "absolute", top: 0, right: 0, height: "100%",
         width: extraWide ? 1160 : (wide ? 600 : 420), maxWidth: "96vw",
         background: T.paper, borderLeft: `1px solid ${T.line}`,
         borderRadius: "18px 0 0 18px", overflow: "hidden",
         display: "flex", flexDirection: "column",
-        boxShadow: "-10px 0 28px rgba(22,33,58,.16)",
+        boxShadow: `-10px 0 28px ${alpha(T.sidebar, 16)}`,
         animation: "drawerIn .24s cubic-bezier(.2,.8,.3,1)",
       }}>
         <div className="modal-handle" />

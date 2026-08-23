@@ -1,5 +1,5 @@
 import React from "react";
-import { T } from "../../lib/theme";
+import { T, alpha } from "../../lib/theme";
 
 export function Badge({ statut }) {
   const map = {
@@ -29,7 +29,7 @@ export function Badge({ statut }) {
     <span style={{
       background: c.bg, color: c.fg, fontFamily: "'IBM Plex Mono', monospace",
       fontSize: 11, letterSpacing: 0.4, textTransform: "uppercase", padding: "3px 8px",
-      borderRadius: 20, border: `1px solid ${c.fg}33`, whiteSpace: "nowrap", fontWeight: 600,
+      borderRadius: 20, border: `1px solid ${alpha(c.fg, 20)}`, whiteSpace: "nowrap", fontWeight: 600,
     }}>{statut}</span>
   );
 }
