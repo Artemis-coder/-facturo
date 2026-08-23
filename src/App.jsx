@@ -170,7 +170,7 @@ export default function App() {
   const { projets, saveProjet, changerStatut, deleteProjet, loading: loadingProjets } = useProjets(entrepriseId);
   const { paiements, loading: loadingPaiements } = usePaiements(entrepriseId);
   const { depenses, saveDepense, deleteDepense, loading: loadingDepenses, reload: reloadDepenses } = useDepenses(entrepriseId);
-  const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus, signContract, uploadContractDocument, getContractDocuments } = useContracts(entrepriseId, userId);
+  const { templates, contracts, loading: loadingContracts, saveTemplate, uploadTemplateSource, suggestTemplateFromSource, suggestContractFields, saveContract, updateContract, updateStatus: updateContractStatus, deleteContract, signContract, uploadContractDocument, getContractDocuments } = useContracts(entrepriseId, userId);
   const { prestataires, liens: liensPrestataires, taches, loading: loadingPrestataires, savePrestataire, deletePrestataire, affecterPrestataire, detacherPrestataire, saveTache, deleteTache, inviterPrestataire, renvoyerInvitationPrestataire } = usePrestataires(entrepriseId, userId);
   const { fichiers: fichiersProjets, loading: loadingFichiers, uploadFichier, supprimerFichier } = useFichiersProjets(entrepriseId, userId);
 
