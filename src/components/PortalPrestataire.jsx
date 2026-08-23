@@ -279,7 +279,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           </div>
         </header>
 
-        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0 }}>
           {alertes.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, background: enRetard.length > 0 ? T.brickSoft : T.goldSoft, border: `1px solid ${alpha(enRetard.length > 0 ? T.brick : T.gold, 20)}`, marginBottom: 18, flexWrap: "wrap" }}>
               <AlertTriangle size={16} color={enRetard.length > 0 ? T.brick : T.gold} />

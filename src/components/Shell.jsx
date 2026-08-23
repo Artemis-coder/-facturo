@@ -388,7 +388,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             </div>
           </div>
         </header>
-        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>{children}</div>
+        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0 }}>{children}</div>
       </main>
 
       {isMobile && (
