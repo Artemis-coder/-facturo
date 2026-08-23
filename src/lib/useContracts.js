@@ -69,7 +69,7 @@ export function useContracts(entrepriseId, userId) {
       await supabase.from("contract_history").insert({ contract_id: data.id, action: "Création", detail: "Contrat créé en brouillon", created_by: userId });
       await load();
     }
-    return { error };
+    return { error, contractId: data?.id || null };
   };
 
   const updateContract = async (contract, form) => {

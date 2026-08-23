@@ -199,7 +199,26 @@ export function Contracts({ templates, contracts, clients, factures, devis, proj
       )}
       {building && building.mode === "import" && (
         <Modal title="Importer un contrat (PDF)" onClose={() => setBuilding(null)} extraWide>
-          <ContractImport clients={clients} prestataires={prestataires} projets={projets} onSave={async (form) => { const { error } = await saveContract({ ...form, contenu: form.contenu || "Contrat importé", templateId: null }); if (!error) { notify("Contrat importé en brouillon"); setBuilding(null); } else { notify(error.message || "Échec de l'import"); } }} notify={notify} />
+          <ContractImport clients={clients} prestataires={prestataires} projets={projets} onSave={async (form) => {
+            const { pdfFile, ...contractForm } = form;
+            const { error, contractId } = await saveContract({ ...contractForm, contenu: contractForm.contenu || "Contrat importé", templateId: null });
+            if (error) {
+              notify(error.message || "Échec de l'import du contrat.");
+              return { error };
+            }
+            if (pdfFile && contractId) {
+              const { error: docError } = await uploadContractDocument(contractId, "transmitted", pdfFile);
+              if (docError) {
+                notify("Contrat créé, mais échec de l'upload du PDF.");
+              } else {
+                notify("Contrat importé avec succès.");
+              }
+            } else {
+              notify("Contrat importé en brouillon.");
+            }
+            setBuilding(null);
+            return { error: null };
+          }} notify={notify} />
         </Modal>
       )}
       {building && building.mode === "template" && (
@@ -296,7 +315,22 @@ function ContractBuilder({ templates, clients, factures, devis, projets, prestat
 
 function ContractImport({ clients, prestataires, projets, onSave, notify }) {
   const [form, setForm] = useState({ titre: "", clientId: clients[0]?.id || "", prestataireId: "", projetId: "", contenu: "Contrat importé" });
+  const [pdfFile, setPdfFile] = useState(null);
   const set = (key) => (e) => setForm((item) => ({ ...item, [key]: e.target.value }));
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setPdfFile(file);
+  };
+  const handleSave = async () => {
+    if (!form.titre.trim() || !form.clientId) {
+      notify("Le titre et le client sont requis.");
+      return;
+    }
+    const result = await onSave({ ...form, pdfFile });
+    if (result?.error) {
+      notify(result.error.message || "Échec de l'import.");
+    }
+  };
   return <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, .75fr) minmax(360px, 1.25fr)", gap: 22 }}>
     <div>
       <Field label="Titre du contrat *"><input style={inputStyle} value={form.titre} onChange={set("titre")} placeholder="Contrat de prestation" /></Field>
@@ -304,12 +338,13 @@ function ContractImport({ clients, prestataires, projets, onSave, notify }) {
       <Field label="Prestataire (optionnel)"><Select value={form.prestataireId} onChange={set("prestataireId")}><option value="">— Aucun —</option>{prestataires.map((item) => <option key={item.id} value={item.id}>{item.nom}{item.societe ? ` — ${item.societe}` : ""}</option>)}</Select></Field>
       <Field label="Projet (optionnel)"><Select value={form.projetId} onChange={set("projetId")}><option value="">— Aucun —</option>{projets.map((item) => <option key={item.id} value={item.id}>{item.nom}</option>)}</Select></Field>
       <Field label="Description / Contenu"><textarea style={{ ...inputStyle, height: 120, padding: 10, lineHeight: 1.55, resize: "vertical" }} value={form.contenu} onChange={set("contenu")} /></Field>
-      <Btn icon={Save} onClick={() => onSave(form)}>Enregistrer le contrat importé</Btn>
+      <Btn icon={Save} onClick={handleSave}>Enregistrer le contrat importé</Btn>
     </div>
     <div style={{ padding: 14, border: `1px solid ${T.line}`, borderRadius: 10, background: T.bg }}>
       <div style={{ fontSize: 11.5, color: T.inkSoft, fontWeight: 700, textTransform: "uppercase", marginBottom: 7 }}>Import PDF</div>
       <p style={{ margin: "0 0 10px", color: T.inkSoft, fontSize: 12, lineHeight: 1.5 }}>Importez votre contrat PDF existant. Le fichier peut être attaché ultérieurement dans la fiche du contrat.</p>
-      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px dashed ${T.gold}`, color: T.ink, background: "#fff", cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}><Upload size={15} /> Choisir un PDF<input type="file" accept="application/pdf" style={{ display: "none" }} /></label>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px dashed ${T.gold}`, color: T.ink, background: "#fff", cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}><Upload size={15} /> {pdfFile ? pdfFile.name : "Choisir un PDF"}<input type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: "none" }} /></label>
+      {pdfFile && <div style={{ fontSize: 11.5, color: T.teal, marginTop: 7 }}>PDF sélectionné : {pdfFile.name}</div>}
     </div>
   </div>;
 }
