@@ -75,6 +75,9 @@ function buildMobileTabs(navItems, role) {
 const isVisible = (n, role) => !n.roles || role === "super_admin" || n.roles.includes(role);
 
 export function Shell({ view, setView, onLogout, children, entreprise, role, amountsHidden, onToggleAmounts, userId, profile, onQuickCreate }) {
+  const go = (key) => {
+    setView(key);
+  };
   const items = NAV
     .filter((n) => isVisible(n, role))
     .map((n) => (n.children ? { ...n, children: n.children.filter((c) => isVisible(c, role)) } : n))
