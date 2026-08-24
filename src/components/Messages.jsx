@@ -173,7 +173,7 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
   const chatPartnerName = selectedContact?.name || "Sélectionner un contact";
 
   return (
-    <div style={{ display: "flex", flex: 1, minHeight: 0, background: T.bg, borderRadius: 16, border: `1px solid ${T.line}`, overflow: "hidden" }}>
+    <div style={{ display: "flex", flex: 1, minHeight: 0, background: T.bg, borderRadius: 16, border: "1px solid " + T.line, overflow: "hidden" }}>
       {/* Sidebar des conversations */}
       <ConversationList
         conversations={filteredConversations}
@@ -193,34 +193,47 @@ export function Messages({ entreprise, currentUserId, userRole, prestataire, con
           <>
             {/* Header */}
             <div style={{
-              padding: "14px 20px",
+              padding: "16px 24px",
               background: T.paper,
-              borderBottom: `1px solid ${T.line}`,
+              borderBottom: "1px solid " + T.line,
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              flexShrink: 0,
+              gap: 16,
+              borderRadius: 12,
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)"
             }}>
               <div style={{
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 borderRadius: "50%",
-                background: `linear-gradient(135deg, ${T.gold}, ${T.teal})`,
+                background: "linear-gradient(135deg, " + T.gold + ", " + T.teal + ")",
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 16,
-                fontWeight: 700,
-                flexShrink: 0,
+                fontSize: 18,
+                fontWeight: 700
               }}>
                 {chatPartnerName.charAt(0).toUpperCase()}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.ink }}>{chatPartnerName}</div>
-                <div style={{ fontSize: 11.5, color: T.teal, fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.teal, display: "inline-block" }} />
-                  En ligne
+              
+              <div style={{ flex: 1, marginLeft: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, marginBottom: 4 }}>
+                  {chatPartnerName}
+                </div>
+                
+                <div style={{ fontSize: 12, color: T.teal, fontWeight: 500 }}>
+                  {online ? (
+                    <span>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.teal, display: "inline-block", marginRight: 4 }} />
+                      En ligne
+                    </span>
+                  ) : (
+                    <span>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.brickSoft, border: "1px solid " + T.brick, display: "inline-block", marginRight: 4 }} />
+                      Hors ligne
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
