@@ -15,7 +15,12 @@ import { useUnreadMessages } from "../lib/unreadMessagesContext.jsx";
 
 export const NAV = [
   { key: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { key: "finance", label: "Finance", icon: Wallet, roles: ["administrateur", "comptable"] },
+  {
+    key: "finance-group", label: "Finance", icon: Wallet, children: [
+      { key: "finance", label: "Finance", icon: Wallet, roles: ["administrateur", "comptable"] },
+      { key: "rapports", label: "Rapports", icon: BarChart3, roles: ["administrateur", "comptable"] },
+    ],
+  },
   {
     key: "commercial", label: "Commercial", icon: Briefcase, children: [
       { key: "clients", label: "Clients", icon: Users, roles: ["administrateur", "comptable", "commercial"] },
@@ -28,7 +33,6 @@ export const NAV = [
   { key: "projets", label: "Projets", icon: FolderKanban, roles: ["administrateur", "comptable", "commercial"] },
   { key: "prestataires", label: "Prestataires", icon: Handshake, roles: ["administrateur", "comptable", "commercial"] },
   { key: "messages", label: "Messages", icon: MessageSquare, roles: ["administrateur", "comptable", "commercial"], showUnreadCount: true },
-  { key: "rapports", label: "Rapports", icon: BarChart3, roles: ["administrateur", "comptable"] },
   { key: "utilisateurs", label: "Utilisateurs", icon: UserCog, roles: ["administrateur"] },
   { key: "entreprise", label: "Entreprise", icon: Building2 },
   { key: "parametres", label: "Paramètres", icon: Settings },
@@ -94,15 +98,12 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
   const rail = collapsed && !isMobile;
   const [navOpen, setNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [groupOverride, setGroupOverride] = useState(null);
+  const [openGroups, setOpenGroups] = useState({});
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const { canInstall, installed, promptInstall } = useInstallPrompt();
   const online = useOnlineStatus();
-  const group = items.find((n) => n.children);
-  const activeInGroup = !!group && group.children.some((c) => c.key === view);
-  const groupOpen = groupOverride === null ? activeInGroup : groupOverride;
-  useEffect(() => { setGroupOverride(null); }, [view]);
+  useEffect(() => { setOpenGroups({}); }, [view]);
   const toggleNav = () => setNavOpen((prev) => !prev);
 
   const mobileTabs = isMobile ? buildMobileTabs(items, role) : [];
@@ -163,9 +164,11 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
           {items.map((n) => {
             const Icon = n.icon;
             if (n.children) {
+              const activeInGroup = n.children.some((c) => c.key === view);
+              const isOpen = openGroups[n.key] ?? activeInGroup;
               return (
                 <div key={n.key}>
-                  <div className="nav-item" onClick={rail ? (() => { setCollapsed(false); setGroupOverride(true); }) : () => setGroupOverride(!groupOpen)} style={{
+                  <div className="nav-item" onClick={rail ? (() => { setCollapsed(false); setOpenGroups((p) => ({ ...p, [n.key]: true })); }) : () => setOpenGroups((p) => ({ ...p, [n.key]: !(p[n.key] ?? activeInGroup) }))} style={{
                     display: "flex", alignItems: "center", gap: 10, padding: rail ? "10px 0" : "10px 12px", marginBottom: 2,
                     borderRadius: 9, cursor: "pointer", fontSize: 13.5, position: "relative",
                     background: activeInGroup ? "#ffffff14" : "transparent", color: activeInGroup ? "#fff" : "#B9BFCF",
@@ -173,11 +176,11 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
                     justifyContent: rail ? "center" : "flex-start",
                   }} title={n.label}>
                     <Icon size={16} />{!rail && n.label}
-                    {!rail && <ChevronDown size={14} style={{ marginLeft: "auto", transition: "transform .2s ease", transform: groupOpen ? "rotate(180deg)" : "rotate(0deg)" }} />}
+                    {!rail && <ChevronDown size={14} style={{ marginLeft: "auto", transition: "transform .2s ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }} />}
                   </div>
                   <div style={{
                     overflow: "hidden",
-                    maxHeight: groupOpen ? n.children.length * 44 : 0,
+                    maxHeight: isOpen ? n.children.length * 44 : 0,
                     transition: "max-height .25s ease",
                   }}>
                     {n.children.map((c) => {
