@@ -235,8 +235,8 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
         </div>
       </aside>
 
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
-        <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+      <main style={{ flex: 1, minWidth: 0 }}>
+        <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
           <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {NAV_ITEMS.find((n) => n.key === tab)?.label}
           </h1>
@@ -247,39 +247,13 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
               {online ? <Wifi size={13} /> : <WifiOff size={13} />}
               <span>{online ? "En ligne" : "Hors ligne"}</span>
             </div>
-            <NotifsBell userId={userId} entrepriseId={entrepriseId} />
-            <ThemeToggle />
-            <button onClick={() => setAlertesOpen(!alertesOpen)} title="Alertes d'échéance"
-              style={{ position: "relative", background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: alertes.length > 0 ? T.brick : T.inkSoft, flexShrink: 0 }}>
-              <CalendarClock size={17} />
-              {alertes.length > 0 && (
-                <span style={{ position: "absolute", top: -5, right: -5, background: T.brick, color: "#fff", fontSize: 9.5, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 10, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>{alertes.length}</span>
-              )}
+            <button onClick={() => setConfirmingLogout(true)} style={{ background: "none", border: `1px solid ${T.line}`, borderRadius: 8, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: T.inkSoft, flexShrink: 0 }} title="Se déconnecter">
+              <LogOut size={16} />
             </button>
-            {alertesOpen && (
-              <div style={{ position: "absolute", top: 44, right: 0, width: 320, background: T.paper, border: `1px solid ${T.line}`, borderRadius: 12, boxShadow: `0 10px 30px ${alpha(T.sidebar, 16)}`, zIndex: 40, overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.line}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 700 }}>Échéances à surveiller</span>
-                  <button onClick={() => setAlertesOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: T.inkSoft, display: "flex" }}><X size={14} /></button>
-                </div>
-                {alertes.length === 0 && <div style={{ padding: 16, fontSize: 12.5, color: T.inkSoft }}>Aucune alerte — toutes vos tâches sont à jour.</div>}
-                <div style={{ maxHeight: 300, overflowY: "auto" }}>
-                  {alertes.map(({ tache, alr }) => (
-                    <div key={tache.id} onClick={() => { setTab("taches"); setAlertesOpen(false); }} style={{ padding: "10px 16px", borderBottom: `1px solid ${T.line}`, cursor: "pointer", display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tache.titre}</div>
-                        <div style={{ fontSize: 11, color: T.inkSoft }}>{projetDe(tache.projetId)?.nom || "Projet"} · éch. {formatDate(tache.echeance)}</div>
-                      </div>
-                      <AlerteBadge alr={alr} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </header>
 
-        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0 }}>
+        <div className="app-content" style={{ padding: 30 }}>
           {alertes.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, background: enRetard.length > 0 ? T.brickSoft : T.goldSoft, border: `1px solid ${alpha(enRetard.length > 0 ? T.brick : T.gold, 20)}`, marginBottom: 18, flexWrap: "wrap" }}>
               <AlertTriangle size={16} color={enRetard.length > 0 ? T.brick : T.gold} />

@@ -309,7 +309,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
           </div>
         )}
       </aside>
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <main style={{ flex: 1, minWidth: 0 }}>
         <header className="app-header" style={{ background: T.paper, borderBottom: `1px solid ${T.line}`, padding: "18px 30px", display: "flex", alignItems: "center", gap: 14 }}>
           <h1 className="app-header-title" style={{ margin: 0, fontFamily: "'Space Grotesk', sans-serif", fontSize: 21, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{current?.label}</h1>
           <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 10 }}>
@@ -347,7 +347,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             <div style={{ position: "relative" }}>
               <button onClick={() => setProfileOpen((o) => !o)} title="Mon profil"
                 style={{ background: "none", border: "none", borderRadius: 8, padding: "4px 6px", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: T.goldFg, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: T.gold, color: T.goldFg, fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                   {initiales}
                 </span>
                 <span className="user-profile-name" style={{ fontSize: 12.5, fontWeight: 600, color: T.ink, maxWidth: 140, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{profile?.nom_complet}</span>
@@ -388,7 +388,7 @@ export function Shell({ view, setView, onLogout, children, entreprise, role, amo
             </div>
           </div>
         </header>
-        <div className="app-content" style={{ padding: 30, flex: 1, minHeight: 0 }}>{children}</div>
+        <div className="app-content" style={{ padding: 30 }}>{children}</div>
       </main>
 
       {isMobile && (
