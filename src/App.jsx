@@ -283,7 +283,7 @@ export default function App() {
             )}
             {view === "rapports" && <Rapports factures={factures} clients={clients} entreprise={entreprise} notify={notify} />}
             {view === "messages" && (
-              <Messages entreprise={entreprise} currentUserId={userId} userRole={role} prestataires={prestataires} />
+              <Messages entreprise={entreprise} currentUserId={userId} userRole={role} prestataires={prestataires} online={online} />
             )}
             {view === "utilisateurs" && isAdmin && (
               <Users profiles={profiles} prestataires={prestatairesFromUsers} invitations={invitations} invitationsAcceptees={invitationsAcceptees} changeRole={changeRole} invite={invite} resendInviteEmail={resendInviteEmail}

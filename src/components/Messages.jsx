@@ -9,7 +9,7 @@ import { Toast } from "./ui";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😊", "🎉", "👀", "✅", "🔥", "👏"];
 
-export function Messages({ entreprise, currentUserId, userRole, prestataire, contract, projet }) {
+export function Messages({ entreprise, currentUserId, userRole, prestataire, contract, projet, online }) {
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");

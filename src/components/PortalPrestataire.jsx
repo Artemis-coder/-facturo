@@ -414,7 +414,7 @@ export function PortalPrestataire({ entrepriseId, userId, entreprise, onLogout }
           )}
 
           {tab === "messages" && (
-            <Messages entreprise={entreprise} currentUserId={userId} userRole="prestataire" prestataire={prestataire} />
+            <Messages entreprise={entreprise} currentUserId={userId} userRole="prestataire" prestataire={prestataire} online={online} />
           )}
         </div>
       </main>
