@@ -1,5 +1,5 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { LineChart, Line, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { DollarSign, PieChart, FileText, CheckCircle2, Receipt, AlertTriangle } from "lucide-react";
 import { T, fmt, PALETTES } from "../lib/theme";
 import { useTheme } from "../lib/useTheme";
@@ -44,6 +44,15 @@ export function DashboardComptable({ devis, factures, clients, setView }) {
     { label: "Factures en Retard", value: `${enRetard}`, sub: "Rappels à effectuer", tone: T.brick, icon: AlertTriangle, onClick: () => setView("factures") },
   ];
 
+  const tooltipStyle = {
+    fontSize: 12,
+    borderRadius: 10,
+    border: `1px solid ${P.line}`,
+    background: P.paper,
+    color: P.ink,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  };
+
   return (
     <div>
       <KpiBar items={kpis} />
@@ -55,11 +64,18 @@ export function DashboardComptable({ devis, factures, clients, setView }) {
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={historique}>
-              <CartesianGrid stroke={P.line} vertical={false} />
+              <defs>
+                <linearGradient id="gradEnc" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={P.teal} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={P.teal} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={P.line} vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="mois" tick={{ fontSize: 12, fill: P.inkSoft }} axisLine={{ stroke: P.line }} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
-              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${P.line}`, background: P.paper, color: P.ink }} />
-              <Line type="monotone" dataKey="ca" stroke={P.gold} strokeWidth={2.5} dot={{ r: 3, fill: P.gold }} />
+              <Tooltip formatter={(v) => fmt(v)} contentStyle={tooltipStyle} />
+              <Area type="monotone" dataKey="ca" stroke="none" fill="url(#gradEnc)" />
+              <Line type="monotone" dataKey="ca" stroke={P.teal} strokeWidth={2.5} dot={{ r: 3, fill: P.teal, strokeWidth: 0 }} activeDot={{ r: 5, fill: P.teal, stroke: P.paper, strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

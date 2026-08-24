@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet, ChevronLeft, ChevronRight, Smartphone } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
+import { LineChart, Line, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
 import { T, fmt, inputStyle, PALETTES } from "../lib/theme";
 import { useTheme } from "../lib/useTheme";
 import { td } from "../lib/tableStyles";
@@ -136,13 +136,25 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, marginBottom: 14 }}>Entrées &amp; sorties (6 derniers mois)</div>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={historique}>
-              <CartesianGrid stroke={P.line} vertical={false} />
+              <defs>
+                <linearGradient id="gradEnt" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={P.teal} stopOpacity={0.2} />
+                  <stop offset="95%" stopColor={P.teal} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradSor" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={P.brick} stopOpacity={0.2} />
+                  <stop offset="95%" stopColor={P.brick} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={P.line} vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="mois" tick={{ fontSize: 12, fill: P.inkSoft }} axisLine={{ stroke: P.line }} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
-              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${P.line}`, background: P.paper, color: P.ink }} />
+              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize: 12, borderRadius: 10, border: `1px solid ${P.line}`, background: P.paper, color: P.ink, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line name="Entrées" type="monotone" dataKey="entrees" stroke={P.teal} strokeWidth={2.5} dot={{ r: 3, fill: P.teal }} />
-              <Line name="Sorties" type="monotone" dataKey="sorties" stroke={P.brick} strokeWidth={2.5} dot={{ r: 3, fill: P.brick }} />
+              <Area name="Entrées" type="monotone" dataKey="entrees" stroke="none" fill="url(#gradEnt)" />
+              <Line name="Entrées" type="monotone" dataKey="entrees" stroke={P.teal} strokeWidth={2.5} dot={{ r: 3, fill: P.teal, strokeWidth: 0 }} activeDot={{ r: 5, fill: P.teal, stroke: P.paper, strokeWidth: 2 }} />
+              <Area name="Sorties" type="monotone" dataKey="sorties" stroke="none" fill="url(#gradSor)" />
+              <Line name="Sorties" type="monotone" dataKey="sorties" stroke={P.brick} strokeWidth={2.5} dot={{ r: 3, fill: P.brick, strokeWidth: 0 }} activeDot={{ r: 5, fill: P.brick, stroke: P.paper, strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
