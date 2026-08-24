@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Wallet, ChevronLeft, ChevronRight, Smartphone } from "lucide-react";
-import { LineChart, Line, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend } from "recharts";
+import { LineChart, Line, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Legend, Cell } from "recharts";
 import { T, fmt, inputStyle, PALETTES } from "../lib/theme";
 import { useTheme } from "../lib/useTheme";
 import { td } from "../lib/tableStyles";
@@ -33,6 +33,19 @@ function fluxParMois(paiements, depenses) {
   });
   return months;
 }
+
+const MODE_COLORS = {
+  "Espèces": "#1F7A63",
+  "Virement": "#C98A2B",
+  "Mobile Money": "#5C6B8A",
+  "Chèque": "#4CBE97",
+  "Carte bancaire": "#E0A63F",
+};
+
+const CAT_COLORS = [
+  "#C98A2B", "#AE3B45", "#1F7A63", "#5C6B8A", "#4CBE97",
+  "#E0A63F", "#9AA3B8", "#16213A", "#D9D6CC", "#3B3017",
+];
 
 export function Finance({ paiements, depenses, clients, saveDepense, deleteDepense, userId, notify, canManage = true, canDelete = false }) {
   const { isDark } = useTheme();
@@ -113,6 +126,15 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
 
   const annIdx = annees.indexOf(annee);
 
+  const tooltipStyle = {
+    fontSize: 12,
+    borderRadius: 10,
+    border: `1px solid ${P.line}`,
+    background: P.paper,
+    color: P.ink,
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  };
+
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -163,35 +185,37 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           <Card style={{ padding: "18px 20px" }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 12 }}>Encaissements par moyen de paiement</div>
             {parMode.length === 0 && <div style={{ fontSize: 12, color: T.inkSoft }}>Aucun encaissement.</div>}
-            {parMode.map(({ mode, total }) => (
-              <div key={mode} style={{ marginBottom: 9 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}>
-                  <span style={{ color: T.inkSoft, display: "flex", alignItems: "center", gap: 4 }}>
-                    {mode === "Mobile Money" && <Smartphone size={11} />}{mode}
-                  </span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(total)}</span>
-                </div>
-                <div style={{ height: 5, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, (total / (parMode[0]?.total || 1)) * 100)}%`, background: T.teal }} />
-                </div>
-              </div>
-            ))}
+            <ResponsiveContainer width="100%" height={parMode.length === 0 ? 40 : 180}>
+              <BarChart data={parMode} layout="vertical">
+                <CartesianGrid stroke={P.line} horizontal={false} strokeDasharray="3 3" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1000}k`} />
+                <YAxis type="category" dataKey="mode" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={90} />
+                <Tooltip formatter={(v) => fmt(v)} contentStyle={tooltipStyle} cursor={{ fill: P.hover }} />
+                <Bar dataKey="total" radius={[0, 6, 6, 0]}>
+                  {parMode.map((entry) => (
+                    <Cell key={entry.mode} fill={MODE_COLORS[entry.mode] || P.teal} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </Card>
 
           <Card style={{ padding: "18px 20px" }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 12 }}>Dépenses par catégorie</div>
             {parCategorie.length === 0 && <div style={{ fontSize: 12, color: T.inkSoft }}>Aucune dépense enregistrée.</div>}
-            {parCategorie.map(({ categorie, total }) => (
-              <div key={categorie} style={{ marginBottom: 9 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}>
-                  <span style={{ color: T.inkSoft }}>{categorie}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{fmt(total)}</span>
-                </div>
-                <div style={{ height: 5, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, (total / (parCategorie[0]?.total || 1)) * 100)}%`, background: T.gold }} />
-                </div>
-              </div>
-            ))}
+            <ResponsiveContainer width="100%" height={parCategorie.length === 0 ? 40 : 180}>
+              <BarChart data={parCategorie} layout="vertical">
+                <CartesianGrid stroke={P.line} horizontal={false} strokeDasharray="3 3" />
+                <XAxis type="number" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1000}k`} />
+                <YAxis type="category" dataKey="categorie" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={130} />
+                <Tooltip formatter={(v) => fmt(v)} contentStyle={tooltipStyle} cursor={{ fill: P.hover }} />
+                <Bar dataKey="total" radius={[0, 6, 6, 0]}>
+                  {parCategorie.map((entry, index) => (
+                    <Cell key={entry.categorie} fill={CAT_COLORS[index % CAT_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </Card>
         </div>
       </div>
