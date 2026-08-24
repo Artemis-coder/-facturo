@@ -185,13 +185,13 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           <Card style={{ padding: "18px 20px" }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 12 }}>Encaissements par moyen de paiement</div>
             {parMode.length === 0 && <div style={{ fontSize: 12, color: T.inkSoft }}>Aucun encaissement.</div>}
-            <ResponsiveContainer width="100%" height={parMode.length === 0 ? 40 : 180}>
-              <BarChart data={parMode} layout="vertical">
-                <CartesianGrid stroke={P.line} horizontal={false} strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1000}k`} />
-                <YAxis type="category" dataKey="mode" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={90} />
+            <ResponsiveContainer width="100%" height={parMode.length === 0 ? 40 : 220}>
+              <BarChart data={parMode}>
+                <CartesianGrid stroke={P.line} vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="mode" tick={{ fontSize: 10, fill: P.inkSoft }} axisLine={{ stroke: P.line }} tickLine={false} interval={0} angle={-25} textAnchor="end" height={50} />
+                <YAxis tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
                 <Tooltip formatter={(v) => fmt(v)} contentStyle={tooltipStyle} cursor={{ fill: P.hover }} />
-                <Bar dataKey="total" radius={[0, 6, 6, 0]}>
+                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                   {parMode.map((entry) => (
                     <Cell key={entry.mode} fill={MODE_COLORS[entry.mode] || P.teal} />
                   ))}
@@ -203,13 +203,13 @@ export function Finance({ paiements, depenses, clients, saveDepense, deleteDepen
           <Card style={{ padding: "18px 20px" }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, marginBottom: 12 }}>Dépenses par catégorie</div>
             {parCategorie.length === 0 && <div style={{ fontSize: 12, color: T.inkSoft }}>Aucune dépense enregistrée.</div>}
-            <ResponsiveContainer width="100%" height={parCategorie.length === 0 ? 40 : 180}>
-              <BarChart data={parCategorie} layout="vertical">
-                <CartesianGrid stroke={P.line} horizontal={false} strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1000}k`} />
-                <YAxis type="category" dataKey="categorie" tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={130} />
+            <ResponsiveContainer width="100%" height={parCategorie.length === 0 ? 40 : 220}>
+              <BarChart data={parCategorie}>
+                <CartesianGrid stroke={P.line} vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="categorie" tick={{ fontSize: 10, fill: P.inkSoft }} axisLine={{ stroke: P.line }} tickLine={false} interval={0} angle={-25} textAnchor="end" height={50} />
+                <YAxis tick={{ fontSize: 11, fill: P.inkSoft }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${v / 1000}k`} />
                 <Tooltip formatter={(v) => fmt(v)} contentStyle={tooltipStyle} cursor={{ fill: P.hover }} />
-                <Bar dataKey="total" radius={[0, 6, 6, 0]}>
+                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                   {parCategorie.map((entry, index) => (
                     <Cell key={entry.categorie} fill={CAT_COLORS[index % CAT_COLORS.length]} />
                   ))}
